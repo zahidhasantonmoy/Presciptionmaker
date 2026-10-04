@@ -267,7 +267,7 @@ export function PrescriptionBuilder() {
               <div>
                 <strong>Previous visit detected:</strong> {pastPrescription.patient.name} on {formatDateDisplay(pastPrescription.date)}
                 {pastPrescription.medicines.length > 0 && ` • ${pastPrescription.medicines.length} previous medicine(s)`}
-                {pastPrescription.diagnoses.length > 0 && ` (${pastPrescription.diagnoses.map(d => d.name).join(', ')})`}
+                {pastPrescription.diagnoses.length > 0 && ` (${pastPrescription.diagnoses.map(d => d.text).join(', ')})`}
               </div>
             </div>
             <button
