@@ -212,9 +212,81 @@ export function MedicineEntry({ medicines, onChange }: MedicineEntryProps) {
                 </div>
               )}
 
+              {/* Quick dose & timing chips for lightning-fast entry */}
+              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 6, paddingLeft: 46 }}>
+                {[
+                  { label: '1+0+1', m: '1', a: '0', e: '1' },
+                  { label: '1+1+1', m: '1', a: '1', e: '1' },
+                  { label: '0+0+1', m: '0', a: '0', e: '1' },
+                  { label: '1+0+0', m: '1', a: '0', e: '0' },
+                ].map(d => (
+                  <button
+                    key={d.label}
+                    type="button"
+                    style={{
+                      cursor: 'pointer',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      padding: '2px 7px',
+                      borderRadius: 6,
+                      background: (med.morning === d.m && med.afternoon === d.a && med.evening === d.e) ? '#dbeafe' : '#f1f5f9',
+                      color: (med.morning === d.m && med.afternoon === d.a && med.evening === d.e) ? '#1e40af' : '#475569',
+                      border: (med.morning === d.m && med.afternoon === d.a && med.evening === d.e) ? '1px solid #93c5fd' : '1px solid #e2e8f0'
+                    }}
+                    onClick={() => updateMedicine(med.id, { morning: d.m, afternoon: d.a, evening: d.e })}
+                  >
+                    {d.label}
+                  </button>
+                ))}
+
+                <span style={{ color: '#cbd5e1', margin: '0 2px' }}>|</span>
+
+                {['খাবারের পরে', 'খাবারের আগে', 'খালি পেটে'].map(t => (
+                  <button
+                    key={t}
+                    type="button"
+                    style={{
+                      cursor: 'pointer',
+                      fontSize: 11,
+                      padding: '2px 7px',
+                      borderRadius: 6,
+                      background: med.timing === t ? '#dcfce7' : '#f8fafc',
+                      color: med.timing === t ? '#166534' : '#64748b',
+                      border: med.timing === t ? '1px solid #86efac' : '1px solid #e2e8f0',
+                      fontFamily: 'var(--font-bn)'
+                    }}
+                    onClick={() => updateMedicine(med.id, { timing: t })}
+                  >
+                    {t}
+                  </button>
+                ))}
+
+                <span style={{ color: '#cbd5e1', margin: '0 2px' }}>|</span>
+
+                {['৩ দিন', '৫ দিন', '৭ দিন', '১৪ দিন', '১ মাস', 'চলবে'].map(dur => (
+                  <button
+                    key={dur}
+                    type="button"
+                    style={{
+                      cursor: 'pointer',
+                      fontSize: 11,
+                      padding: '2px 7px',
+                      borderRadius: 6,
+                      background: med.duration === dur ? '#fef3c7' : '#f8fafc',
+                      color: med.duration === dur ? '#92400e' : '#64748b',
+                      border: med.duration === dur ? '1px solid #fde68a' : '1px solid #e2e8f0',
+                      fontFamily: 'var(--font-bn)'
+                    }}
+                    onClick={() => updateMedicine(med.id, { duration: dur })}
+                  >
+                    {dur}
+                  </button>
+                ))}
+              </div>
+
               {/* Quick dose preview */}
               {!isExpanded && med.name && (
-                <div style={{ marginTop: 4, fontSize: 11, color: '#64748b', paddingLeft: 54 }}>
+                <div style={{ marginTop: 4, fontSize: 11, color: '#64748b', paddingLeft: 46 }}>
                   {med.morning}+{med.afternoon}+{med.evening}
                   {med.timing && ` · ${med.timing}`}
                   {med.duration && ` · ${med.duration}`}
