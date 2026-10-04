@@ -17,17 +17,13 @@ function AppContent() {
       <Sidebar />
 
       {/* Main content */}
-      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-        {activePage === 'dashboard' && <Dashboard />}
-        {activePage === 'builder' && (
-          <div style={{ flex: 1, display: 'flex', overflow: 'hidden', height: '100%' }}>
-            <PrescriptionBuilder />
-          </div>
-        )}
-        {activePage === 'history' && <HistoryPage />}
-        {activePage === 'templates' && <TemplatesPage />}
-        {activePage === 'settings' && <SettingsPage />}
-      </div>
+      <main style={{ flex: 1, height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        {activePage === 'dashboard' && <div style={{ flex: 1, height: '100%', overflowY: 'auto' }}><Dashboard /></div>}
+        {activePage === 'builder' && <PrescriptionBuilder />}
+        {activePage === 'history' && <div style={{ flex: 1, height: '100%', overflowY: 'auto' }}><HistoryPage /></div>}
+        {activePage === 'templates' && <div style={{ flex: 1, height: '100%', overflowY: 'auto' }}><TemplatesPage /></div>}
+        {activePage === 'settings' && <div style={{ flex: 1, height: '100%', overflowY: 'auto' }}><SettingsPage /></div>}
+      </main>
     </div>
   );
 }
