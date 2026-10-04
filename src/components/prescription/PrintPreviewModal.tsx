@@ -1,5 +1,8 @@
 import React, { useRef, useState, useCallback } from 'react';
-import { Printer, Download, X, MessageSquare, FileText, Layers } from 'lucide-react';
+import {
+  Printer, Download, X, MessageSquare, FileText, Layers,
+  ZoomIn, ZoomOut, Maximize2
+} from 'lucide-react';
 import type { Prescription, DoctorProfile } from '../../types';
 import { PrescriptionPreview } from './PrescriptionPreview';
 import { useToast } from '../ui/Toast';
@@ -22,6 +25,7 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose }: Prin
   const [splitAfter, setSplitAfter] = useState<number>(
     prescription.splitAfterMedicine || Math.min(6, Math.max(1, Math.ceil((prescription.medicines.length || 1) / 2)))
   );
+  const [zoomScale, setZoomScale] = useState<number>(0.9);
 
   const activePrescription: Prescription = {
     ...prescription,
@@ -38,7 +42,7 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose }: Prin
 
   const handleDownloadPDF = useCallback(async () => {
     if (!previewRef.current) return;
-    showToast('Generating high-resolution PDF...', 'info');
+    showToast('Generating high-resolution 1-Page A4 PDF...', 'info');
     try {
       const sheets = previewRef.current.querySelectorAll<HTMLElement>('.rx-page-sheet');
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -87,25 +91,59 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose }: Prin
   }, [prescription, showToast]);
 
   return (
-    <div className="modal-overlay" style={{ alignItems: 'flex-start', paddingTop: 16 }}>
-      {/* Toolbar */}
-      <div className="no-print" style={{
-        position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)',
-        background: 'white', borderRadius: 12, padding: '10px 20px',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-        display: 'flex', alignItems: 'center', gap: 10, zIndex: 300,
-        flexWrap: 'wrap',
-      }}>
-        <span style={{ fontWeight: 700, color: '#1e40af', fontSize: 15 }}>Print &amp; PDF</span>
-        <div style={{ width: 1, height: 24, background: '#e2e8f0' }}></div>
+    <div
+      className="modal-overlay print-modal-scroll-wrap"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        padding: '0 16px 80px 16px',
+        zIndex: 9999,
+        background: 'rgba(15, 23, 42, 0.75)',
+        backdropFilter: 'blur(6px)',
+        cursor: 'default',
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      {/* Pinned Sticky Toolbar */}
+      <div
+        className="no-print"
+        style={{
+          position: 'sticky',
+          top: 14,
+          background: '#ffffff',
+          borderRadius: 14,
+          padding: '8px 16px',
+          boxShadow: '0 12px 36px rgba(0,0,0,0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          zIndex: 10000,
+          flexWrap: 'wrap',
+          marginTop: 14,
+          marginBottom: 18,
+          border: '1px solid #cbd5e1',
+          maxWidth: '96vw',
+        }}
+      >
+        <span style={{ fontWeight: 800, color: '#1e40af', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+          📄 Print &amp; PDF
+        </span>
+        <div style={{ width: 1, height: 22, background: '#e2e8f0' }} />
 
         {/* Page Mode Selector */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f8fafc', padding: '4px 8px', borderRadius: 8, border: '1px solid #cbd5e1' }}>
-          <Layers size={14} color="#64748b" />
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#334155' }}>Pages:</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#f8fafc', padding: '3px 8px', borderRadius: 8, border: '1px solid #cbd5e1' }}>
+          <Layers size={13} color="#64748b" />
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#334155' }}>Pages:</span>
           <select
             className="form-select"
-            style={{ fontSize: 12, padding: '2px 8px', height: 28, width: 95 }}
+            style={{ fontSize: 11, padding: '2px 6px', height: 26, width: 85 }}
             value={pageMode}
             onChange={(e) => setPageMode(e.target.value as '1' | '2' | 'auto')}
             title="Page Count: 1 Page (default), 2 Pages, or Auto"
@@ -117,10 +155,10 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose }: Prin
 
           {isMultiPage && prescription.medicines.length > 1 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 4 }}>
-              <span style={{ fontSize: 11, color: '#64748b' }}>Split after:</span>
+              <span style={{ fontSize: 10, color: '#64748b' }}>Split after:</span>
               <select
                 className="form-select"
-                style={{ fontSize: 12, padding: '2px 6px', height: 28, width: 75 }}
+                style={{ fontSize: 11, padding: '2px 4px', height: 26, width: 72 }}
                 value={splitAfter}
                 onChange={(e) => setSplitAfter(Number(e.target.value))}
                 title="Number of medicines on Page 1 before continuing to Page 2"
@@ -142,11 +180,13 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose }: Prin
             color: isPadMode ? '#92400e' : '#475569',
             border: `1px solid ${isPadMode ? '#f59e0b' : '#cbd5e1'}`,
             fontWeight: 600,
+            fontSize: 12,
+            padding: '4px 10px',
           }}
           onClick={() => setIsPadMode(!isPadMode)}
           title="Toggle Pre-printed Pad Stationery Mode"
         >
-          <FileText size={14} />
+          <FileText size={13} />
           {isPadMode ? 'Pad Mode (ON)' : 'Pad Mode (OFF)'}
         </button>
 
@@ -158,38 +198,96 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose }: Prin
             background: '#f0fdf4',
             color: '#166534',
             border: '1px solid #86efac',
-            fontWeight: 600,
+            fontWeight: 700,
+            fontSize: 12,
+            padding: '4px 10px',
           }}
           onClick={() => openWhatsAppPrescription(prescription.patient.phone, activePrescription, doctorProfile)}
           title="Share formatted prescription to patient via WhatsApp"
         >
-          <MessageSquare size={14} /> WhatsApp
+          <MessageSquare size={13} color="#16a34a" /> WhatsApp
         </button>
 
-        <button className="btn-primary btn-sm" onClick={handlePrint}>
-          <Printer size={15} /> Print ({isMultiPage ? '2 Pages' : '1 Page'})
+        <div style={{ width: 1, height: 22, background: '#e2e8f0' }} />
+
+        {/* Zoom Controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#f8fafc', padding: '2px 6px', borderRadius: 8, border: '1px solid #cbd5e1' }}>
+          <button
+            className="btn-icon"
+            style={{ width: 24, height: 24 }}
+            onClick={() => setZoomScale(s => Math.max(0.5, parseFloat((s - 0.1).toFixed(2))))}
+            title="Zoom out"
+          >
+            <ZoomOut size={13} />
+          </button>
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#334155', minWidth: 36, textAlign: 'center' }}>
+            {Math.round(zoomScale * 100)}%
+          </span>
+          <button
+            className="btn-icon"
+            style={{ width: 24, height: 24 }}
+            onClick={() => setZoomScale(s => Math.min(1.2, parseFloat((s + 0.1).toFixed(2))))}
+            title="Zoom in"
+          >
+            <ZoomIn size={13} />
+          </button>
+          <button
+            className="btn-ghost btn-sm"
+            style={{ fontSize: 11, padding: '2px 6px', height: 24 }}
+            onClick={() => setZoomScale(0.85)}
+            title="Fit to Screen"
+          >
+            <Maximize2 size={11} /> Fit
+          </button>
+        </div>
+
+        <div style={{ width: 1, height: 22, background: '#e2e8f0' }} />
+
+        <button className="btn-primary btn-sm" style={{ padding: '6px 14px', fontSize: 12 }} onClick={handlePrint}>
+          <Printer size={14} /> Print ({isMultiPage ? '2 Pages' : '1 Page'})
         </button>
 
-        <button className="btn-secondary btn-sm" onClick={handleDownloadPDF}>
-          <Download size={15} /> Download PDF ({isMultiPage ? '2 Pages' : '1 Page'})
+        <button className="btn-secondary btn-sm" style={{ padding: '6px 14px', fontSize: 12 }} onClick={handleDownloadPDF}>
+          <Download size={14} /> Download PDF ({isMultiPage ? '2 Pages' : '1 Page'})
         </button>
 
-        <button className="btn-ghost btn-sm" onClick={onClose}>
-          <X size={16} /> Close
+        <button className="btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={onClose} title="Close Preview">
+          <X size={16} />
         </button>
       </div>
 
-      {/* Preview area */}
-      <div style={{
-        marginTop: 80, width: '100%', display: 'flex', justifyContent: 'center',
-        paddingBottom: 40,
-      }}>
-        <div className="print-only" style={{ width: '210mm' }}>
-          <PrescriptionPreview
-            ref={previewRef}
-            prescription={activePrescription}
-            doctorProfile={doctorProfile}
-          />
+      {/* Scrollable Preview Area */}
+      <div
+        style={{
+          width: '100%',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'flex-start',
+          paddingBottom: 60,
+        }}
+      >
+        <div
+          style={{
+            width: `${Math.round(794 * zoomScale)}px`,
+            boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
+            borderRadius: 4,
+            background: '#ffffff',
+            transition: 'width 0.15s ease',
+          }}
+        >
+          <div
+            style={{
+              width: '210mm',
+              transform: `scale(${zoomScale})`,
+              transformOrigin: 'top left',
+            }}
+          >
+            <PrescriptionPreview
+              ref={previewRef}
+              prescription={activePrescription}
+              doctorProfile={doctorProfile}
+            />
+          </div>
         </div>
       </div>
     </div>

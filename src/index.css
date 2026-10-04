@@ -790,6 +790,16 @@ textarea.form-input {
   backdrop-filter: blur(4px);
 }
 
+.print-modal-scroll-wrap {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
 .modal-box {
   background: white;
   border-radius: 16px;
@@ -1285,4 +1295,15 @@ textarea.form-input {
   color: #e0161b;
   font-weight: 700;
   font-style: normal;
+}
+
+/* Voice Dictation Mic Pulse */
+.listening-pulse {
+  animation: micPulse 1.2s infinite ease-in-out;
+}
+
+@keyframes micPulse {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+  70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }

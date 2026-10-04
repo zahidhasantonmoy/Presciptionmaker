@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Star, ChevronDown, ChevronUp } from 'lucide-react';
 import { useStore } from '../../store/useStore';
+import { VoiceDictationButton } from '../ui/VoiceDictationButton';
 
 interface AdviceEntryProps {
   advice: string;
@@ -55,7 +56,14 @@ export function AdviceEntry({ advice, adviceBn, onAdviceChange, onAdviceBnChange
 
       {/* English advice */}
       <div>
-        <label className="form-label">Advice (English)</label>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
+          <label className="form-label" style={{ margin: 0 }}>Advice (English)</label>
+          <VoiceDictationButton
+            lang="en-US"
+            onTranscript={t => onAdviceChange(advice ? `${advice}\n${t}` : t)}
+            title="Dictate advice in English"
+          />
+        </div>
         <textarea
           className="form-input"
           value={advice}
@@ -68,12 +76,19 @@ export function AdviceEntry({ advice, adviceBn, onAdviceChange, onAdviceBnChange
 
       {/* Bangla advice */}
       <div>
-        <label className="form-label">পরামর্শ (বাংলা)</label>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
+          <label className="form-label" style={{ margin: 0 }}>পরামর্শ (বাংলা)</label>
+          <VoiceDictationButton
+            lang="bn-BD"
+            onTranscript={t => onAdviceBnChange(adviceBn ? `${adviceBn}\n${t}` : t)}
+            title="পরামর্শ বাংলায় মুখে বলুন (ভয়েস টাইপিং)"
+          />
+        </div>
         <textarea
           className="form-input bn"
           value={adviceBn}
           onChange={e => onAdviceBnChange(e.target.value)}
-          placeholder="বাংলায় পরামর্শ লিখুন..."
+          placeholder="বাংলায় পরামর্শ লিখুন (যেমন: গরম পানির সেঁক দিবেন, চেয়ারে বসে নামাজ পড়বেন)..."
           rows={3}
           style={{ resize: 'vertical', lineHeight: 1.7, fontFamily: 'var(--font-bn), sans-serif' }}
         />

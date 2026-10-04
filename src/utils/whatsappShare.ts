@@ -68,8 +68,18 @@ export function generateWhatsAppPrescriptionText(
     lines.push(`📅 *Next Visit / পরবর্তী সাক্ষাৎ:* ${p.followUpText || (p.followUpDate && formatDateDisplay(p.followUpDate))}`);
   }
 
+  // Verification Link
+  const rxKey = p.id || p.patient.patientId || p.prescriptionNumber;
+  if (rxKey) {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://easypadbd.vercel.app';
+    const verifyUrl = `${origin}/?verify=${encodeURIComponent(rxKey)}`;
+    lines.push('');
+    lines.push(`📱 *ডিজিটাল প্রেসক্রিপশন ভেরিফিকেশন ও ডাউনলোড লিংক:*`);
+    lines.push(verifyUrl);
+  }
+
   lines.push('');
-  lines.push('────────── EasyPad ──────────');
+  lines.push('────────── EasyPad Healthcare ──────────');
   return lines.join('\n');
 }
 

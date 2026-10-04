@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Save, Printer, Eye, ChevronDown, ChevronUp,
   User, Stethoscope, FlaskConical, BookOpen, Calendar, FileText, Keyboard, Clock, RotateCcw,
-  Layers, ShieldCheck
+  Layers, ShieldCheck, MessageSquare
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useStore } from '../store/useStore';
@@ -12,10 +12,13 @@ import { DiagnosisEntry } from '../components/prescription/DiagnosisEntry';
 import { InvestigationEntry } from '../components/prescription/InvestigationEntry';
 import { AdviceEntry } from '../components/prescription/AdviceEntry';
 import { PrintPreviewModal } from '../components/prescription/PrintPreviewModal';
+import { LabRequisitionSlipModal } from '../components/modals/LabRequisitionSlipModal';
 import { KeyboardShortcutsModal } from '../components/modals/KeyboardShortcutsModal';
+import { VoiceDictationButton } from '../components/ui/VoiceDictationButton';
 import { DoctorSwitcher } from '../components/layout/DoctorSwitcher';
 import { useToast } from '../components/ui/Toast';
 import { calculateAge, formatDateForInput, formatDateDisplay } from '../utils/dateUtils';
+import { openWhatsAppPrescription } from '../utils/whatsappShare';
 import type { Prescription, PrescriptionTheme } from '../types';
 import { SANOWARA_SAMPLE_PATIENT, JESMIN_SAMPLE_PATIENT } from '../data/defaults';
 
@@ -70,6 +73,7 @@ export function PrescriptionBuilder() {
 
   const [showPreview, setShowPreview] = useState(true);
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const [showLabSlipModal, setShowLabSlipModal] = useState(false);
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   const [sections, setSections] = useState<SectionToggle>({
     complaints: true, examination: false, history: false, diagnosis: true,
@@ -397,6 +401,22 @@ export function PrescriptionBuilder() {
           <button className="btn-ghost btn-sm" onClick={() => setShowPrintModal(true)}>
             <Printer size={14} /> Print/PDF
           </button>
+          <button
+            className="btn-ghost btn-sm"
+            onClick={() => setShowLabSlipModal(true)}
+            title="ডায়াগনস্টিক সেন্টারের আলাদা ল্যাব টেস্ট রিকুইজিশন স্লিপ প্রিন্ট করুন"
+            style={{ color: '#047857' }}
+          >
+            <FlaskConical size={14} color="#047857" /> Lab Slip ({rx.investigations.length})
+          </button>
+          <button
+            className="btn-ghost btn-sm"
+            onClick={() => openWhatsAppPrescription(rx.patient.phone, rx, effectiveDoctor)}
+            title="Share formatted prescription to patient via WhatsApp"
+            style={{ color: '#166534' }}
+          >
+            <MessageSquare size={14} color="#16a34a" /> WhatsApp
+          </button>
           <a
             className="btn-ghost btn-sm"
             href={`/?verify=${encodeURIComponent(rx.id || rx.patient.patientId || rx.prescriptionNumber || 'rx')}`}
@@ -647,16 +667,30 @@ export function PrescriptionBuilder() {
           {sections.complaints && (
             <div className="section-panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div>
-                <label className="form-label">Complaints (English)</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                  <label className="form-label" style={{ margin: 0 }}>Complaints (English)</label>
+                  <VoiceDictationButton
+                    lang="en-US"
+                    onTranscript={t => update({ complaints: rx.complaints ? `${rx.complaints}\n${t}` : t })}
+                    title="Dictate complaints in English"
+                  />
+                </div>
                 <textarea className="form-input" value={rx.complaints} rows={3} style={{ resize: 'vertical' }}
                   placeholder="e.g. Fever, Cough, LBP..."
                   onChange={e => update({ complaints: e.target.value })} />
               </div>
               <div>
-                <label className="form-label">অভিযোগ (বাংলা)</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                  <label className="form-label" style={{ margin: 0 }}>অভিযোগ (বাংলা)</label>
+                  <VoiceDictationButton
+                    lang="bn-BD"
+                    onTranscript={t => update({ complaintsBn: rx.complaintsBn ? `${rx.complaintsBn}\n${t}` : t })}
+                    title="সমস্যা বাংলায় মুখে বলুন (ভয়েস টাইপিং)"
+                  />
+                </div>
                 <textarea className="form-input bn" value={rx.complaintsBn ?? ''} rows={2}
                   style={{ resize: 'vertical', fontFamily: 'var(--font-bn), sans-serif' }}
-                  placeholder="যেমন: জ্বর, কাশি..."
+                  placeholder="যেমন: জ্বর, কাশি, কোমরে ব্যথা..."
                   onChange={e => update({ complaintsBn: e.target.value })} />
               </div>
             </div>
@@ -668,6 +702,14 @@ export function PrescriptionBuilder() {
           <SectionHeader title="On Examination" icon={<Stethoscope size={15} />} isOpen={sections.examination} onToggle={() => toggleSection('examination')} />
           {sections.examination && (
             <div className="section-panel-body">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                <label className="form-label" style={{ margin: 0 }}>Clinical Findings</label>
+                <VoiceDictationButton
+                  lang="en-US"
+                  onTranscript={t => update({ onExamination: rx.onExamination ? `${rx.onExamination}, ${t}` : t })}
+                  title="Dictate examination findings"
+                />
+              </div>
               <textarea className="form-input" value={rx.onExamination ?? ''} rows={3} style={{ resize: 'vertical' }}
                 placeholder="BP, Pulse, Temp, etc."
                 onChange={e => update({ onExamination: e.target.value })} />
@@ -680,8 +722,16 @@ export function PrescriptionBuilder() {
           <SectionHeader title="History / Notes" icon={<FileText size={15} />} isOpen={sections.history} onToggle={() => toggleSection('history')} />
           {sections.history && (
             <div className="section-panel-body">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                <label className="form-label" style={{ margin: 0 }}>Medical History</label>
+                <VoiceDictationButton
+                  lang="bn-BD"
+                  onTranscript={t => update({ history: rx.history ? `${rx.history}\n${t}` : t })}
+                  title="মেডিকেল হিস্টোরি মুখে বলুন"
+                />
+              </div>
               <textarea className="form-input" value={rx.history ?? ''} rows={3} style={{ resize: 'vertical' }}
-                placeholder="Medical history, past treatments..."
+                placeholder="Medical history, past treatments, H/O HTN..."
                 onChange={e => update({ history: e.target.value })} />
             </div>
           )}
@@ -775,6 +825,14 @@ export function PrescriptionBuilder() {
           <SectionHeader title="Additional Notes" icon={<FileText size={15} />} isOpen={sections.notes} onToggle={() => toggleSection('notes')} />
           {sections.notes && (
             <div className="section-panel-body">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                <label className="form-label" style={{ margin: 0 }}>Special Notes / Treatment Plan</label>
+                <VoiceDictationButton
+                  lang="bn-BD"
+                  onTranscript={t => update({ additionalNotes: rx.additionalNotes ? `${rx.additionalNotes}\n${t}` : t })}
+                  title="নোট মুখে বলুন"
+                />
+              </div>
               <textarea className="form-input" value={rx.additionalNotes ?? ''} rows={2} style={{ resize: 'vertical' }}
                 placeholder="Any additional notes..."
                 onChange={e => update({ additionalNotes: e.target.value })} />
@@ -846,6 +904,15 @@ export function PrescriptionBuilder() {
           prescription={rx}
           doctorProfile={effectiveDoctor}
           onClose={() => setShowPrintModal(false)}
+        />
+      )}
+
+      {/* Diagnostic Lab Slip Modal */}
+      {showLabSlipModal && (
+        <LabRequisitionSlipModal
+          prescription={rx}
+          doctorProfile={effectiveDoctor}
+          onClose={() => setShowLabSlipModal(false)}
         />
       )}
 

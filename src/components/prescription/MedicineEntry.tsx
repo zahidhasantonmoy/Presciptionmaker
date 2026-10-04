@@ -4,7 +4,10 @@ import { v4 as uuidv4 } from 'uuid';
 import type { PrescriptionMedicine, MedicineForm } from '../../types';
 import { AutocompleteInput } from '../ui/AutocompleteInput';
 import { useStore } from '../../store/useStore';
-import { checkDrugAllergy, getPregnancySafety, detectDuplicateMedicines, normalizeMedicineName } from '../../utils/clinicalSafety';
+import {
+  checkDrugAllergy, getPregnancySafety, detectDuplicateMedicines,
+  normalizeMedicineName, detectGastroprotectionNeed
+} from '../../utils/clinicalSafety';
 import { PediatricDoseCalculatorModal } from '../modals/PediatricDoseCalculatorModal';
 import { useToast } from '../ui/Toast';
 
@@ -55,8 +58,27 @@ export function MedicineEntry({ medicines, onChange, patientAllergies, patientWe
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showPediaModal, setShowPediaModal] = useState(false);
 
-  // Clinical safety check: Detect duplicate medicines
+  // Clinical safety check: Detect duplicate medicines & gastroprotection need
   const duplicateIssues = detectDuplicateMedicines(medicines);
+  const gastroAlert = detectGastroprotectionNeed(medicines);
+
+  const handleAddPpi = () => {
+    const ppi: PrescriptionMedicine = {
+      id: uuidv4(),
+      name: 'TAB PANTONIX 20mg',
+      genericName: 'Pantoprazole',
+      form: 'tablet',
+      strength: '20mg',
+      morning: '১',
+      afternoon: '০',
+      evening: '১',
+      timing: 'খাওয়ার ৩০ মিনিট আগে',
+      duration: '১৪ দিন',
+      instruction: 'খাওয়ার ৩০ মিনিট আগে',
+    };
+    onChange([...medicines, ppi]);
+    showToast('🛡️ Tab. Pantonix 20mg যোগ করা হয়েছে (Gastroprotection Active)!', 'success');
+  };
 
   const catalogOptions = medicineCatalog
     .sort((a, b) => (b.useCount ?? 0) - (a.useCount ?? 0))
@@ -157,6 +179,48 @@ export function MedicineEntry({ medicines, onChange, patientAllergies, patientWe
               একই ওষুধ বা একই সক্রিয় জেনেরিক উপাদান একাধিকবার প্রেসক্রিপশনে এসেছে। ওভারডোজ এড়াতে নিচের চিহ্নিত ওষুধগুলো যাচাই করুন।
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Smart Gastroprotection Reminder Banner */}
+      {gastroAlert.needsPpi && (
+        <div style={{
+          background: '#eff6ff',
+          border: '1.5px solid #60a5fa',
+          borderRadius: 10,
+          padding: '10px 14px',
+          marginBottom: 12,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#1e40af' }}>
+            <ShieldAlert size={18} color="#2563eb" style={{ flexShrink: 0 }} />
+            <div>
+              <strong>স্মার্ট ড্রাগ সেফটি রিমাইন্ডার:</strong>{' '}
+              {gastroAlert.warningBn}
+            </div>
+          </div>
+          <button
+            type="button"
+            className="btn-sm"
+            style={{
+              background: '#2563eb',
+              color: 'white',
+              border: 'none',
+              borderRadius: 6,
+              padding: '6px 12px',
+              fontWeight: 700,
+              fontSize: 12,
+              whiteSpace: 'nowrap',
+              cursor: 'pointer'
+            }}
+            onClick={handleAddPpi}
+          >
+            + Add Pantonix 20mg
+          </button>
         </div>
       )}
 

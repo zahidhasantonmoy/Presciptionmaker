@@ -649,14 +649,22 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
                 {!shouldSplit && (
                   <>
                     {renderAdviceSection()}
-                    {/* Single Page Follow-up (Signature removed as requested) */}
+                    {/* Single Page Follow-up & Optional Seal/Signature */}
                     {isSanowaraTheme ? (
-                      <div style={{ marginTop: 6, marginBottom: 2 }}>
-                        {(prescription.followUpText || prescription.followUpDate) && (
+                      <div style={{ marginTop: 6, marginBottom: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                        {(prescription.followUpText || prescription.followUpDate) ? (
                           <div className="rx-sanowara-follow" style={{ margin: 0 }}>
                             পরবর্তী সাক্ষাৎ: {prescription.followUpText || (prescription.followUpDate && formatDateDisplay(prescription.followUpDate))}
                           </div>
-                        )}
+                        ) : <div />}
+                        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, marginLeft: 'auto' }}>
+                          {doctorProfile?.showSealOnPrint && doctorProfile?.sealUrl && (
+                            <img src={doctorProfile.sealUrl} alt="Seal" style={{ maxHeight: 38, maxWidth: 60, objectFit: 'contain' }} />
+                          )}
+                          {doctorProfile?.showSignatureOnPrint && doctorProfile?.signatureUrl && (
+                            <img src={doctorProfile.signatureUrl} alt="Signature" style={{ maxHeight: 26, maxWidth: 80, objectFit: 'contain' }} />
+                          )}
+                        </div>
                       </div>
                     ) : (
                       <>
@@ -827,14 +835,22 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
                   {/* Advice Box */}
                   {renderAdviceSection()}
 
-                  {/* Follow-up (Signature removed as requested) */}
+                  {/* Follow-up & Optional Seal/Signature */}
                   {isSanowaraTheme ? (
-                    <div style={{ marginTop: 6, marginBottom: 2 }}>
-                      {(prescription.followUpText || prescription.followUpDate) && (
+                    <div style={{ marginTop: 6, marginBottom: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                      {(prescription.followUpText || prescription.followUpDate) ? (
                         <div className="rx-sanowara-follow" style={{ margin: 0 }}>
                           পরবর্তী সাক্ষাৎ: {prescription.followUpText || (prescription.followUpDate && formatDateDisplay(prescription.followUpDate))}
                         </div>
-                      )}
+                      ) : <div />}
+                      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, marginLeft: 'auto' }}>
+                        {doctorProfile?.showSealOnPrint && doctorProfile?.sealUrl && (
+                          <img src={doctorProfile.sealUrl} alt="Seal" style={{ maxHeight: 38, maxWidth: 60, objectFit: 'contain' }} />
+                        )}
+                        {doctorProfile?.showSignatureOnPrint && doctorProfile?.signatureUrl && (
+                          <img src={doctorProfile.signatureUrl} alt="Signature" style={{ maxHeight: 26, maxWidth: 80, objectFit: 'contain' }} />
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <>

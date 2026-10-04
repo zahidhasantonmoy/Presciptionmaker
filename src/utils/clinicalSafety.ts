@@ -258,3 +258,45 @@ export function detectDuplicateMedicines(
 
   return issues;
 }
+
+export interface GastroprotectionAlert {
+  needsPpi: boolean;
+  nsaidName?: string;
+  recommendedPpiName?: string;
+  warningBn?: string;
+}
+
+export function detectGastroprotectionNeed(
+  medicines: { name: string; genericName?: string }[]
+): GastroprotectionAlert {
+  const nsaidKeywords = ['naproxen', 'naprosyn', 'naproxcin', 'diclofenac', 'voltalin', 'aceclofenac', 'ketorolac', 'torax', 'ibuprofen', 'indomethacin', 'etoricoxib', 'coxb'];
+  const ppiKeywords = ['pantoprazole', 'pantonix', 'esomeprazole', 'sergel', 'maxpro', 'omeprazole', 'seclo', 'rabeprazole', 'finix', 'dexlansoprazole'];
+
+  let foundNsaid: string | null = null;
+  let foundPpi = false;
+
+  for (const m of medicines) {
+    const text = `${m.name} ${m.genericName || ''}`.toLowerCase();
+    // Exclude combination pills like Naprosyn Plus which already contain Esomeprazole
+    if (text.includes('plus') && text.includes('esomeprazole')) {
+      foundPpi = true;
+    }
+    if (!foundNsaid && nsaidKeywords.some(k => text.includes(k))) {
+      foundNsaid = m.name;
+    }
+    if (ppiKeywords.some(k => text.includes(k))) {
+      foundPpi = true;
+    }
+  }
+
+  if (foundNsaid && !foundPpi) {
+    return {
+      needsPpi: true,
+      nsaidName: foundNsaid,
+      recommendedPpiName: 'Tab. Pantonix 20mg',
+      warningBn: `গ্যাস্ট্রোপ্রোটেকশন অ্যালার্ট: ব্যথানাশক (${foundNsaid}) দেওয়া হয়েছে কিন্তু গ্যাস্ট্রিকের ওষুধ (PPI) যোগ করা হয়নি।`,
+    };
+  }
+
+  return { needsPpi: false };
+}

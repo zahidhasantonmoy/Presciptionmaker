@@ -135,6 +135,14 @@ export function SettingsPage() {
     reader.readAsDataURL(file);
   };
 
+  const handleSealUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => updateProfileField('sealUrl', ev.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
   const handleExport = () => {
     const json = exportData();
     const blob = new Blob([json], { type: 'application/json' });
@@ -502,8 +510,8 @@ export function SettingsPage() {
             </label>
           </div>
 
-          {/* Logo & Signature Uploads */}
-          <div style={{ marginTop: 14, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          {/* Logo, Signature & Official Seal Uploads */}
+          <div style={{ marginTop: 14, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
             <div>
               <label className="form-label">Clinic / Hospital Logo</label>
               <label style={{
@@ -523,7 +531,25 @@ export function SettingsPage() {
             </div>
 
             <div>
-              <label className="form-label">Doctor Signature Image</label>
+              <label className="form-label">Doctor Official Seal (সিল)</label>
+              <label style={{
+                display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
+                border: '1.5px dashed #94a3b8', borderRadius: 8, cursor: 'pointer',
+                background: '#ffffff', fontSize: 13, color: '#475569',
+              }}>
+                <Upload size={16} /> Upload Official Seal
+                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleSealUpload} />
+              </label>
+              {profileForm.sealUrl && (
+                <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <img src={profileForm.sealUrl} alt="Seal" style={{ maxHeight: 45, borderRadius: 4, border: '1px solid #cbd5e1' }} />
+                  <button className="btn-ghost btn-sm" onClick={() => updateProfileField('sealUrl', '')}>Remove</button>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="form-label">Doctor Digital Signature</label>
               <label style={{
                 display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
                 border: '1.5px dashed #94a3b8', borderRadius: 8, cursor: 'pointer',
@@ -538,6 +564,35 @@ export function SettingsPage() {
                   <button className="btn-ghost btn-sm" onClick={() => updateProfileField('signatureUrl', '')}>Remove</button>
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* Seal & Signature Display Toggles */}
+          <div style={{ marginTop: 14, display: 'flex', flexWrap: 'wrap', gap: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input
+                type="checkbox"
+                id="showSealOnPrint"
+                checked={profileForm.showSealOnPrint ?? false}
+                onChange={e => updateProfileField('showSealOnPrint', e.target.checked)}
+                style={{ width: 16, height: 16, cursor: 'pointer' }}
+              />
+              <label htmlFor="showSealOnPrint" style={{ fontSize: 13, fontWeight: 600, color: '#334155', cursor: 'pointer' }}>
+                প্রেসক্রিপশনে ডাক্তারের সিল (Official Seal) প্রদর্শন করুন
+              </label>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input
+                type="checkbox"
+                id="showSignatureOnPrint"
+                checked={profileForm.showSignatureOnPrint ?? false}
+                onChange={e => updateProfileField('showSignatureOnPrint', e.target.checked)}
+                style={{ width: 16, height: 16, cursor: 'pointer' }}
+              />
+              <label htmlFor="showSignatureOnPrint" style={{ fontSize: 13, fontWeight: 600, color: '#334155', cursor: 'pointer' }}>
+                প্রেসক্রিপশনে ডিজিটাল স্বাক্ষর প্রদর্শন করুন
+              </label>
             </div>
           </div>
 

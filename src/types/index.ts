@@ -29,6 +29,9 @@ export interface DoctorProfile {
   consultationHoursBn?: string;
   logoUrl?: string;
   signatureUrl?: string;
+  sealUrl?: string;
+  showSignatureOnPrint?: boolean;
+  showSealOnPrint?: boolean;
   footerText?: string;
   footerTextBn?: string;
   showBnHeader: boolean;
