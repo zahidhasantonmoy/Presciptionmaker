@@ -41,18 +41,43 @@
 
 /* ─── Print styles ─────────────────────────────────────────────────────────── */
 @media print {
-  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-  body { background: white !important; margin: 0; padding: 0; }
-  .no-print { display: none !important; }
-  .print-only { display: block !important; }
+  * { 
+    -webkit-print-color-adjust: exact !important; 
+    print-color-adjust: exact !important; 
+  }
+  body, html { 
+    background: white !important; 
+    margin: 0 !important; 
+    padding: 0 !important; 
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .no-print, .sidebar, header, nav { 
+    display: none !important; 
+  }
+  .modal-overlay {
+    position: static !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+  }
+  .print-only { 
+    display: block !important; 
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
   .rx-preview { 
     box-shadow: none !important; 
-    margin: 0 !important; 
+    margin: 0 auto !important; 
     padding: 0 !important;
     width: 210mm !important;
+    min-height: 297mm !important;
   }
   @page {
-    size: A4;
+    size: A4 portrait;
     margin: 0;
   }
 }
