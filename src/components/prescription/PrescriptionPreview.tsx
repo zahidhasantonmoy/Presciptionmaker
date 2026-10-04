@@ -1,4 +1,5 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useState, useEffect } from 'react';
+import QRCode from 'qrcode';
 import type { Prescription, DoctorProfile, PrescriptionTheme, PrescriptionMedicine } from '../../types';
 import { formatDateDisplay } from '../../utils/dateUtils';
 
@@ -31,6 +32,17 @@ function getMedicineDisplayName(med: PrescriptionMedicine): string {
 export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPreviewProps>(
   ({ prescription, doctorProfile, scale = 1 }, ref) => {
     const theme: PrescriptionTheme = prescription.theme ?? 'classic';
+    const isPadMode = prescription.printMode === 'pad_only';
+    const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+
+    useEffect(() => {
+      if (prescription.showQrCode !== false && prescription.prescriptionNumber) {
+        const qrData = `Rx#:${prescription.prescriptionNumber}|Date:${prescription.date.substring(0, 10)}|Dr:${doctorProfile?.name ?? ''}|Pt:${prescription.patient.name}|EasyPad-BD`;
+        QRCode.toDataURL(qrData, { width: 80, margin: 1, color: { dark: '#1e3a8a', light: '#ffffff' } })
+          .then(url => setQrCodeUrl(url))
+          .catch(() => {});
+      }
+    }, [prescription.prescriptionNumber, prescription.date, prescription.showQrCode, doctorProfile?.name, prescription.patient.name]);
 
     const patientAge = prescription.patient.age || '';
     const patientGender = prescription.patient.gender
@@ -40,13 +52,28 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
     return (
       <div
         ref={ref}
-        className={`rx-preview theme-${theme}`}
+        className={`rx-preview theme-${theme} ${isPadMode ? 'pad-mode' : ''}`}
         style={{ transform: scale !== 1 ? `scale(${scale})` : undefined, transformOrigin: 'top left' }}
         aria-label="Prescription Preview"
       >
         <div className="rx-preview-inner">
           {/* ─── HEADER ─────────────────────────────────────────────────────── */}
-          {doctorProfile ? (
+          {isPadMode ? (
+            <div style={{ height: '52mm', display: 'flex', alignItems: 'center', justifyContent: 'center' }} className="pad-header-spacing">
+              <div className="no-print" style={{
+                textAlign: 'center',
+                padding: '12px 24px',
+                color: '#94a3b8',
+                border: '1px dashed #cbd5e1',
+                borderRadius: 8,
+                fontSize: '8.5pt',
+                background: '#f8fafc',
+                width: '100%',
+              }}>
+                📄 Pre-printed Pad Mode (Doctor Header area reserved for your printed pad stationery)
+              </div>
+            </div>
+          ) : doctorProfile ? (
             <div className="rx-header">
               {/* Left: English info */}
               <div className="rx-header-left">
@@ -290,38 +317,55 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
                 </div>
               )}
 
-              {/* Signature */}
-              <div className="rx-signature-area" style={{ marginTop: 24 }}>
-                {doctorProfile?.signatureUrl ? (
-                  <img src={doctorProfile.signatureUrl} alt="Signature" style={{ maxWidth: 120, maxHeight: 60 }} />
-                ) : (
-                  <div style={{ borderBottom: '1px solid #374151', width: 100, marginLeft: 'auto', marginBottom: 4 }}></div>
+              {/* Signature & QR Code */}
+              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 24, gap: 12 }}>
+                {qrCodeUrl && prescription.showQrCode !== false && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <img src={qrCodeUrl} alt="Rx QR Code" style={{ width: 48, height: 48, borderRadius: 4 }} />
+                    <div style={{ fontSize: '6.5pt', color: '#64748b', lineHeight: 1.25 }}>
+                      <div style={{ fontWeight: 700, color: '#1e3a8a' }}>{prescription.prescriptionNumber}</div>
+                      <div>Scan to verify e-Rx</div>
+                      <div style={{ color: '#94a3b8' }}>EasyPad BD</div>
+                    </div>
+                  </div>
                 )}
-                <div style={{ fontSize: '8pt', color: '#374151' }}>Signature</div>
+
+                <div className="rx-signature-area" style={{ marginLeft: 'auto' }}>
+                  {doctorProfile?.signatureUrl ? (
+                    <img src={doctorProfile.signatureUrl} alt="Signature" style={{ maxWidth: 120, maxHeight: 60 }} />
+                  ) : (
+                    <div style={{ borderBottom: '1px solid #374151', width: 100, marginLeft: 'auto', marginBottom: 4 }}></div>
+                  )}
+                  <div style={{ fontSize: '8pt', color: '#374151', textAlign: 'right' }}>Signature</div>
+                </div>
               </div>
             </div>
           </div>
 
           {/* ─── FOOTER ──────────────────────────────────────────────────── */}
-          <div className="rx-footer">
-            <div>
-              {doctorProfile?.phone && <span>📞 {doctorProfile.phone}</span>}
-              {doctorProfile?.email && <span style={{ marginLeft: 10 }}>✉ {doctorProfile.email}</span>}
-            </div>
-            {doctorProfile?.consultationHours && (
-              <div style={{ textAlign: 'center' }}>
-                {doctorProfile.consultationHours}
-                {doctorProfile.consultationHoursBn && (
-                  <span className="bn-text" style={{ marginLeft: 6 }}>{doctorProfile.consultationHoursBn}</span>
-                )}
+          {isPadMode ? (
+            <div style={{ height: '18mm' }} className="pad-footer-spacing" />
+          ) : (
+            <div className="rx-footer">
+              <div>
+                {doctorProfile?.phone && <span>📞 {doctorProfile.phone}</span>}
+                {doctorProfile?.email && <span style={{ marginLeft: 10 }}>✉ {doctorProfile.email}</span>}
               </div>
-            )}
-            <div style={{ textAlign: 'right' }}>
-              {doctorProfile?.footerText && <div>{doctorProfile.footerText}</div>}
-              {doctorProfile?.footerTextBn && <div className="bn-text">{doctorProfile.footerTextBn}</div>}
-              <div style={{ color: '#94a3b8', fontSize: '7pt', marginTop: 2 }}>Powered by EasyPad</div>
+              {doctorProfile?.consultationHours && (
+                <div style={{ textAlign: 'center' }}>
+                  {doctorProfile.consultationHours}
+                  {doctorProfile.consultationHoursBn && (
+                    <span className="bn-text" style={{ marginLeft: 6 }}>{doctorProfile.consultationHoursBn}</span>
+                  )}
+                </div>
+              )}
+              <div style={{ textAlign: 'right' }}>
+                {doctorProfile?.footerText && <div>{doctorProfile.footerText}</div>}
+                {doctorProfile?.footerTextBn && <div className="bn-text">{doctorProfile.footerTextBn}</div>}
+                <div style={{ color: '#94a3b8', fontSize: '7pt', marginTop: 2 }}>Powered by EasyPad</div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     );
