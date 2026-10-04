@@ -195,17 +195,25 @@ export function PrescriptionBuilder() {
   };
 
   return (
-    <div style={{ display: 'flex', gap: 0, height: '100%', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', gap: 0, width: '100%', height: '100%', overflow: 'hidden' }}>
       {/* ─── LEFT: BUILDER ─────────────────────────────────────────────────── */}
       <div style={{
-        flex: 1, overflowY: 'auto', padding: '16px',
-        display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0,
+        flex: 1,
+        height: '100%',
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        padding: '16px 20px 48px 20px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 16,
+        minWidth: 0,
       }}>
         {/* Toolbar */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
           background: 'white', padding: '12px 16px', borderRadius: 12,
           border: '1px solid #e2e8f0', position: 'sticky', top: 0, zIndex: 10,
+          flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
         }}>
           <span style={{ fontWeight: 700, color: '#1e40af', fontSize: 16, marginRight: 4 }}>
             ✍️ New Prescription
@@ -264,6 +272,7 @@ export function PrescriptionBuilder() {
             justifyContent: 'space-between',
             gap: 12,
             boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+            flexShrink: 0,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#166534' }}>
               <Clock size={16} color="#16a34a" />
@@ -299,7 +308,7 @@ export function PrescriptionBuilder() {
 
         {/* Template Panel */}
         {showTemplatePanel && (
-          <div className="card" style={{ padding: 16 }}>
+          <div className="card" style={{ padding: 16, flexShrink: 0 }}>
             <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10, color: '#1e40af' }}>
               📋 Apply Template
             </div>
@@ -560,7 +569,7 @@ export function PrescriptionBuilder() {
         </div>
 
         {/* Bottom save */}
-        <div style={{ display: 'flex', gap: 10, paddingBottom: 32 }}>
+        <div style={{ display: 'flex', gap: 10, paddingBottom: 24, flexShrink: 0, marginTop: 8 }}>
           <button className="btn-primary" style={{ flex: 1 }} onClick={handleSave}>
             <Save size={16} /> Save Prescription
           </button>
