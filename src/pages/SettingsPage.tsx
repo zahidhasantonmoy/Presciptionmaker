@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Save, Upload, Camera, AlertCircle
+  Save, Upload, Camera, AlertCircle, Plus, Trash2, Edit3, Copy, Check, Stethoscope, Building2
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useToast } from '../components/ui/Toast';
@@ -15,30 +15,115 @@ const THEMES: { value: PrescriptionTheme; label: string; desc: string }[] = [
 ];
 
 export function SettingsPage() {
-  const { doctorProfile, setDoctorProfile, settings, updateSettings, exportData, importData, clearAllData } = useStore();
+  const {
+    doctorProfiles, activeDoctorId, setActiveDoctorId,
+    addDoctorProfile, updateDoctorProfile, deleteDoctorProfile,
+    settings, updateSettings, exportData, importData, clearAllData
+  } = useStore();
   const { showToast } = useToast();
 
-  const [profile, setProfile] = useState<Partial<DoctorProfile>>(doctorProfile ?? {
+  const activeDoc = doctorProfiles.find(d => d.id === activeDoctorId) || doctorProfiles[0];
+  const [editingProfileId, setEditingProfileId] = useState<string | null>(activeDoc?.id || null);
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
+  const [profileForm, setProfileForm] = useState<Partial<DoctorProfile>>(activeDoc || {
     id: uuidv4(), name: '', degrees: '', specialty: '', showBnHeader: true, theme: 'classic',
   });
   const [clearConfirm, setClearConfirm] = useState(false);
 
-  const updateProfile = (field: string, value: string | boolean) => {
-    setProfile(p => ({ ...p, [field]: value }));
+  const startEditProfile = (p: DoctorProfile) => {
+    setEditingProfileId(p.id);
+    setIsCreatingNew(false);
+    setProfileForm({ ...p });
+  };
+
+  const startNewProfile = () => {
+    const newId = uuidv4();
+    setIsCreatingNew(true);
+    setEditingProfileId(newId);
+    setProfileForm({
+      id: newId,
+      name: '',
+      title: 'Dr.',
+      degrees: '',
+      specialty: '',
+      clinicName: '',
+      showBnHeader: true,
+      theme: 'classic',
+    });
+  };
+
+  const updateProfileField = (field: string, value: string | boolean) => {
+    setProfileForm(p => ({ ...p, [field]: value }));
   };
 
   const handleSaveProfile = () => {
-    if (!profile.name?.trim()) { showToast('Doctor name is required', 'error'); return; }
-    if (!profile.degrees?.trim()) { showToast('Degrees/qualifications are required', 'error'); return; }
-    setDoctorProfile({ ...profile, id: profile.id ?? uuidv4(), theme: profile.theme ?? 'classic', showBnHeader: profile.showBnHeader ?? true, updatedAt: new Date().toISOString() } as DoctorProfile);
-    showToast('Doctor profile saved!', 'success');
+    if (!profileForm.name?.trim()) { showToast('Doctor name is required', 'error'); return; }
+    if (!profileForm.degrees?.trim()) { showToast('Degrees/qualifications are required', 'error'); return; }
+
+    if (isCreatingNew) {
+      const created = addDoctorProfile({
+        name: profileForm.name,
+        nameBn: profileForm.nameBn,
+        title: profileForm.title,
+        degrees: profileForm.degrees,
+        degreesBn: profileForm.degreesBn,
+        specialty: profileForm.specialty || '',
+        specialtyBn: profileForm.specialtyBn,
+        bmdcNumber: profileForm.bmdcNumber,
+        clinicName: profileForm.clinicName,
+        clinicNameBn: profileForm.clinicNameBn,
+        address: profileForm.address,
+        addressBn: profileForm.addressBn,
+        phone: profileForm.phone,
+        email: profileForm.email,
+        consultationHours: profileForm.consultationHours,
+        consultationHoursBn: profileForm.consultationHoursBn,
+        logoUrl: profileForm.logoUrl,
+        signatureUrl: profileForm.signatureUrl,
+        footerText: profileForm.footerText,
+        footerTextBn: profileForm.footerTextBn,
+        showBnHeader: profileForm.showBnHeader ?? true,
+        theme: profileForm.theme ?? 'classic',
+      });
+      setEditingProfileId(created.id);
+      setIsCreatingNew(false);
+      showToast(`Doctor profile for "${created.name}" created!`, 'success');
+    } else if (editingProfileId) {
+      updateDoctorProfile(editingProfileId, profileForm);
+      showToast('Doctor profile updated!', 'success');
+    }
+  };
+
+  const handleDuplicateProfile = (p: DoctorProfile) => {
+    const cloned = addDoctorProfile({
+      ...p,
+      name: `${p.name} (Chamber 2)`,
+      clinicName: p.clinicName ? `${p.clinicName} (Branch 2)` : 'New Chamber',
+    });
+    setEditingProfileId(cloned.id);
+    setIsCreatingNew(false);
+    setProfileForm({ ...cloned });
+    showToast(`Profile duplicated as "${cloned.name}"`, 'success');
+  };
+
+  const handleDeleteProfile = (id: string, name: string) => {
+    if (doctorProfiles.length <= 1) {
+      showToast('Cannot delete the only remaining doctor profile', 'error');
+      return;
+    }
+    deleteDoctorProfile(id);
+    showToast(`Profile "${name}" deleted`, 'info');
+    const remaining = doctorProfiles.filter(d => d.id !== id);
+    if (remaining.length > 0) {
+      startEditProfile(remaining[0]);
+    }
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => updateProfile('logoUrl', ev.target?.result as string);
+    reader.onload = (ev) => updateProfileField('logoUrl', ev.target?.result as string);
     reader.readAsDataURL(file);
   };
 
@@ -46,7 +131,7 @@ export function SettingsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => updateProfile('signatureUrl', ev.target?.result as string);
+    reader.onload = (ev) => updateProfileField('signatureUrl', ev.target?.result as string);
     reader.readAsDataURL(file);
   };
 
@@ -100,144 +185,379 @@ export function SettingsPage() {
   );
 
   return (
-    <div style={{ padding: 24, maxWidth: 800 }}>
-      <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1e293b', marginBottom: 6 }}>Settings</h1>
-      <p style={{ color: '#64748b', fontSize: 14, marginBottom: 20 }}>Configure your doctor profile, prescription defaults, and application data.</p>
+    <div style={{ padding: 24, maxWidth: 860, margin: '0 auto' }}>
+      <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1e293b', marginBottom: 6 }}>Settings & Configuration</h1>
+      <p style={{ color: '#64748b', fontSize: 14, marginBottom: 20 }}>
+        Manage doctor profiles, chamber details, printing margins, and local data storage.
+      </p>
 
-      {/* Doctor Profile */}
-      <Section title="👨‍⚕️ Doctor Profile">
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <Field label="Full Name (English) *">
-            <input className="form-input" value={profile.name ?? ''} placeholder="Dr. Md. Example Rahman"
-              onChange={e => updateProfile('name', e.target.value)} />
-          </Field>
-          <Field label="নাম (বাংলা)">
-            <input className="form-input bn" value={profile.nameBn ?? ''}
-              style={{ fontFamily: 'var(--font-bn), sans-serif' }}
-              placeholder="ডাঃ মোঃ উদাহরণ রহমান"
-              onChange={e => updateProfile('nameBn', e.target.value)} />
-          </Field>
-          <Field label="Title">
-            <input className="form-input" value={profile.title ?? ''} placeholder="Dr., Prof., Assoc. Prof."
-              onChange={e => updateProfile('title', e.target.value)} />
-          </Field>
-          <Field label="BMDC Reg. No.">
-            <input className="form-input" value={profile.bmdcNumber ?? ''} placeholder="A-XXXXX"
-              onChange={e => updateProfile('bmdcNumber', e.target.value)} />
-          </Field>
-          <div style={{ gridColumn: '1/-1' }}>
-            <Field label="Degrees / Qualifications (English) *">
-              <input className="form-input" value={profile.degrees ?? ''} placeholder="MBBS, BCS (Health), FCPS (Medicine)"
-                onChange={e => updateProfile('degrees', e.target.value)} />
-            </Field>
+      {/* ─── Doctor Profiles Management ─── */}
+      <Section title={`👨‍⚕️ Doctor Profiles (${doctorProfiles.length})`}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+          <p style={{ fontSize: 13, color: '#475569', margin: 0 }}>
+            Switch between different doctors, chambers, or clinic letterheads with 1-click.
+          </p>
+          <button className="btn-primary btn-sm" onClick={startNewProfile}>
+            <Plus size={14} /> Add Doctor Profile
+          </button>
+        </div>
+
+        {/* List of Doctor Profile Cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12, marginBottom: 20 }}>
+          {doctorProfiles.map(p => {
+            const isActive = p.id === activeDoctorId;
+            const isEditing = p.id === editingProfileId && !isCreatingNew;
+            return (
+              <div
+                key={p.id}
+                style={{
+                  background: isActive ? '#f0fdf4' : (isEditing ? '#eff6ff' : '#ffffff'),
+                  border: `2px solid ${isActive ? '#86efac' : (isEditing ? '#93c5fd' : '#e2e8f0')}`,
+                  borderRadius: 12,
+                  padding: '14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 8,
+                  position: 'relative',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 6 }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {p.name}
+                    </div>
+                    {p.nameBn && (
+                      <div className="bn" style={{ fontSize: 12, color: '#475569', fontFamily: 'var(--font-bn)' }}>
+                        {p.nameBn}
+                      </div>
+                    )}
+                  </div>
+                  {isActive && (
+                    <span className="badge badge-green" style={{ fontSize: 10, flexShrink: 0 }}>
+                      <Check size={11} /> Active
+                    </span>
+                  )}
+                </div>
+
+                <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.4 }}>
+                  <div style={{ fontWeight: 500 }}>{p.degrees || 'No degrees specified'}</div>
+                  {p.clinicName && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2, color: '#1e40af' }}>
+                      <Building2 size={12} /> {p.clinicName}
+                    </div>
+                  )}
+                  {p.bmdcNumber && <div style={{ fontSize: 11, color: '#64748b' }}>BMDC: {p.bmdcNumber}</div>}
+                </div>
+
+                {/* Actions */}
+                <div style={{ display: 'flex', gap: 6, marginTop: 'auto', paddingTop: 8, borderTop: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
+                  {!isActive && (
+                    <button
+                      className="btn-secondary btn-sm"
+                      style={{ fontSize: 11.5, padding: '3px 8px' }}
+                      onClick={() => {
+                        setActiveDoctorId(p.id);
+                        showToast(`Active doctor switched to ${p.name}`, 'success');
+                      }}
+                    >
+                      Make Active
+                    </button>
+                  )}
+                  <button
+                    className="btn-ghost btn-sm"
+                    style={{ fontSize: 11.5, padding: '3px 8px' }}
+                    onClick={() => startEditProfile(p)}
+                  >
+                    <Edit3 size={12} /> Edit
+                  </button>
+                  <button
+                    className="btn-ghost btn-sm"
+                    style={{ fontSize: 11.5, padding: '3px 8px' }}
+                    onClick={() => handleDuplicateProfile(p)}
+                    title="Duplicate Profile"
+                  >
+                    <Copy size={12} /> Clone
+                  </button>
+                  {doctorProfiles.length > 1 && (
+                    <button
+                      className="btn-icon"
+                      style={{ color: '#ef4444', marginLeft: 'auto' }}
+                      onClick={() => handleDeleteProfile(p.id, p.name)}
+                      title="Delete profile"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* ─── Profile Form Editor ─── */}
+        <div style={{
+          background: '#f8fafc',
+          border: '1.5px solid #cbd5e1',
+          borderRadius: 12,
+          padding: '18px',
+          marginTop: 10,
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#1e40af', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Stethoscope size={16} />
+              {isCreatingNew ? '➕ Create New Doctor Profile' : `✏️ Edit Profile: ${profileForm.name || 'Doctor'}`}
+            </h4>
+            {isCreatingNew && (
+              <button
+                className="btn-ghost btn-sm"
+                onClick={() => {
+                  setIsCreatingNew(false);
+                  if (activeDoc) startEditProfile(activeDoc);
+                }}
+              >
+                Cancel
+              </button>
+            )}
           </div>
-          <div style={{ gridColumn: '1/-1' }}>
-            <Field label="ডিগ্রি (বাংলা)">
-              <input className="form-input bn" value={profile.degreesBn ?? ''}
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <Field label="Full Name (English) *">
+              <input
+                className="form-input"
+                value={profileForm.name ?? ''}
+                placeholder="Dr. Md. Example Rahman"
+                onChange={e => updateProfileField('name', e.target.value)}
+              />
+            </Field>
+
+            <Field label="নাম (বাংলা)">
+              <input
+                className="form-input bn"
+                value={profileForm.nameBn ?? ''}
                 style={{ fontFamily: 'var(--font-bn), sans-serif' }}
-                placeholder="এমবিবিএস, বিসিএস (স্বাস্থ্য)"
-                onChange={e => updateProfile('degreesBn', e.target.value)} />
+                placeholder="ডাঃ মোঃ উদাহরণ রহমান"
+                onChange={e => updateProfileField('nameBn', e.target.value)}
+              />
+            </Field>
+
+            <Field label="Title">
+              <input
+                className="form-input"
+                value={profileForm.title ?? ''}
+                placeholder="Dr., Prof., Assoc. Prof."
+                onChange={e => updateProfileField('title', e.target.value)}
+              />
+            </Field>
+
+            <Field label="BMDC Reg. No.">
+              <input
+                className="form-input"
+                value={profileForm.bmdcNumber ?? ''}
+                placeholder="A-XXXXX"
+                onChange={e => updateProfileField('bmdcNumber', e.target.value)}
+              />
+            </Field>
+
+            <div style={{ gridColumn: '1/-1' }}>
+              <Field label="Degrees / Qualifications (English) *">
+                <input
+                  className="form-input"
+                  value={profileForm.degrees ?? ''}
+                  placeholder="MBBS, BCS (Health), FCPS (Medicine), MD"
+                  onChange={e => updateProfileField('degrees', e.target.value)}
+                />
+              </Field>
+            </div>
+
+            <div style={{ gridColumn: '1/-1' }}>
+              <Field label="ডিগ্রি (বাংলা)">
+                <input
+                  className="form-input bn"
+                  value={profileForm.degreesBn ?? ''}
+                  style={{ fontFamily: 'var(--font-bn), sans-serif' }}
+                  placeholder="এমবিবিএস, বিসিএস (স্বাস্থ্য), এফসিপিএস (মেডিসিন)"
+                  onChange={e => updateProfileField('degreesBn', e.target.value)}
+                />
+              </Field>
+            </div>
+
+            <Field label="Specialty (English)">
+              <input
+                className="form-input"
+                value={profileForm.specialty ?? ''}
+                placeholder="Medicine Specialist / Cardiologist..."
+                onChange={e => updateProfileField('specialty', e.target.value)}
+              />
+            </Field>
+
+            <Field label="বিশেষত্ব (বাংলা)">
+              <input
+                className="form-input bn"
+                value={profileForm.specialtyBn ?? ''}
+                style={{ fontFamily: 'var(--font-bn), sans-serif' }}
+                placeholder="মেডিসিন বিশেষজ্ঞ / হৃদরোগ বিশেষজ্ঞ"
+                onChange={e => updateProfileField('specialtyBn', e.target.value)}
+              />
+            </Field>
+
+            <Field label="Hospital / Clinic / Chamber Name">
+              <input
+                className="form-input"
+                value={profileForm.clinicName ?? ''}
+                placeholder="e.g. Popular Diagnostic Center, Dhanmondi"
+                onChange={e => updateProfileField('clinicName', e.target.value)}
+              />
+            </Field>
+
+            <Field label="ক্লিনিক / চেম্বার নাম (বাংলা)">
+              <input
+                className="form-input bn"
+                value={profileForm.clinicNameBn ?? ''}
+                style={{ fontFamily: 'var(--font-bn), sans-serif' }}
+                placeholder="পপুলার ডায়াগনস্টিক সেন্টার, ধানমন্ডি"
+                onChange={e => updateProfileField('clinicNameBn', e.target.value)}
+              />
+            </Field>
+
+            <div style={{ gridColumn: '1/-1' }}>
+              <Field label="Address / Chamber Location">
+                <input
+                  className="form-input"
+                  value={profileForm.address ?? ''}
+                  placeholder="House 16, Road 2, Dhanmondi, Dhaka"
+                  onChange={e => updateProfileField('address', e.target.value)}
+                />
+              </Field>
+            </div>
+
+            <Field label="Phone / Appointment Hotline">
+              <input
+                className="form-input"
+                value={profileForm.phone ?? ''}
+                placeholder="01XXXXXXXXX"
+                onChange={e => updateProfileField('phone', e.target.value)}
+              />
+            </Field>
+
+            <Field label="Email">
+              <input
+                className="form-input"
+                value={profileForm.email ?? ''}
+                placeholder="doctor@example.com"
+                onChange={e => updateProfileField('email', e.target.value)}
+              />
+            </Field>
+
+            <Field label="Consultation Hours (English)">
+              <input
+                className="form-input"
+                value={profileForm.consultationHours ?? ''}
+                placeholder="Sat–Thu: 5:00 PM – 9:00 PM (Friday Closed)"
+                onChange={e => updateProfileField('consultationHours', e.target.value)}
+              />
+            </Field>
+
+            <Field label="সেবার সময় (বাংলা)">
+              <input
+                className="form-input bn"
+                value={profileForm.consultationHoursBn ?? ''}
+                style={{ fontFamily: 'var(--font-bn), sans-serif' }}
+                placeholder="শনি–বৃহস্পতি: বিকাল ৫টা – রাত ৯টা (শুক্রবার বন্ধ)"
+                onChange={e => updateProfileField('consultationHoursBn', e.target.value)}
+              />
+            </Field>
+
+            <Field label="Footer Note (English)">
+              <input
+                className="form-input"
+                value={profileForm.footerText ?? ''}
+                placeholder="Not valid for medico-legal purposes"
+                onChange={e => updateProfileField('footerText', e.target.value)}
+              />
+            </Field>
+
+            <Field label="ফুটার নোট (বাংলা)">
+              <input
+                className="form-input bn"
+                value={profileForm.footerTextBn ?? ''}
+                style={{ fontFamily: 'var(--font-bn), sans-serif' }}
+                placeholder="মেডিকেল বা আইনি ক্ষেত্রে প্রযোজ্য নয়"
+                onChange={e => updateProfileField('footerTextBn', e.target.value)}
+              />
             </Field>
           </div>
-          <Field label="Specialty (English)">
-            <input className="form-input" value={profile.specialty ?? ''} placeholder="Medicine / Orthopaedic Surgeon..."
-              onChange={e => updateProfile('specialty', e.target.value)} />
-          </Field>
-          <Field label="বিশেষত্ব (বাংলা)">
-            <input className="form-input bn" value={profile.specialtyBn ?? ''}
-              style={{ fontFamily: 'var(--font-bn), sans-serif' }}
-              placeholder="মেডিসিন বিশেষজ্ঞ"
-              onChange={e => updateProfile('specialtyBn', e.target.value)} />
-          </Field>
-          <Field label="Hospital / Clinic Name">
-            <input className="form-input" value={profile.clinicName ?? ''} placeholder="Dhaka Medical College Hospital"
-              onChange={e => updateProfile('clinicName', e.target.value)} />
-          </Field>
-          <Field label="ক্লিনিক নাম (বাংলা)">
-            <input className="form-input bn" value={profile.clinicNameBn ?? ''}
-              style={{ fontFamily: 'var(--font-bn), sans-serif' }}
-              placeholder="ঢাকা মেডিকেল কলেজ হাসপাতাল"
-              onChange={e => updateProfile('clinicNameBn', e.target.value)} />
-          </Field>
-          <div style={{ gridColumn: '1/-1' }}>
-            <Field label="Address">
-              <input className="form-input" value={profile.address ?? ''} placeholder="Chamber/clinic address"
-                onChange={e => updateProfile('address', e.target.value)} />
-            </Field>
-          </div>
-          <Field label="Phone">
-            <input className="form-input" value={profile.phone ?? ''} placeholder="01XXXXXXXXX"
-              onChange={e => updateProfile('phone', e.target.value)} />
-          </Field>
-          <Field label="Email">
-            <input className="form-input" value={profile.email ?? ''} placeholder="doctor@example.com"
-              onChange={e => updateProfile('email', e.target.value)} />
-          </Field>
-          <Field label="Consultation Hours">
-            <input className="form-input" value={profile.consultationHours ?? ''} placeholder="Sat-Thu: 5PM–9PM"
-              onChange={e => updateProfile('consultationHours', e.target.value)} />
-          </Field>
-          <Field label="সেবার সময় (বাংলা)">
-            <input className="form-input bn" value={profile.consultationHoursBn ?? ''}
-              style={{ fontFamily: 'var(--font-bn), sans-serif' }}
-              placeholder="শনি-বৃহঃ: বিকাল ৫টা – রাত ৯টা"
-              onChange={e => updateProfile('consultationHoursBn', e.target.value)} />
-          </Field>
-          <Field label="Footer Text (English)">
-            <input className="form-input" value={profile.footerText ?? ''} placeholder="Any footer note"
-              onChange={e => updateProfile('footerText', e.target.value)} />
-          </Field>
-          <Field label="ফুটার (বাংলা)">
-            <input className="form-input bn" value={profile.footerTextBn ?? ''}
-              style={{ fontFamily: 'var(--font-bn), sans-serif' }}
-              onChange={e => updateProfile('footerTextBn', e.target.value)} />
-          </Field>
-        </div>
 
-        {/* Show Bangla header */}
-        <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
-          <input type="checkbox" id="showBnHeader" checked={profile.showBnHeader ?? true}
-            onChange={e => updateProfile('showBnHeader', e.target.checked)} style={{ width: 16, height: 16 }} />
-          <label htmlFor="showBnHeader" style={{ fontSize: 14, fontWeight: 500, color: '#374151', cursor: 'pointer' }}>
-            Show Bangla header on prescription
-          </label>
-        </div>
-
-        {/* Logo & Signature uploads */}
-        <div style={{ marginTop: 14, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <div>
-            <label className="form-label">Logo Image (PNG/JPG)</label>
-            <label style={{
-              display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
-              border: '1.5px dashed #d1d5db', borderRadius: 8, cursor: 'pointer',
-              background: '#f8fafc', fontSize: 13, color: '#64748b',
-            }}>
-              <Upload size={16} /> Upload Logo
-              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleLogoUpload} />
+          {/* Show Bangla header toggle */}
+          <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <input
+              type="checkbox"
+              id="showBnHeader"
+              checked={profileForm.showBnHeader ?? true}
+              onChange={e => updateProfileField('showBnHeader', e.target.checked)}
+              style={{ width: 16, height: 16 }}
+            />
+            <label htmlFor="showBnHeader" style={{ fontSize: 13.5, fontWeight: 600, color: '#334155', cursor: 'pointer' }}>
+              Show bilingual Bangla & English header on prescription pad
             </label>
-            {profile.logoUrl && (
-              <img src={profile.logoUrl} alt="Logo" style={{ marginTop: 6, maxHeight: 50, borderRadius: 4 }} />
-            )}
           </div>
-          <div>
-            <label className="form-label">Signature Image (PNG/JPG)</label>
-            <label style={{
-              display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
-              border: '1.5px dashed #d1d5db', borderRadius: 8, cursor: 'pointer',
-              background: '#f8fafc', fontSize: 13, color: '#64748b',
-            }}>
-              <Camera size={16} /> Upload Signature
-              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleSignatureUpload} />
-            </label>
-            {profile.signatureUrl && (
-              <img src={profile.signatureUrl} alt="Signature" style={{ marginTop: 6, maxHeight: 50, borderRadius: 4 }} />
+
+          {/* Logo & Signature Uploads */}
+          <div style={{ marginTop: 14, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div>
+              <label className="form-label">Clinic / Hospital Logo</label>
+              <label style={{
+                display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
+                border: '1.5px dashed #94a3b8', borderRadius: 8, cursor: 'pointer',
+                background: '#ffffff', fontSize: 13, color: '#475569',
+              }}>
+                <Upload size={16} /> Upload Logo Image
+                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleLogoUpload} />
+              </label>
+              {profileForm.logoUrl && (
+                <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <img src={profileForm.logoUrl} alt="Logo" style={{ maxHeight: 45, borderRadius: 4, border: '1px solid #cbd5e1' }} />
+                  <button className="btn-ghost btn-sm" onClick={() => updateProfileField('logoUrl', '')}>Remove</button>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="form-label">Doctor Signature Image</label>
+              <label style={{
+                display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
+                border: '1.5px dashed #94a3b8', borderRadius: 8, cursor: 'pointer',
+                background: '#ffffff', fontSize: 13, color: '#475569',
+              }}>
+                <Camera size={16} /> Upload Signature Image
+                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleSignatureUpload} />
+              </label>
+              {profileForm.signatureUrl && (
+                <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <img src={profileForm.signatureUrl} alt="Signature" style={{ maxHeight: 45, borderRadius: 4, border: '1px solid #cbd5e1' }} />
+                  <button className="btn-ghost btn-sm" onClick={() => updateProfileField('signatureUrl', '')}>Remove</button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+            <button className="btn-primary" onClick={handleSaveProfile}>
+              <Save size={15} /> {isCreatingNew ? 'Save New Profile' : 'Update Profile'}
+            </button>
+            {isCreatingNew && (
+              <button
+                className="btn-secondary"
+                onClick={() => {
+                  setIsCreatingNew(false);
+                  if (activeDoc) startEditProfile(activeDoc);
+                }}
+              >
+                Cancel
+              </button>
             )}
           </div>
         </div>
-
-        <button className="btn-primary" style={{ marginTop: 16 }} onClick={handleSaveProfile}>
-          <Save size={15} /> Save Profile
-        </button>
       </Section>
 
       {/* Prescription Defaults */}
