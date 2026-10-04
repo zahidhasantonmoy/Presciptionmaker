@@ -288,6 +288,65 @@ export function SettingsPage() {
         </div>
       </Section>
 
+      {/* Printing & Pre-printed Pad Configuration */}
+      <Section title="🖨️ Printing & Pad Mode Configuration">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          <Field label="Default Print Layout">
+            <select
+              className="form-select"
+              value={settings.defaultPrintMode || 'full'}
+              onChange={e => updateSettings({ defaultPrintMode: e.target.value as 'full' | 'pad_only' })}
+            >
+              <option value="full">Full Prescription (with Doctor Header & Clinic details)</option>
+              <option value="pad_only">Pre-printed Pad Mode (Hide Header & Footer for physical stationery)</option>
+            </select>
+          </Field>
+
+          <Field label="Verification QR Code">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 38 }}>
+              <input
+                type="checkbox"
+                id="showQrCode"
+                checked={settings.showQrCode ?? true}
+                onChange={e => updateSettings({ showQrCode: e.target.checked })}
+                style={{ width: 16, height: 16 }}
+              />
+              <label htmlFor="showQrCode" style={{ fontSize: 13, color: '#374151', cursor: 'pointer' }}>
+                Print scannable QR Code with prescription verification link
+              </label>
+            </div>
+          </Field>
+
+          <Field label="Pad Top Blank Margin (mm)">
+            <input
+              type="number"
+              className="form-input"
+              value={settings.padTopMarginMm ?? 52}
+              min={20}
+              max={120}
+              onChange={e => updateSettings({ padTopMarginMm: Number(e.target.value) })}
+            />
+            <div style={{ fontSize: 11, color: '#64748b', marginTop: 3 }}>
+              Exact physical height of your printed pad's header (Standard: 52mm)
+            </div>
+          </Field>
+
+          <Field label="Pad Bottom Blank Margin (mm)">
+            <input
+              type="number"
+              className="form-input"
+              value={settings.padBottomMarginMm ?? 25}
+              min={10}
+              max={80}
+              onChange={e => updateSettings({ padBottomMarginMm: Number(e.target.value) })}
+            />
+            <div style={{ fontSize: 11, color: '#64748b', marginTop: 3 }}>
+              Exact physical height of your printed pad's footer (Standard: 25mm)
+            </div>
+          </Field>
+        </div>
+      </Section>
+
       {/* Data Management */}
       <Section title="💾 Data Backup & Management">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
