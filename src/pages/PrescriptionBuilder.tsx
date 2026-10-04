@@ -34,6 +34,28 @@ interface SectionToggle {
   notes: boolean;
 }
 
+interface SectionHeaderProps {
+  title: string;
+  icon: React.ReactNode;
+  isOpen: boolean;
+  onToggle: () => void;
+  count?: number;
+}
+
+function SectionHeader({ title, icon, isOpen, onToggle, count }: SectionHeaderProps) {
+  return (
+    <div className="section-panel-header" onClick={onToggle} style={{ cursor: 'pointer' }}>
+      <div className="section-panel-title">
+        {icon} {title}
+        {count !== undefined && count > 0 && (
+          <span className="badge badge-blue" style={{ fontSize: 10, marginLeft: 4 }}>{count}</span>
+        )}
+      </div>
+      {isOpen ? <ChevronUp size={16} color="#64748b" /> : <ChevronDown size={16} color="#64748b" />}
+    </div>
+  );
+}
+
 export function PrescriptionBuilder() {
   const {
     currentPrescription, doctorProfile, prescriptionTemplates, updateCurrentPrescription,
@@ -47,7 +69,7 @@ export function PrescriptionBuilder() {
     complaints: true, examination: false, history: false, diagnosis: true,
     medicines: true, investigations: true, advice: true, followup: true, notes: false,
   });
-  const [previewScale, setPreviewScale] = useState(0.65);
+  const [previewScale, setPreviewScale] = useState(0.48);
   const [showTemplatePanel, setShowTemplatePanel] = useState(false);
 
   // Auto-create prescription if none
@@ -106,20 +128,6 @@ export function PrescriptionBuilder() {
     setShowTemplatePanel(false);
     showToast(`Template "${tmpl.name}" applied`, 'success');
   };
-
-  const SectionHeader = ({ title, icon, section, count }: {
-    title: string; icon: React.ReactNode; section: keyof SectionToggle; count?: number;
-  }) => (
-    <div className="section-panel-header" onClick={() => toggleSection(section)} style={{ cursor: 'pointer' }}>
-      <div className="section-panel-title">
-        {icon} {title}
-        {count !== undefined && count > 0 && (
-          <span className="badge badge-blue" style={{ fontSize: 10, marginLeft: 4 }}>{count}</span>
-        )}
-      </div>
-      {sections[section] ? <ChevronUp size={16} color="#64748b" /> : <ChevronDown size={16} color="#64748b" />}
-    </div>
-  );
 
   return (
     <div style={{ display: 'flex', gap: 0, height: '100%', overflow: 'hidden' }}>
@@ -280,7 +288,7 @@ export function PrescriptionBuilder() {
 
         {/* ─── Clinical Notes ────────────────────────────────────────────────── */}
         <div className="section-panel">
-          <SectionHeader title="Chief Complaints" icon={<Stethoscope size={15} />} section="complaints" />
+          <SectionHeader title="Chief Complaints" icon={<Stethoscope size={15} />} isOpen={sections.complaints} onToggle={() => toggleSection('complaints')} />
           {sections.complaints && (
             <div className="section-panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div>
@@ -302,7 +310,7 @@ export function PrescriptionBuilder() {
 
         {/* On Examination */}
         <div className="section-panel">
-          <SectionHeader title="On Examination" icon={<Stethoscope size={15} />} section="examination" />
+          <SectionHeader title="On Examination" icon={<Stethoscope size={15} />} isOpen={sections.examination} onToggle={() => toggleSection('examination')} />
           {sections.examination && (
             <div className="section-panel-body">
               <textarea className="form-input" value={rx.onExamination ?? ''} rows={3} style={{ resize: 'vertical' }}
@@ -314,7 +322,7 @@ export function PrescriptionBuilder() {
 
         {/* History */}
         <div className="section-panel">
-          <SectionHeader title="History / Notes" icon={<FileText size={15} />} section="history" />
+          <SectionHeader title="History / Notes" icon={<FileText size={15} />} isOpen={sections.history} onToggle={() => toggleSection('history')} />
           {sections.history && (
             <div className="section-panel-body">
               <textarea className="form-input" value={rx.history ?? ''} rows={3} style={{ resize: 'vertical' }}
@@ -326,7 +334,7 @@ export function PrescriptionBuilder() {
 
         {/* ─── Diagnosis ────────────────────────────────────────────────────── */}
         <div className="section-panel">
-          <SectionHeader title="Diagnosis" icon={<Stethoscope size={15} />} section="diagnosis" count={rx.diagnoses.length} />
+          <SectionHeader title="Diagnosis" icon={<Stethoscope size={15} />} isOpen={sections.diagnosis} onToggle={() => toggleSection('diagnosis')} count={rx.diagnoses.length} />
           {sections.diagnosis && (
             <div className="section-panel-body">
               <DiagnosisEntry diagnoses={rx.diagnoses} onChange={d => update({ diagnoses: d })} />
@@ -336,7 +344,7 @@ export function PrescriptionBuilder() {
 
         {/* ─── Medicines ────────────────────────────────────────────────────── */}
         <div className="section-panel">
-          <SectionHeader title="Medicines (℞)" icon={<span style={{ fontFamily: 'serif', fontStyle: 'italic', fontSize: 16 }}>℞</span>} section="medicines" count={rx.medicines.length} />
+          <SectionHeader title="Medicines (℞)" icon={<span style={{ fontFamily: 'serif', fontStyle: 'italic', fontSize: 16 }}>℞</span>} isOpen={sections.medicines} onToggle={() => toggleSection('medicines')} count={rx.medicines.length} />
           {sections.medicines && (
             <div className="section-panel-body">
               <MedicineEntry medicines={rx.medicines} onChange={m => update({ medicines: m })} />
@@ -346,7 +354,7 @@ export function PrescriptionBuilder() {
 
         {/* ─── Investigations ───────────────────────────────────────────────── */}
         <div className="section-panel">
-          <SectionHeader title="Tests / Investigations" icon={<FlaskConical size={15} />} section="investigations" count={rx.investigations.length} />
+          <SectionHeader title="Tests / Investigations" icon={<FlaskConical size={15} />} isOpen={sections.investigations} onToggle={() => toggleSection('investigations')} count={rx.investigations.length} />
           {sections.investigations && (
             <div className="section-panel-body">
               <InvestigationEntry investigations={rx.investigations} onChange={i => update({ investigations: i })} />
@@ -356,7 +364,7 @@ export function PrescriptionBuilder() {
 
         {/* ─── Advice ──────────────────────────────────────────────────────── */}
         <div className="section-panel">
-          <SectionHeader title="Advice / Instructions" icon={<BookOpen size={15} />} section="advice" />
+          <SectionHeader title="Advice / Instructions" icon={<BookOpen size={15} />} isOpen={sections.advice} onToggle={() => toggleSection('advice')} />
           {sections.advice && (
             <div className="section-panel-body">
               <AdviceEntry
@@ -371,7 +379,7 @@ export function PrescriptionBuilder() {
 
         {/* ─── Follow-up ───────────────────────────────────────────────────── */}
         <div className="section-panel">
-          <SectionHeader title="Follow-up" icon={<Calendar size={15} />} section="followup" />
+          <SectionHeader title="Follow-up" icon={<Calendar size={15} />} isOpen={sections.followup} onToggle={() => toggleSection('followup')} />
           {sections.followup && (
             <div className="section-panel-body">
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -404,7 +412,7 @@ export function PrescriptionBuilder() {
 
         {/* Additional notes */}
         <div className="section-panel">
-          <SectionHeader title="Additional Notes" icon={<FileText size={15} />} section="notes" />
+          <SectionHeader title="Additional Notes" icon={<FileText size={15} />} isOpen={sections.notes} onToggle={() => toggleSection('notes')} />
           {sections.notes && (
             <div className="section-panel-body">
               <textarea className="form-input" value={rx.additionalNotes ?? ''} rows={2} style={{ resize: 'vertical' }}
@@ -428,7 +436,7 @@ export function PrescriptionBuilder() {
       {/* ─── RIGHT: PREVIEW ────────────────────────────────────────────────── */}
       {showPreview && (
         <div style={{
-          width: 380, flexShrink: 0, background: '#f1f5f9',
+          width: 440, flexShrink: 0, background: '#f1f5f9',
           borderLeft: '1px solid #e2e8f0', overflowY: 'auto',
           display: 'flex', flexDirection: 'column',
         }}>
@@ -437,15 +445,35 @@ export function PrescriptionBuilder() {
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 5,
           }}>
             <span style={{ fontWeight: 700, fontSize: 13, color: '#1e40af' }}>📄 Live A4 Preview</span>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <button className="btn-icon" onClick={() => setPreviewScale(s => Math.max(0.4, s - 0.05))} title="Zoom out">−</button>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <button className="btn-icon" onClick={() => setPreviewScale(s => Math.max(0.3, parseFloat((s - 0.05).toFixed(2))))} title="Zoom out">−</button>
               <span style={{ fontSize: 11, color: '#64748b', minWidth: 36, textAlign: 'center' }}>{Math.round(previewScale * 100)}%</span>
-              <button className="btn-icon" onClick={() => setPreviewScale(s => Math.min(1, s + 0.05))} title="Zoom in">+</button>
+              <button className="btn-icon" onClick={() => setPreviewScale(s => Math.min(1, parseFloat((s + 0.05).toFixed(2))))} title="Zoom in">+</button>
+              <button className="btn-ghost btn-sm" style={{ padding: '2px 8px', fontSize: 11 }} onClick={() => setPreviewScale(0.48)} title="Fit width">Fit</button>
             </div>
           </div>
-          <div style={{ padding: 16, display: 'flex', justifyContent: 'center' }}>
-            <div style={{ transformOrigin: 'top center', transform: `scale(${previewScale})`, width: `${210 / previewScale}mm`, maxWidth: '100%' }}>
-              <PrescriptionPreview prescription={rx} doctorProfile={doctorProfile} />
+          <div style={{ padding: '16px 8px', display: 'flex', justifyContent: 'center', overflowX: 'auto', flex: 1 }}>
+            <div style={{
+              width: `${Math.round(794 * previewScale)}px`,
+              height: `${Math.round(1123 * previewScale)}px`,
+              position: 'relative',
+              flexShrink: 0,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+              borderRadius: 4,
+              overflow: 'hidden',
+              background: 'white',
+            }}>
+              <div style={{
+                width: '210mm',
+                minHeight: '297mm',
+                transform: `scale(${previewScale})`,
+                transformOrigin: 'top left',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+              }}>
+                <PrescriptionPreview prescription={rx} doctorProfile={doctorProfile} />
+              </div>
             </div>
           </div>
         </div>
