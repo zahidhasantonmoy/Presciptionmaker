@@ -40,13 +40,18 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
     const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
 
     useEffect(() => {
-      if (prescription.showQrCode !== false && prescription.prescriptionNumber) {
-        const qrData = `Rx#:${prescription.prescriptionNumber}|Date:${prescription.date.substring(0, 10)}|Dr:${doctorProfile?.name ?? ''}|Pt:${prescription.patient.name}|EasyPad-BD`;
-        QRCode.toDataURL(qrData, { width: 80, margin: 1, color: { dark: '#1e3a8a', light: '#ffffff' } })
+      if (prescription.showQrCode !== false) {
+        const rxKey = prescription.id || prescription.patient.patientId || prescription.prescriptionNumber || 'rx-verified';
+        const verifyUrl = `${window.location.origin}/?verify=${encodeURIComponent(rxKey)}`;
+        QRCode.toDataURL(verifyUrl, {
+          width: 140,
+          margin: 1,
+          color: { dark: '#000000', light: '#ffffff' }
+        })
           .then(url => setQrCodeUrl(url))
           .catch(() => {});
       }
-    }, [prescription.prescriptionNumber, prescription.date, prescription.showQrCode, doctorProfile?.name, prescription.patient.name]);
+    }, [prescription.id, prescription.patient.patientId, prescription.prescriptionNumber, prescription.showQrCode]);
 
     const patientAge = prescription.patient.age || '';
     const patientGender = prescription.patient.gender
@@ -444,21 +449,52 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
           </>
         )}
 
-        {/* If Single Page: Additional Notes & QR box in left column */}
+        {/* If Single Page: Additional Notes (Treatment plan) & QR box in left column */}
         {!isMultiPageMode && isSanowaraTheme && prescription.additionalNotes && (
-          <div style={{ marginTop: 6, fontSize: '8pt', lineHeight: 1.4, whiteSpace: 'pre-wrap' }}>
-            {prescription.additionalNotes}
+          <div style={{ marginTop: 5, fontSize: '8pt', lineHeight: 1.35 }}>
+            {prescription.additionalNotes.split('\n').filter(Boolean).map((line, lIdx) => {
+              const trimmed = line.trim();
+              if (trimmed.endsWith(':') || (trimmed.toUpperCase() === trimmed && trimmed.length < 25 && !trimmed.startsWith('•'))) {
+                return (
+                  <div key={lIdx} style={{ fontWeight: 700, marginTop: lIdx > 0 ? 5 : 2, marginBottom: 1, color: '#111', fontSize: '8.5pt' }}>
+                    {trimmed}
+                  </div>
+                );
+              }
+              return (
+                <div key={lIdx} style={{ paddingLeft: 6, display: 'flex', alignItems: 'flex-start', gap: 4, color: '#222', fontSize: '8pt' }}>
+                  <span>•</span>
+                  <span>{trimmed.replace(/^[•\-\*]\s*/, '')}</span>
+                </div>
+              );
+            })}
           </div>
         )}
 
         {!isMultiPageMode && isSanowaraTheme && (
           <div className="rx-sanowara-qr-box" style={{ marginTop: 'auto' }}>
-            <JotnoQrSvg size={46} />
+            {qrCodeUrl ? (
+              <a
+                href={`${window.location.origin}/?verify=${encodeURIComponent(prescription.id || prescription.patient.patientId || prescription.prescriptionNumber || 'rx-verified')}`}
+                target="_blank"
+                rel="noreferrer"
+                title="ভেরিফিকেশন দেখতে ক্লিক করুন বা স্ক্যান করুন"
+                style={{ display: 'block', textDecoration: 'none' }}
+              >
+                <img
+                  src={qrCodeUrl}
+                  alt="QR Verification"
+                  style={{ width: 48, height: 48, display: 'block', borderRadius: 2 }}
+                />
+              </a>
+            ) : (
+              <div style={{ width: 48, height: 48, background: '#f1f5f9', borderRadius: 2 }} />
+            )}
             <div>
-              <div className="id">P-4G5B4HGSR</div>
-              <div>JOTNO স্বাস্থ্য এ্যাপ্লিকেশন পেতে</div>
+              <div className="id">{prescription.patient.patientId || prescription.prescriptionNumber || 'P - 202610339'}</div>
+              <div>প্রেসক্রিপশন ভেরিফিকেশনের জন্য</div>
               <div>QR কোডটি স্ক্যান করুন</div>
-              <div>Powered By JOTNO</div>
+              <div style={{ color: '#047857', fontWeight: 700 }}>Verified by EasyPad</div>
             </div>
           </div>
         )}
@@ -613,21 +649,14 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
                 {!shouldSplit && (
                   <>
                     {renderAdviceSection()}
+                    {/* Single Page Follow-up (Signature removed as requested) */}
                     {isSanowaraTheme ? (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 4, marginBottom: 2 }}>
-                        {(prescription.followUpText || prescription.followUpDate) ? (
+                      <div style={{ marginTop: 6, marginBottom: 2 }}>
+                        {(prescription.followUpText || prescription.followUpDate) && (
                           <div className="rx-sanowara-follow" style={{ margin: 0 }}>
                             পরবর্তী সাক্ষাৎ: {prescription.followUpText || (prescription.followUpDate && formatDateDisplay(prescription.followUpDate))}
                           </div>
-                        ) : <div />}
-                        <div className="rx-signature-area" style={{ marginLeft: 'auto', textAlign: 'right' }}>
-                          {doctorProfile?.signatureUrl ? (
-                            <img src={doctorProfile.signatureUrl} alt="Signature" style={{ maxWidth: 85, maxHeight: 26 }} />
-                          ) : (
-                            <div style={{ borderBottom: '1px solid #333', width: 80, marginBottom: 2 }} />
-                          )}
-                          <div style={{ fontSize: '7.5pt', color: '#333' }}>Signature</div>
-                        </div>
+                        )}
                       </div>
                     ) : (
                       <>
@@ -756,12 +785,28 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
                   {/* Sanowara QR Box */}
                   {isSanowaraTheme && (
                     <div className="rx-sanowara-qr-box" style={{ marginTop: 'auto' }}>
-                      <JotnoQrSvg size={46} />
+                      {qrCodeUrl ? (
+                        <a
+                          href={`${window.location.origin}/?verify=${encodeURIComponent(prescription.id || prescription.patient.patientId || prescription.prescriptionNumber || 'rx-verified')}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          title="ভেরিফিকেশন দেখতে ক্লিক করুন বা স্ক্যান করুন"
+                          style={{ display: 'block', textDecoration: 'none' }}
+                        >
+                          <img
+                            src={qrCodeUrl}
+                            alt="QR Verification"
+                            style={{ width: 48, height: 48, display: 'block', borderRadius: 2 }}
+                          />
+                        </a>
+                      ) : (
+                        <div style={{ width: 48, height: 48, background: '#f1f5f9', borderRadius: 2 }} />
+                      )}
                       <div>
-                        <div className="id">P-4G5B4HGSR</div>
-                        <div>JOTNO স্বাস্থ্য এ্যাপ্লিকেশন পেতে</div>
+                        <div className="id">{prescription.patient.patientId || prescription.prescriptionNumber || 'P - 202610339'}</div>
+                        <div>প্রেসক্রিপশন ভেরিফিকেশনের জন্য</div>
                         <div>QR কোডটি স্ক্যান করুন</div>
-                        <div>Powered By JOTNO</div>
+                        <div style={{ color: '#047857', fontWeight: 700 }}>Verified by EasyPad</div>
                       </div>
                     </div>
                   )}
@@ -782,22 +827,14 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
                   {/* Advice Box */}
                   {renderAdviceSection()}
 
-                  {/* Follow-up & Signature */}
+                  {/* Follow-up (Signature removed as requested) */}
                   {isSanowaraTheme ? (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 4, marginBottom: 2 }}>
-                      {(prescription.followUpText || prescription.followUpDate) ? (
+                    <div style={{ marginTop: 6, marginBottom: 2 }}>
+                      {(prescription.followUpText || prescription.followUpDate) && (
                         <div className="rx-sanowara-follow" style={{ margin: 0 }}>
                           পরবর্তী সাক্ষাৎ: {prescription.followUpText || (prescription.followUpDate && formatDateDisplay(prescription.followUpDate))}
                         </div>
-                      ) : <div />}
-                      <div className="rx-signature-area" style={{ marginLeft: 'auto', textAlign: 'right' }}>
-                        {doctorProfile?.signatureUrl ? (
-                          <img src={doctorProfile.signatureUrl} alt="Signature" style={{ maxWidth: 85, maxHeight: 26 }} />
-                        ) : (
-                          <div style={{ borderBottom: '1px solid #333', width: 80, marginBottom: 2 }} />
-                        )}
-                        <div style={{ fontSize: '7.5pt', color: '#333' }}>Signature</div>
-                      </div>
+                      )}
                     </div>
                   ) : (
                     <>

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Save, Printer, Eye, ChevronDown, ChevronUp,
   User, Stethoscope, FlaskConical, BookOpen, Calendar, FileText, Keyboard, Clock, RotateCcw,
-  Layers
+  Layers, ShieldCheck
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useStore } from '../store/useStore';
@@ -397,6 +397,16 @@ export function PrescriptionBuilder() {
           <button className="btn-ghost btn-sm" onClick={() => setShowPrintModal(true)}>
             <Printer size={14} /> Print/PDF
           </button>
+          <a
+            className="btn-ghost btn-sm"
+            href={`/?verify=${encodeURIComponent(rx.id || rx.patient.patientId || rx.prescriptionNumber || 'rx')}`}
+            target="_blank"
+            rel="noreferrer"
+            title="ভেরিফিকেশন পেজটি কেমন দেখাবে তা পরীক্ষা করুন (অনলাইনে স্ক্যান ফলাফল)"
+            style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5, color: '#047857' }}
+          >
+            <ShieldCheck size={14} color="#047857" /> Verify Page
+          </a>
           <button className="btn-primary btn-sm" onClick={handleSave}>
             <Save size={14} /> Save
           </button>
