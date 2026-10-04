@@ -14,6 +14,10 @@ const DEFAULT_SETTINGS: AppSettings = {
   autoSave: true,
   prescriptionNumberPrefix: 'Rx',
   prescriptionNumberCounter: 1,
+  defaultPrintMode: 'full',
+  padTopMarginMm: 52,
+  padBottomMarginMm: 25,
+  showQrCode: true,
 };
 
 interface AppActions {
@@ -117,6 +121,8 @@ export const useStore = create<Store>()(
           advice: '',
           language: settings.language,
           theme: settings.theme,
+          printMode: settings.defaultPrintMode || 'full',
+          showQrCode: settings.showQrCode !== false,
           isDraft: true,
           createdAt: now,
           updatedAt: now,
