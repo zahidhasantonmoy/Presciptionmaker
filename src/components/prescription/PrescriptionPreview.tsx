@@ -267,10 +267,18 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
               {/* Complaints */}
               {prescription.complaints && (
                 <>
-                  <div className="rx-section-title">Complaints</div>
-                  <div style={{ fontSize: '9pt', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
-                    {prescription.complaints}
-                  </div>
+                  <div className="rx-section-title">{isSanowaraTheme ? 'COMPLAINTS' : 'Complaints'}</div>
+                  {isSanowaraTheme ? (
+                    <ul className="rx-bullet-list">
+                      {prescription.complaints.split('\n').filter(Boolean).map((line, idx) => (
+                        <li key={idx}>{line.replace(/^[•\-\*]\s*/, '')}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div style={{ fontSize: '9pt', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                      {prescription.complaints}
+                    </div>
+                  )}
                   {prescription.complaintsBn && (
                     <div className="bn-text" style={{ fontSize: '9pt', lineHeight: 1.6, marginTop: 2 }}>
                       {prescription.complaintsBn}
@@ -279,46 +287,96 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
                 </>
               )}
 
-              {/* On Examination */}
-              {prescription.onExamination && (
-                <>
-                  <div className="rx-section-title">On Examination</div>
-                  <div style={{ fontSize: '9pt', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{prescription.onExamination}</div>
-                </>
-              )}
-
               {/* History */}
               {prescription.history && (
                 <>
-                  <div className="rx-section-title">History</div>
-                  <div style={{ fontSize: '9pt', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{prescription.history}</div>
+                  <div className="rx-section-title">{isSanowaraTheme ? 'HISTORY' : 'History'}</div>
+                  {isSanowaraTheme ? (
+                    <ul className="rx-bullet-list">
+                      {prescription.history.split('\n').filter(Boolean).map((line, idx) => (
+                        <li key={idx}>{line.replace(/^[•\-\*]\s*/, '')}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div style={{ fontSize: '9pt', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{prescription.history}</div>
+                  )}
+                </>
+              )}
+
+              {/* Investigations - In Sanowara theme, separate Past vs Requested if present */}
+              {prescription.investigations.length > 0 && (() => {
+                const requested = prescription.investigations.filter(i =>
+                  i.category === 'requested' || (i.instruction && i.instruction.toLowerCase().includes('requested'))
+                );
+                const past = requested.length > 0
+                  ? prescription.investigations.filter(i => i.category !== 'requested' && !(i.instruction && i.instruction.toLowerCase().includes('requested')))
+                  : prescription.investigations;
+
+                return (
+                  <>
+                    {past.length > 0 && (
+                      <>
+                        <div className="rx-section-title">{isSanowaraTheme ? (requested.length > 0 ? 'INVESTIGATION (Past)' : 'INVESTIGATION') : 'Investigation'}</div>
+                        <ul className="rx-bullet-list">
+                          {past.map(inv => (
+                            <li key={inv.id}>
+                              {inv.name}
+                              {inv.instruction && !inv.instruction.toLowerCase().includes('requested') && (
+                                <span style={{ color: '#6b7280', fontSize: '8.5pt' }}> ({inv.instruction})</span>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
+
+                    {/* Findings / On Examination */}
+                    {prescription.onExamination && (
+                      <>
+                        <div className="rx-section-title">{isSanowaraTheme ? 'FINDINGS' : 'On Examination'}</div>
+                        {isSanowaraTheme ? (
+                          <ul className="rx-bullet-list">
+                            {prescription.onExamination.split('\n').filter(Boolean).map((line, idx) => (
+                              <li key={idx}>{line.replace(/^[•\-\*]\s*/, '')}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <div style={{ fontSize: '9pt', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{prescription.onExamination}</div>
+                        )}
+                      </>
+                    )}
+
+                    {requested.length > 0 && (
+                      <>
+                        <div className="rx-section-title">{isSanowaraTheme ? 'INVESTIGATION (Requested)' : 'Requested Tests'}</div>
+                        <ul className="rx-bullet-list">
+                          {requested.map(inv => (
+                            <li key={inv.id}>{inv.name}</li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
+                  </>
+                );
+              })()}
+
+              {/* If no investigations but onExamination exists */}
+              {prescription.investigations.length === 0 && prescription.onExamination && (
+                <>
+                  <div className="rx-section-title">{isSanowaraTheme ? 'FINDINGS' : 'On Examination'}</div>
+                  <div style={{ fontSize: '9pt', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{prescription.onExamination}</div>
                 </>
               )}
 
               {/* Diagnosis */}
               {prescription.diagnoses.length > 0 && (
                 <>
-                  <div className="rx-section-title">Diagnosis</div>
+                  <div className="rx-section-title">{isSanowaraTheme ? 'DIAGNOSIS' : 'Diagnosis'}</div>
                   <ul className="rx-bullet-list">
                     {prescription.diagnoses.map(d => (
                       <li key={d.id}>
                         {d.text}
                         {d.note && <span style={{ color: '#6b7280', fontSize: '8.5pt' }}> – {d.note}</span>}
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              )}
-
-              {/* Investigations */}
-              {prescription.investigations.length > 0 && (
-                <>
-                  <div className="rx-section-title">Investigation</div>
-                  <ul className="rx-bullet-list">
-                    {prescription.investigations.map(inv => (
-                      <li key={inv.id}>
-                        {inv.name}
-                        {inv.instruction && <span style={{ color: '#6b7280', fontSize: '8.5pt' }}> ({inv.instruction})</span>}
                       </li>
                     ))}
                   </ul>
@@ -366,15 +424,40 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
                     )}
                   </div>
                   <div className="rx-medicine-dose">
-                    <div className="rx-medicine-dose-grid">
-                      <span className="rx-dose-value">{med.morning}+{med.afternoon}+{med.evening}</span>
-                      {med.timing && <span className="rx-timing">{med.timing}</span>}
-                      {med.duration && <span className="rx-duration">{med.duration}</span>}
-                    </div>
-                    {med.instruction && (
-                      <div className="bn-text" style={{ fontSize: '8.5pt', color: '#374151', marginTop: 1 }}>
-                        {med.instruction}
+                    {isSanowaraTheme && med.instruction && med.instruction.includes('\n') ? (
+                      <div style={{ marginTop: 2 }}>
+                        {med.instruction.split('\n').map((line, lIdx) => {
+                          const parts = line.split(/\s{2,}|\t/);
+                          return (
+                            <div key={lIdx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8.8pt', lineHeight: 1.35, marginTop: 1 }}>
+                              <span style={{ fontWeight: 600 }}>{parts[0]}</span>
+                              <span style={{ color: '#111', whiteSpace: 'nowrap' }}>{parts[1] || ''}</span>
+                            </div>
+                          );
+                        })}
                       </div>
+                    ) : isSanowaraTheme ? (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8.8pt', marginTop: 1 }}>
+                        <span className="rx-dose-value" style={{ fontWeight: 600 }}>
+                          {med.morning}+{med.afternoon}+{med.evening}
+                        </span>
+                        <span style={{ whiteSpace: 'nowrap', color: '#111' }}>
+                          {[med.duration, med.instruction || med.timing].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(', ')}
+                        </span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="rx-medicine-dose-grid">
+                          <span className="rx-dose-value">{med.morning}+{med.afternoon}+{med.evening}</span>
+                          {med.timing && <span className="rx-timing">{med.timing}</span>}
+                          {med.duration && <span className="rx-duration">{med.duration}</span>}
+                        </div>
+                        {med.instruction && (
+                          <div className="bn-text" style={{ fontSize: '8.5pt', color: '#374151', marginTop: 1, whiteSpace: 'pre-wrap' }}>
+                            {med.instruction}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -457,7 +540,7 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
                     {doctorProfile?.clinicNameBn || 'পপুলার ডায়াগনস্টিক সেন্টার লিঃ'}
                   </div>
                   <div className="ad bn-text">
-                    {doctorProfile?.addressBn || 'ডবল-২ ও হোটেল সং-বি-৪৫৪, পলাশীপুর, রাজবাড়ী।'}
+                    {doctorProfile?.addressBn || '(বিল্ডিং-২, বাড়ি নং ৪৭৪) এবং হোল্ডিং নং ৬১৭ (বিল্ডিং-১), লক্ষ্মীপুর, রাজশাহী-'}
                   </div>
                 </div>
               </div>

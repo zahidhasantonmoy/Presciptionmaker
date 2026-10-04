@@ -139,6 +139,7 @@ export interface PrescriptionTemplate {
   diagnoses: Diagnosis[];
   medicines: PrescriptionMedicine[];
   investigations: Investigation[];
+  onExamination?: string;
   advice: string;
   adviceBn?: string;
   followUpText?: string;

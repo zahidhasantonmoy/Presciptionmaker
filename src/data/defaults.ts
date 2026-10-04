@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import type {
   DoctorProfile, PrescriptionTemplate, MedicineCatalogItem,
-  DiagnosisCatalogItem, TestCatalogItem, AdviceTemplate
+  DiagnosisCatalogItem, TestCatalogItem, AdviceTemplate, Prescription
 } from '../types';
 
 export const DEFAULT_DOCTOR_PROFILE: DoctorProfile = {
@@ -41,8 +41,8 @@ export const DR_MIZAN_PROFILE: DoctorProfile = {
   fellowId: '8751',
   clinicName: 'Popular Diagnostic Centre Ltd.',
   clinicNameBn: 'পপুলার ডায়াগনস্টিক সেন্টার লিঃ',
-  address: 'Room 322 (3rd Floor), Double-2 & Hotel Song-B-454, Palashipur, Rajbari',
-  addressBn: 'রুম নং-৩২২ (৩য় তলা), ডবল-২ ও হোটেল সং-বি-৪৫৪, পলাশীপুর, রাজবাড়ী।',
+  address: 'Room 322 (3rd Floor), Building-2, House 474 & Holding 617 (Building-1), Laxmipur, Rajshahi',
+  addressBn: 'রুম নং-৩২২ (৩য় তলা), (বিল্ডিং-২, বাড়ি নং ৪৭৪) এবং হোল্ডিং নং ৬১৭ (বিল্ডিং-১), লক্ষ্মীপুর, রাজশাহী-',
   phone: '01663644611',
   consultationHours: '3:00 PM – 9:00 PM (Friday Closed)',
   consultationHoursBn: 'বিকাল ৩টা - রাত ৯টা (শুক্রবার বন্ধ)',
@@ -58,12 +58,191 @@ export const DEFAULT_DOCTOR_PROFILES: DoctorProfile[] = [
   DR_MIZAN_PROFILE,
 ];
 
+export const JESMIN_SAMPLE_PATIENT = {
+  id: 'patient-jesmin-sample',
+  name: 'Jesmin',
+  patientId: 'P - 202610339',
+  age: '40Y22D',
+  gender: 'female' as const,
+  date: '2026-09-21',
+};
+
 export const SANOWARA_SAMPLE_PATIENT = {
+  id: 'patient-sanowara-sample',
   name: 'Sanowara',
   patientId: '20265435',
   age: '70Y',
   gender: 'female' as const,
   date: '2026-09-21',
+};
+
+export const JESMIN_CERVICAL_TEMPLATE: PrescriptionTemplate = {
+  id: 'template-jesmin-cervical-plid',
+  name: 'Ortho, Spine & Cervical PID (Jesmin)',
+  description: 'Dr. Md. Mizanur Rahman – Neck & Low Back Pain with Radiculopathy, Cervical PID C5/6 & Chronic PLID L4/5',
+  complaints: 'Neck pain with radiculopathy ; Lt>Rt\nLBP with radiculopathy',
+  history: 'Medical: Hypertension (HTN): Yes',
+  onExamination: 'BP: 140 / 90mmHg',
+  diagnoses: [
+    { id: uuidv4(), text: 'LBP due to chronic PLID L4/5' },
+    { id: uuidv4(), text: 'Neck pain due to Cervical PID C5/6' },
+  ],
+  medicines: [
+    {
+      id: uuidv4(),
+      name: 'TAB NAPROSYN-PLUS 500+20mg',
+      genericName: 'NAPROXEN SODIUM+ESOMEPRAZOLE',
+      form: 'tablet',
+      strength: '500+20mg',
+      morning: '১',
+      afternoon: '০',
+      evening: '১',
+      timing: 'খাওয়ার আধা ঘন্টা আগে',
+      duration: '১ মাস',
+      instruction: 'খাওয়ার আধা ঘন্টা আগে',
+    },
+    {
+      id: uuidv4(),
+      name: 'TAB FLEXILAX 10mg',
+      genericName: 'BACLOFEN',
+      form: 'tablet',
+      strength: '10mg',
+      morning: '১',
+      afternoon: '১',
+      evening: '১',
+      timing: 'ভরা পেটে',
+      duration: '১ মাস',
+      instruction: 'ভরা পেটে',
+    },
+    {
+      id: uuidv4(),
+      name: 'TAB NEUCOS-B 100mg+200mg+200mcg',
+      genericName: 'VITAMIN B1+VITAMIN B6+VITAMIN B12',
+      form: 'tablet',
+      strength: '100mg+200mg+200mcg',
+      morning: '১',
+      afternoon: '১',
+      evening: '১',
+      timing: 'খাওয়ার পরে',
+      duration: '৩ মাস',
+      instruction: 'খাওয়ার পরে',
+    },
+    {
+      id: uuidv4(),
+      name: 'TAB MECOLAGIN 0.5mg',
+      genericName: 'MECOBALAMIN',
+      form: 'tablet',
+      strength: '0.5mg',
+      morning: '১',
+      afternoon: '০',
+      evening: '১',
+      timing: 'নিয়মিত',
+      duration: '৩ মাস',
+    },
+    {
+      id: uuidv4(),
+      name: 'CAP ALFANE 300mg',
+      genericName: 'ALPHA LIPOIC ACID',
+      form: 'capsule',
+      strength: '300mg',
+      morning: '১',
+      afternoon: '০',
+      evening: '১',
+      timing: 'নিয়মিত',
+      duration: '৩ মাস',
+    },
+    {
+      id: uuidv4(),
+      name: 'TAB NUMIRA 2.5mg',
+      genericName: 'MIROGABALIN BESYLATE',
+      form: 'tablet',
+      strength: '2.5mg',
+      morning: '০',
+      afternoon: '০',
+      evening: '১',
+      timing: 'রাতে',
+      duration: '৩ মাস',
+    },
+    {
+      id: uuidv4(),
+      name: 'TAB DEFLACORT 6mg',
+      genericName: 'DEFLAZACORT',
+      form: 'tablet',
+      strength: '6mg',
+      morning: '১',
+      afternoon: '১',
+      evening: '১',
+      timing: 'খাওয়ার পরে',
+      duration: '১০ দিন (ধাপে ধাপে হ্রাস)',
+      instruction: '১+১+১  ১০ দিন\nএরপর, ১+০+১  ১০ দিন\nএরপর, ১+০+০  ১০ দিন',
+    },
+    {
+      id: uuidv4(),
+      name: 'TAB BIZORAN 5mg+40mg',
+      genericName: 'AMLODIPINE+OLMESARTAN MEDOXOMIL',
+      form: 'tablet',
+      strength: '5mg+40mg',
+      morning: '০',
+      afternoon: '০',
+      evening: '১',
+      timing: 'নিয়মিত',
+      duration: 'চলবে',
+    },
+    {
+      id: uuidv4(),
+      name: 'TAB CORSIL-DX 600mg+400IU',
+      genericName: 'CORAL CALCIUM+VITAMIN D3',
+      form: 'tablet',
+      strength: '600mg+400IU',
+      morning: '০',
+      afternoon: '১',
+      evening: '০',
+      timing: 'খাওয়ার পরে',
+      duration: '১ মাস',
+    },
+    {
+      id: uuidv4(),
+      name: 'VOLTALIN SUPPOSITORY 50mg',
+      genericName: 'DICLOFENAC SODIUM BP',
+      form: 'suppository',
+      strength: '50mg',
+      morning: '১',
+      afternoon: '০',
+      evening: '০',
+      timing: 'ব্যথা খুব বেশি হলে',
+      duration: 'প্রয়োজনে',
+      instruction: 'পায়খানার রাস্তায়; ব্যাথা খুব বেশি হলে',
+    },
+  ],
+  investigations: [
+    { id: uuidv4(), name: 'NCS of Left Upper Limb: Normal', category: 'past' },
+    { id: uuidv4(), name: 'CBC with ESR: TC-9200 ESR-55', category: 'past' },
+    { id: uuidv4(), name: 'RBS: 5.47', category: 'past' },
+    { id: uuidv4(), name: 'Serum Creatinine: 0.79', category: 'past' },
+    { id: uuidv4(), name: 'S.Uric Acid: 4.6', category: 'past' },
+    { id: uuidv4(), name: 'Anti-CCP Antibody: 0.09', category: 'past' },
+    { id: uuidv4(), name: 'MRI LUMBOSACRAL SPINE WITH SCREENING OF WHOLE SPINE: Bulging C5/6 & Herniation L4/5', category: 'past' },
+    { id: uuidv4(), name: 'X Ray: Cervical Spine B/V', category: 'requested', instruction: 'Requested' },
+  ],
+  advice: `১. Hot water ব্যাগ দিয়ে স্যাক দিবেন।
+২. CERVICAL COLLAR ব্যবহার করবেন
+৩. Lumbar Corset ব্যবহার করবেন
+৪. অনেকক্ষন ঘর নিচু করে কাজ করবেন না
+৫. পাতলা ও নরম একটি বালিশ ব্যবহার করবেন
+৬. চেয়ারে বসে নামাজ পড়বেন।
+৭. হাই কমোড বা চেয়ার কমোড ব্যবহার করবেন।
+৮. Physio-Therapy: Cervical & Pelvic Intermittent Traction, TENS, SWD, UST, IFT, Back Muscle strengthening exercise - Neck & Back`,
+  followUpText: '২১ অক্টোবর, ২০২৬ (১ মাস পর)',
+  additionalNotes: `TREATMENT PLAN:
+• Conservative for Cervical PID
+• Decompression & Fixation for PLID
+
+SPECIAL NOTE:
+• Improving >60%`,
+  theme: 'sanowara',
+  doctorProfileId: 'dr-mizanur-rahman-ortho',
+  isDemo: true,
+  createdAt: new Date().toISOString(),
 };
 
 export const SANOWARA_ORTHO_TEMPLATE: PrescriptionTemplate = {
@@ -216,6 +395,7 @@ Decompression & Fixation for PLID (Subject to BMD report).`,
 };
 
 export const DEMO_TEMPLATES: PrescriptionTemplate[] = [
+  JESMIN_CERVICAL_TEMPLATE,
   SANOWARA_ORTHO_TEMPLATE,
   {
     id: uuidv4(),
@@ -282,11 +462,97 @@ export const DEMO_TEMPLATES: PrescriptionTemplate[] = [
   },
 ];
 
+export const JESMIN_FULL_PRESCRIPTION: Prescription = {
+  id: 'rx-jesmin-cervical-plid',
+  prescriptionNumber: 'P - 202610339',
+  date: '2026-09-21T09:00:00.000Z',
+  doctorProfileId: DR_MIZAN_PROFILE.id,
+  patient: {
+    id: 'patient-jesmin-sample',
+    patientId: 'P - 202610339',
+    name: 'Jesmin',
+    age: '40Y22D',
+    gender: 'female',
+    bloodPressure: '140/90',
+    createdAt: '2026-09-21T09:00:00.000Z',
+    updatedAt: '2026-09-21T09:00:00.000Z',
+  },
+  complaints: 'Neck pain with radiculopathy ; Lt>Rt\nLBP with radiculopathy',
+  history: 'Medical: Hypertension (HTN): Yes',
+  onExamination: 'BP: 140 / 90mmHg',
+  diagnoses: [
+    { id: uuidv4(), text: 'LBP due to chronic PLID L4/5' },
+    { id: uuidv4(), text: 'Neck pain due to Cervical PID C5/6' },
+  ],
+  medicines: JESMIN_CERVICAL_TEMPLATE.medicines,
+  investigations: JESMIN_CERVICAL_TEMPLATE.investigations,
+  advice: JESMIN_CERVICAL_TEMPLATE.advice,
+  followUpText: '২১ অক্টোবর, ২০২৬ (১ মাস পর)',
+  additionalNotes: `TREATMENT PLAN:
+• Conservative for Cervical PID
+• Decompression & Fixation for PLID
+
+SPECIAL NOTE:
+• Improving >60%`,
+  language: 'bn',
+  theme: 'sanowara',
+  printMode: 'full',
+  showQrCode: true,
+  isDraft: false,
+  createdAt: '2026-09-21T09:00:00.000Z',
+  updatedAt: '2026-09-21T09:00:00.000Z',
+};
+
+export const SANOWARA_FULL_PRESCRIPTION: Prescription = {
+  id: 'rx-sanowara-ortho-plid',
+  prescriptionNumber: '20265435',
+  date: '2026-09-21T09:00:00.000Z',
+  doctorProfileId: DR_MIZAN_PROFILE.id,
+  patient: {
+    id: 'patient-sanowara-sample',
+    patientId: '20265435',
+    name: 'Sanowara',
+    age: '70Y',
+    gender: 'female',
+    createdAt: '2026-09-21T09:00:00.000Z',
+    updatedAt: '2026-09-21T09:00:00.000Z',
+  },
+  complaints: 'LBP with radiculopathy ; Both lower limbs\nDifficulty in walking and prolonged standing',
+  history: 'Medical\n• H/O Fall',
+  diagnoses: [
+    { id: uuidv4(), text: 'LBP due to Lumbar PLID L4/5 & L5/S1 with Spinal Canal Stenosis' },
+  ],
+  medicines: SANOWARA_ORTHO_TEMPLATE.medicines,
+  investigations: SANOWARA_ORTHO_TEMPLATE.investigations,
+  advice: SANOWARA_ORTHO_TEMPLATE.advice,
+  followUpText: '১ মাস পর (BMD রিপোর্ট সহ)',
+  additionalNotes: `Treatment plan:
+• Adv: BMD of Lumbar Spine.
+• Decompression & Fixation for PLID (Subject to BMD report).`,
+  language: 'bn',
+  theme: 'sanowara',
+  printMode: 'full',
+  showQrCode: true,
+  isDraft: false,
+  createdAt: '2026-09-21T09:00:00.000Z',
+  updatedAt: '2026-09-21T09:00:00.000Z',
+};
+
+export const DEMO_PRESCRIPTIONS: Prescription[] = [
+  JESMIN_FULL_PRESCRIPTION,
+  SANOWARA_FULL_PRESCRIPTION,
+];
+
 export const DEFAULT_MEDICINE_CATALOG: MedicineCatalogItem[] = [
-  // Ortho & Spine / Anti-inflammatory
+  // Ortho, Spine & Neurology
+  { id: uuidv4(), name: 'Tab. Naprosyn-Plus 500+20mg', genericName: 'Naproxen Sodium + Esomeprazole', form: 'tablet', strength: '500+20mg', isFavorite: true, useCount: 25 },
   { id: uuidv4(), name: 'Tab. Naproxcin 500mg', genericName: 'Naproxen', form: 'tablet', strength: '500mg', isFavorite: true, useCount: 20 },
+  { id: uuidv4(), name: 'Tab. Flexilax 10mg', genericName: 'Baclofen', form: 'tablet', strength: '10mg', isFavorite: true, useCount: 21 },
   { id: uuidv4(), name: 'Tab. Neucos-B', genericName: 'Vitamin B1 + B6 + B12', form: 'tablet', strength: '100mg+200mg+200mcg', isFavorite: true, useCount: 19 },
+  { id: uuidv4(), name: 'Tab. Mecolagin 0.5mg', genericName: 'Mecobalamin', form: 'tablet', strength: '0.5mg', isFavorite: true, useCount: 18 },
+  { id: uuidv4(), name: 'Cap. Alfane 300mg', genericName: 'Alpha Lipoic Acid', form: 'capsule', strength: '300mg', isFavorite: true, useCount: 17 },
   { id: uuidv4(), name: 'Tab. Numira 2.5mg', genericName: 'Mirogabalin Besylate', form: 'tablet', strength: '2.5mg', isFavorite: true, useCount: 16 },
+  { id: uuidv4(), name: 'Tab. Deflacort 6mg', genericName: 'Deflazacort', form: 'tablet', strength: '6mg', isFavorite: true, useCount: 16 },
   { id: uuidv4(), name: 'Tab. Corsil-DX 600mg+400IU', genericName: 'Coral Calcium + Vitamin D3', form: 'tablet', strength: '600mg+400IU', isFavorite: true, useCount: 18 },
   { id: uuidv4(), name: 'Tab. Evion 400mg', genericName: 'Vitamin E', form: 'tablet', strength: '400mg', isFavorite: true, useCount: 15 },
   { id: uuidv4(), name: 'Tab. Zinc-B', genericName: 'Zinc + Vitamin B Complex', form: 'tablet', strength: 'Standard', isFavorite: true, useCount: 14 },

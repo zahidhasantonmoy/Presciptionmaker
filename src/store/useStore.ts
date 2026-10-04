@@ -9,7 +9,9 @@ import { getDhakaNow } from '../utils/dateUtils';
 import {
   DEMO_TEMPLATES, DEFAULT_MEDICINE_CATALOG, DEFAULT_DIAGNOSIS_CATALOG,
   DEFAULT_TEST_CATALOG, DEFAULT_ADVICE_TEMPLATES, DEFAULT_DOCTOR_PROFILE,
-  DEFAULT_DOCTOR_PROFILES, DR_MIZAN_PROFILE, SANOWARA_ORTHO_TEMPLATE
+  DEFAULT_DOCTOR_PROFILES, DR_MIZAN_PROFILE, SANOWARA_ORTHO_TEMPLATE,
+  JESMIN_CERVICAL_TEMPLATE, JESMIN_FULL_PRESCRIPTION, SANOWARA_FULL_PRESCRIPTION,
+  DEMO_PRESCRIPTIONS
 } from '../data/defaults';
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -80,7 +82,7 @@ export const useStore = create<Store>()(
       activeDoctorId: DEFAULT_DOCTOR_PROFILE.id,
       doctorProfile: DEFAULT_DOCTOR_PROFILE,
       patients: [],
-      prescriptions: [],
+      prescriptions: DEMO_PRESCRIPTIONS,
       prescriptionTemplates: DEMO_TEMPLATES,
       medicineTemplates: [],
       medicineCatalog: DEFAULT_MEDICINE_CATALOG,
@@ -403,7 +405,10 @@ export const useStore = create<Store>()(
             state.activeDoctorId = DEFAULT_DOCTOR_PROFILES[0].id;
             state.doctorProfile = DEFAULT_DOCTOR_PROFILES[0];
           } else {
-            if (!state.doctorProfiles.some(p => p.id === DR_MIZAN_PROFILE.id || p.name.includes('Mizanur Rahman'))) {
+            const mizanIdx = state.doctorProfiles.findIndex(p => p.id === DR_MIZAN_PROFILE.id || p.name.includes('Mizanur Rahman'));
+            if (mizanIdx >= 0) {
+              state.doctorProfiles[mizanIdx] = { ...state.doctorProfiles[mizanIdx], ...DR_MIZAN_PROFILE };
+            } else {
               state.doctorProfiles.push(DR_MIZAN_PROFILE);
             }
             if (!state.activeDoctorId) {
@@ -412,11 +417,24 @@ export const useStore = create<Store>()(
             }
           }
           if (state.prescriptionTemplates) {
+            if (!state.prescriptionTemplates.some(t => t.id === JESMIN_CERVICAL_TEMPLATE.id || t.name.includes('Jesmin'))) {
+              state.prescriptionTemplates = [JESMIN_CERVICAL_TEMPLATE, ...state.prescriptionTemplates];
+            }
             if (!state.prescriptionTemplates.some(t => t.id === SANOWARA_ORTHO_TEMPLATE.id || t.name.includes('Sanowara'))) {
               state.prescriptionTemplates = [SANOWARA_ORTHO_TEMPLATE, ...state.prescriptionTemplates];
             }
           } else {
             state.prescriptionTemplates = DEMO_TEMPLATES;
+          }
+          if (!state.prescriptions || state.prescriptions.length === 0) {
+            state.prescriptions = DEMO_PRESCRIPTIONS;
+          } else {
+            if (!state.prescriptions.some(p => p.id === JESMIN_FULL_PRESCRIPTION.id || p.patient.name === 'Jesmin')) {
+              state.prescriptions = [JESMIN_FULL_PRESCRIPTION, ...state.prescriptions];
+            }
+            if (!state.prescriptions.some(p => p.id === SANOWARA_FULL_PRESCRIPTION.id || p.patient.name === 'Sanowara')) {
+              state.prescriptions = [SANOWARA_FULL_PRESCRIPTION, ...state.prescriptions];
+            }
           }
         }
       },

@@ -5,7 +5,7 @@ import { useToast } from '../components/ui/Toast';
 import { ConfirmModal } from '../components/ui/Modal';
 import type { PrescriptionTemplate, Prescription } from '../types';
 import { v4 as uuidv4 } from 'uuid';
-import { SANOWARA_SAMPLE_PATIENT } from '../data/defaults';
+import { SANOWARA_SAMPLE_PATIENT, JESMIN_SAMPLE_PATIENT } from '../data/defaults';
 
 export function TemplatesPage() {
   const {
@@ -36,20 +36,34 @@ export function TemplatesPage() {
       followUpText: t.followUpText,
       complaints: t.complaints || '',
       history: t.history || '',
+      onExamination: t.onExamination || '',
       additionalNotes: t.additionalNotes || '',
     };
     if (t.theme) {
       updates.theme = t.theme;
     }
-    if (loadCase && t.id === 'template-sanowara-ortho-plid') {
-      updates.patient = {
-        ...rx.patient,
-        name: SANOWARA_SAMPLE_PATIENT.name,
-        patientId: SANOWARA_SAMPLE_PATIENT.patientId,
-        age: SANOWARA_SAMPLE_PATIENT.age,
-        gender: SANOWARA_SAMPLE_PATIENT.gender,
-      };
-      updates.date = '2026-09-21T10:00:00.000Z';
+    if (loadCase) {
+      if (t.id === 'template-jesmin-cervical-plid' || t.name.includes('Jesmin')) {
+        updates.patient = {
+          ...rx.patient,
+          name: JESMIN_SAMPLE_PATIENT.name,
+          patientId: JESMIN_SAMPLE_PATIENT.patientId,
+          age: JESMIN_SAMPLE_PATIENT.age,
+          gender: JESMIN_SAMPLE_PATIENT.gender,
+        };
+        updates.prescriptionNumber = JESMIN_SAMPLE_PATIENT.patientId;
+        updates.date = '2026-09-21T10:00:00.000Z';
+      } else if (t.id === 'template-sanowara-ortho-plid' || t.name.includes('Sanowara')) {
+        updates.patient = {
+          ...rx.patient,
+          name: SANOWARA_SAMPLE_PATIENT.name,
+          patientId: SANOWARA_SAMPLE_PATIENT.patientId,
+          age: SANOWARA_SAMPLE_PATIENT.age,
+          gender: SANOWARA_SAMPLE_PATIENT.gender,
+        };
+        updates.prescriptionNumber = SANOWARA_SAMPLE_PATIENT.patientId;
+        updates.date = '2026-09-21T10:00:00.000Z';
+      }
     }
     if (t.doctorProfileId) {
       const doc = doctorProfiles.find(p => p.id === t.doctorProfileId);
@@ -60,7 +74,7 @@ export function TemplatesPage() {
     }
     updateCurrentPrescription(updates);
     setActivePage('builder');
-    showToast(`Prescription created with template "${t.name}"`, 'success');
+    showToast(loadCase ? `Loaded full case "${t.name}" into editor` : `Prescription created with template "${t.name}"`, 'success');
   };
 
   const handleDeleteTemplate = (id: string) => {
@@ -124,52 +138,86 @@ export function TemplatesPage() {
             </p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
-            {prescriptionTemplates.map(t => (
-              <div key={t.id} className="card" style={{ padding: 16 }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 700, fontSize: 14, color: '#1e40af' }}>{t.name}</div>
-                    {t.isDemo && <span className="badge badge-demo" style={{ fontSize: 10, marginTop: 4 }}>Demo</span>}
-                    {t.description && <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>{t.description}</div>}
+            {prescriptionTemplates.map(t => {
+              const isJesmin = t.id === 'template-jesmin-cervical-plid' || t.name.includes('Jesmin');
+              const isSanowara = t.id === 'template-sanowara-ortho-plid' || t.name.includes('Sanowara');
+              const isSpecial = isJesmin || isSanowara;
+              const brandColor = isJesmin ? '#0f766e' : isSanowara ? '#6b1a4f' : '#1e40af';
+              const bgColor = isJesmin ? '#f0fdfa' : isSanowara ? '#fdf2f8' : 'white';
+              const borderColor = isJesmin ? '#0f766e' : isSanowara ? '#6b1a4f' : '#e2e8f0';
+
+              return (
+                <div key={t.id} className="card" style={{
+                  padding: 16,
+                  background: bgColor,
+                  border: isSpecial ? `2px solid ${borderColor}` : `1px solid ${borderColor}`,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: brandColor }}>{t.name}</div>
+                      {isSpecial ? (
+                        <span style={{
+                          display: 'inline-block',
+                          background: brandColor,
+                          color: 'white',
+                          fontSize: 10,
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: 4,
+                          marginTop: 4,
+                        }}>
+                          ★ Frequent Case / বেশি ব্যবহৃত
+                        </span>
+                      ) : t.isDemo ? (
+                        <span className="badge badge-demo" style={{ fontSize: 10, marginTop: 4 }}>Demo</span>
+                      ) : null}
+                      {t.description && <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>{t.description}</div>}
+                    </div>
+                    {!t.isDemo && (
+                      <button className="btn-icon" style={{ color: '#ef4444' }}
+                        onClick={() => { setDeleteId(t.id); setDeleteType('template'); }}>
+                        <Trash2 size={14} />
+                      </button>
+                    )}
                   </div>
-                  {!t.isDemo && (
-                    <button className="btn-icon" style={{ color: '#ef4444' }}
-                      onClick={() => { setDeleteId(t.id); setDeleteType('template'); }}>
-                      <Trash2 size={14} />
-                    </button>
-                  )}
-                </div>
-                <div style={{ marginTop: 10, fontSize: 12, color: '#6b7280' }}>
-                  {t.diagnoses.length > 0 && <div>🩺 {t.diagnoses.map(d => d.text).join(', ')}</div>}
-                  {t.medicines.length > 0 && <div>💊 {t.medicines.length} medicine{t.medicines.length !== 1 ? 's' : ''}</div>}
-                  {t.investigations.length > 0 && <div>🔬 {t.investigations.length} test{t.investigations.length !== 1 ? 's' : ''}</div>}
-                  {t.advice && <div>📋 Has advice</div>}
-                </div>
-                <div style={{ display: 'flex', gap: 6, marginTop: 14, paddingTop: 10, borderTop: '1px solid #f1f5f9' }}>
-                  <button
-                    className="btn-primary btn-sm"
-                    style={{
-                      flex: 1, fontSize: 12,
-                      background: t.id === 'template-sanowara-ortho-plid' ? '#6b1a4f' : undefined,
-                      borderColor: t.id === 'template-sanowara-ortho-plid' ? '#6b1a4f' : undefined
-                    }}
-                    onClick={() => handleUseTemplate(t, false)}
-                  >
-                    ✍️ Use in Prescription
-                  </button>
-                  {t.id === 'template-sanowara-ortho-plid' && (
+                  <div style={{ marginTop: 10, fontSize: 12, color: '#6b7280' }}>
+                    {t.diagnoses.length > 0 && <div>🩺 {t.diagnoses.map(d => d.text).join(', ')}</div>}
+                    {t.medicines.length > 0 && <div>💊 {t.medicines.length} medicine{t.medicines.length !== 1 ? 's' : ''}</div>}
+                    {t.investigations.length > 0 && <div>🔬 {t.investigations.length} test{t.investigations.length !== 1 ? 's' : ''}</div>}
+                    {t.advice && <div>📋 Has advice</div>}
+                  </div>
+                  <div style={{ display: 'flex', gap: 6, marginTop: 14, paddingTop: 10, borderTop: '1px solid #f1f5f9' }}>
                     <button
-                      className="btn-ghost btn-sm"
-                      style={{ fontSize: 11, color: '#6b1a4f', borderColor: '#6b1a4f', background: '#fce7f3', fontWeight: 600 }}
-                      onClick={() => handleUseTemplate(t, true)}
-                      title="Load complete Sanowara case with patient info, Dr. Mizan profile, & all clinical data"
+                      className="btn-primary btn-sm"
+                      style={{
+                        flex: 1, fontSize: 12,
+                        background: isSpecial ? brandColor : undefined,
+                        borderColor: isSpecial ? brandColor : undefined
+                      }}
+                      onClick={() => handleUseTemplate(t, false)}
                     >
-                      Load Patient Case
+                      ✍️ Use in Prescription
                     </button>
-                  )}
+                    {isSpecial && (
+                      <button
+                        className="btn-ghost btn-sm"
+                        style={{
+                          fontSize: 11,
+                          color: brandColor,
+                          borderColor: brandColor,
+                          background: isJesmin ? '#ccfbf1' : '#fce7f3',
+                          fontWeight: 600,
+                        }}
+                        onClick={() => handleUseTemplate(t, true)}
+                        title={`Load complete case with ${isJesmin ? 'Jesmin (40Y, P-202610339)' : 'Sanowara (70Y, 20265435)'}`}
+                      >
+                        Load Patient Case
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <div style={{ marginTop: 16, padding: 16, background: '#f8faff', borderRadius: 10, border: '1.5px dashed #c7d7fa' }}>
             <div style={{ fontSize: 13, color: '#64748b' }}>
