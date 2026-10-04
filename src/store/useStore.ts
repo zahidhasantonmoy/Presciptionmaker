@@ -6,7 +6,7 @@ import type {
   MedicineTemplate, MedicineCatalogItem, AdviceTemplate, AppSettings
 } from '../types';
 import { getDhakaNow } from '../utils/dateUtils';
-import { DEMO_TEMPLATES, DEFAULT_MEDICINE_CATALOG, DEFAULT_DIAGNOSIS_CATALOG, DEFAULT_TEST_CATALOG, DEFAULT_ADVICE_TEMPLATES } from '../data/defaults';
+import { DEMO_TEMPLATES, DEFAULT_MEDICINE_CATALOG, DEFAULT_DIAGNOSIS_CATALOG, DEFAULT_TEST_CATALOG, DEFAULT_ADVICE_TEMPLATES, DEFAULT_DOCTOR_PROFILE } from '../data/defaults';
 
 const DEFAULT_SETTINGS: AppSettings = {
   language: 'en',
@@ -64,7 +64,7 @@ export const useStore = create<Store>()(
   persist(
     (set, get) => ({
       // ─── Initial State ─────────────────────────────────────────────────────
-      doctorProfile: null,
+      doctorProfile: DEFAULT_DOCTOR_PROFILE,
       patients: [],
       prescriptions: [],
       prescriptionTemplates: DEMO_TEMPLATES,
