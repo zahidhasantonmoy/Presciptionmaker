@@ -1,5 +1,33 @@
 import { v4 as uuidv4 } from 'uuid';
-import type { PrescriptionTemplate, MedicineCatalogItem, DiagnosisCatalogItem, TestCatalogItem, AdviceTemplate } from '../types';
+import type {
+  DoctorProfile, PrescriptionTemplate, MedicineCatalogItem,
+  DiagnosisCatalogItem, TestCatalogItem, AdviceTemplate
+} from '../types';
+
+export const DEFAULT_DOCTOR_PROFILE: DoctorProfile = {
+  id: uuidv4(),
+  name: 'Prof. Dr. Mohammad Rafiqul Islam',
+  nameBn: 'অধ্যাপক ডাঃ মোঃ রফিকুল ইসলাম',
+  degrees: 'MBBS, FCPS (Medicine), MD (Internal Medicine)',
+  degreesBn: 'এমবিবিএস, এফসিপিএস (মেডিসিন), এমডি (ইন্টারনাল মেডিসিন)',
+  specialty: 'Medicine Specialist & Interventional Diabetologist',
+  specialtyBn: 'মেডিসিন ও ডায়াবেটিস বিশেষজ্ঞ',
+  bmdcNumber: 'A-45678',
+  fellowId: 'F-9281',
+  clinicName: 'Popular Diagnostic Centre Ltd.',
+  clinicNameBn: 'পপুলার ডায়াগনস্টিক সেন্টার লিঃ',
+  address: 'House 16, Road 2, Dhanmondi, Dhaka-1205',
+  addressBn: 'বাড়ি ১৬, রোড ২, ধানমন্ডি, ঢাকা-১২০৫',
+  phone: '+880 1711-000000',
+  email: 'dr.rafiqul@example.com',
+  consultationHours: 'Daily 5:00 PM – 9:00 PM (Friday Closed)',
+  consultationHoursBn: 'প্রতিদিন বিকাল ৫:০০ - রাত ৯:০০ (শুক্রবার বন্ধ)',
+  footerText: 'Emergency: Please visit nearest hospital emergency room',
+  footerTextBn: 'জরুরী প্রয়োজনে নিকটস্থ হাসপাতালের জরুরী বিভাগে যোগাযোগ করুন',
+  showBnHeader: true,
+  theme: 'classic',
+  updatedAt: new Date().toISOString(),
+};
 
 export const DEMO_TEMPLATES: PrescriptionTemplate[] = [
   {
@@ -8,9 +36,9 @@ export const DEMO_TEMPLATES: PrescriptionTemplate[] = [
     description: 'Common cold / URI – demo template for UI testing only',
     diagnoses: [{ id: uuidv4(), text: 'Upper Respiratory Tract Infection (URTI)' }],
     medicines: [
-      { id: uuidv4(), name: 'Tab. Napa Extend 665mg (Paracetamol)', genericName: 'Paracetamol', form: 'tablet', strength: '665mg', morning: '1', afternoon: '1', evening: '1', timing: 'After meal', duration: '5 days' },
-      { id: uuidv4(), name: 'Cap. Sergel 20mg (Esomeprazole)', genericName: 'Esomeprazole', form: 'capsule', strength: '20mg', morning: '1', afternoon: '0', evening: '0', timing: 'Before meal', duration: '5 days' },
-      { id: uuidv4(), name: 'Tab. Fexo 180mg (Fexofenadine)', genericName: 'Fexofenadine', form: 'tablet', strength: '180mg', morning: '0', afternoon: '0', evening: '1', timing: 'After meal', duration: '5 days' },
+      { id: uuidv4(), name: 'Tab. Napa Extend 665mg', genericName: 'Paracetamol', form: 'tablet', strength: '665mg', morning: '1', afternoon: '1', evening: '1', timing: 'After meal', duration: '5 days' },
+      { id: uuidv4(), name: 'Cap. Sergel 20mg', genericName: 'Esomeprazole', form: 'capsule', strength: '20mg', morning: '1', afternoon: '0', evening: '0', timing: 'Before meal', duration: '5 days' },
+      { id: uuidv4(), name: 'Tab. Fexo 180mg', genericName: 'Fexofenadine', form: 'tablet', strength: '180mg', morning: '0', afternoon: '0', evening: '1', timing: 'After meal', duration: '5 days' },
     ],
     investigations: [
       { id: uuidv4(), name: 'CBC with ESR', category: 'lab' },
@@ -30,8 +58,8 @@ export const DEMO_TEMPLATES: PrescriptionTemplate[] = [
       { id: uuidv4(), text: 'Lumbar Spondylosis' },
     ],
     medicines: [
-      { id: uuidv4(), name: 'Tab. Naprosyn 500mg (Naproxen)', genericName: 'Naproxen', form: 'tablet', strength: '500mg', morning: '1', afternoon: '0', evening: '1', timing: 'After meal', duration: '7 days' },
-      { id: uuidv4(), name: 'Tab. Flexilax 10mg (Baclofen)', genericName: 'Baclofen', form: 'tablet', strength: '10mg', morning: '1', afternoon: '0', evening: '1', timing: 'Full stomach', duration: '1 month' },
+      { id: uuidv4(), name: 'Tab. Naprosyn 500mg', genericName: 'Naproxen', form: 'tablet', strength: '500mg', morning: '1', afternoon: '0', evening: '1', timing: 'After meal', duration: '7 days' },
+      { id: uuidv4(), name: 'Tab. Flexilax 10mg', genericName: 'Baclofen', form: 'tablet', strength: '10mg', morning: '1', afternoon: '0', evening: '1', timing: 'Full stomach', duration: '1 month' },
     ],
     investigations: [
       { id: uuidv4(), name: 'X-Ray Lumbosacral Spine B/V', category: 'imaging' },
@@ -41,49 +69,118 @@ export const DEMO_TEMPLATES: PrescriptionTemplate[] = [
     isDemo: true,
     createdAt: new Date().toISOString(),
   },
+  {
+    id: uuidv4(),
+    name: 'Hypertension & Diabetes (Demo)',
+    description: 'HTN & T2DM routine follow-up',
+    diagnoses: [
+      { id: uuidv4(), text: 'Hypertension (HTN)' },
+      { id: uuidv4(), text: 'Type 2 Diabetes Mellitus (T2DM)' },
+    ],
+    medicines: [
+      { id: uuidv4(), name: 'Tab. Bizoran 5/20mg', genericName: 'Amlodipine + Olmesartan', form: 'tablet', strength: '5/20mg', morning: '1', afternoon: '0', evening: '0', timing: 'Morning only', duration: 'Continue' },
+      { id: uuidv4(), name: 'Tab. Metfo 500mg', genericName: 'Metformin HCl', form: 'tablet', strength: '500mg', morning: '1', afternoon: '0', evening: '1', timing: 'With meal', duration: 'Continue' },
+      { id: uuidv4(), name: 'Cap. Maxpro 20mg', genericName: 'Esomeprazole', form: 'capsule', strength: '20mg', morning: '1', afternoon: '0', evening: '0', timing: 'Before meal', duration: '14 days' },
+    ],
+    investigations: [
+      { id: uuidv4(), name: 'Blood Glucose (Fasting)', category: 'lab' },
+      { id: uuidv4(), name: 'HbA1c', category: 'lab' },
+      { id: uuidv4(), name: 'Serum Creatinine', category: 'lab' },
+      { id: uuidv4(), name: 'Lipid Profile', category: 'lab' },
+    ],
+    advice: 'Low salt, low carbohydrate diet. Walk at least 30 minutes daily. Monitor blood sugar and blood pressure weekly.',
+    followUpText: 'Review after 1 month with test reports',
+    isDemo: true,
+    createdAt: new Date().toISOString(),
+  },
 ];
 
 export const DEFAULT_MEDICINE_CATALOG: MedicineCatalogItem[] = [
-  { id: uuidv4(), name: 'Tab. Napa Extend 665mg (Paracetamol)', genericName: 'Paracetamol', form: 'tablet', strength: '665mg', isFavorite: true, useCount: 10 },
-  { id: uuidv4(), name: 'Cap. Sergel 20mg (Esomeprazole)', genericName: 'Esomeprazole', form: 'capsule', strength: '20mg', isFavorite: true, useCount: 8 },
-  { id: uuidv4(), name: 'Tab. Fexo 180mg (Fexofenadine)', genericName: 'Fexofenadine', form: 'tablet', strength: '180mg', isFavorite: false, useCount: 5 },
-  { id: uuidv4(), name: 'Tab. Monas 10mg (Montelukast)', genericName: 'Montelukast', form: 'tablet', strength: '10mg', isFavorite: false, useCount: 3 },
-  { id: uuidv4(), name: 'Tab. Naprosyn 500mg (Naproxen)', genericName: 'Naproxen', form: 'tablet', strength: '500mg', isFavorite: false, useCount: 4 },
-  { id: uuidv4(), name: 'Tab. Flexilax 10mg (Baclofen)', genericName: 'Baclofen', form: 'tablet', strength: '10mg', isFavorite: false, useCount: 3 },
-  { id: uuidv4(), name: 'Tab. Metformin 500mg', genericName: 'Metformin HCl', form: 'tablet', strength: '500mg', isFavorite: false, useCount: 2 },
-  { id: uuidv4(), name: 'Tab. Amlodipine 5mg', genericName: 'Amlodipine', form: 'tablet', strength: '5mg', isFavorite: false, useCount: 2 },
+  // Antipyretics / Analgesics
+  { id: uuidv4(), name: 'Tab. Napa 500mg', genericName: 'Paracetamol', form: 'tablet', strength: '500mg', isFavorite: true, useCount: 15 },
+  { id: uuidv4(), name: 'Tab. Napa Extend 665mg', genericName: 'Paracetamol', form: 'tablet', strength: '665mg', isFavorite: true, useCount: 14 },
+  { id: uuidv4(), name: 'Tab. Ace Plus', genericName: 'Paracetamol + Caffeine', form: 'tablet', strength: '500mg/65mg', isFavorite: true, useCount: 12 },
+  { id: uuidv4(), name: 'Syp. Napa 120mg/5ml', genericName: 'Paracetamol', form: 'syrup', strength: '120mg/5ml', isFavorite: false, useCount: 6 },
+  { id: uuidv4(), name: 'Tab. Naprosyn 500mg', genericName: 'Naproxen', form: 'tablet', strength: '500mg', isFavorite: false, useCount: 8 },
+  { id: uuidv4(), name: 'Tab. Torax 10mg', genericName: 'Ketorolac Tromethamine', form: 'tablet', strength: '10mg', isFavorite: false, useCount: 4 },
+
+  // PPI / Gastrointestinal
+  { id: uuidv4(), name: 'Cap. Sergel 20mg', genericName: 'Esomeprazole', form: 'capsule', strength: '20mg', isFavorite: true, useCount: 18 },
+  { id: uuidv4(), name: 'Cap. Seclo 20mg', genericName: 'Omeprazole', form: 'capsule', strength: '20mg', isFavorite: true, useCount: 15 },
+  { id: uuidv4(), name: 'Cap. Maxpro 20mg', genericName: 'Esomeprazole', form: 'capsule', strength: '20mg', isFavorite: true, useCount: 12 },
+  { id: uuidv4(), name: 'Tab. Pantonix 20mg', genericName: 'Pantoprazole', form: 'tablet', strength: '20mg', isFavorite: false, useCount: 7 },
+  { id: uuidv4(), name: 'Syp. Gaviscon', genericName: 'Sodium Alginate + Potassium Bicarbonate', form: 'syrup', strength: 'Oral Susp', isFavorite: false, useCount: 5 },
+
+  // Antihistamines & Respiratory
+  { id: uuidv4(), name: 'Tab. Fexo 120mg', genericName: 'Fexofenadine HCl', form: 'tablet', strength: '120mg', isFavorite: true, useCount: 10 },
+  { id: uuidv4(), name: 'Tab. Fexo 180mg', genericName: 'Fexofenadine HCl', form: 'tablet', strength: '180mg', isFavorite: true, useCount: 9 },
+  { id: uuidv4(), name: 'Tab. Monas 10mg', genericName: 'Montelukast', form: 'tablet', strength: '10mg', isFavorite: true, useCount: 11 },
+  { id: uuidv4(), name: 'Tab. Bilashin 20mg', genericName: 'Bilastine', form: 'tablet', strength: '20mg', isFavorite: false, useCount: 6 },
+  { id: uuidv4(), name: 'Syp. Tusca', genericName: 'Dextromethorphan + Guaiphenesin', form: 'syrup', strength: '100ml', isFavorite: false, useCount: 5 },
+  { id: uuidv4(), name: 'Syp. Adovas', genericName: 'Vasaka Herbal Cough Syrup', form: 'syrup', strength: '100ml', isFavorite: false, useCount: 4 },
+
+  // Antibiotics
+  { id: uuidv4(), name: 'Tab. Azithrocin 500mg', genericName: 'Azithromycin', form: 'tablet', strength: '500mg', isFavorite: true, useCount: 8 },
+  { id: uuidv4(), name: 'Cap. Cef-3 200mg', genericName: 'Cefixime', form: 'capsule', strength: '200mg', isFavorite: false, useCount: 6 },
+  { id: uuidv4(), name: 'Tab. Ciprocin 500mg', genericName: 'Ciprofloxacin', form: 'tablet', strength: '500mg', isFavorite: false, useCount: 5 },
+  { id: uuidv4(), name: 'Tab. Moxaclav 625mg', genericName: 'Amoxicillin + Clavulanic Acid', form: 'tablet', strength: '625mg', isFavorite: false, useCount: 4 },
+
+  // Muscle Relaxants & Neuro
+  { id: uuidv4(), name: 'Tab. Flexilax 10mg', genericName: 'Baclofen', form: 'tablet', strength: '10mg', isFavorite: false, useCount: 6 },
+  { id: uuidv4(), name: 'Tab. Neuro-B', genericName: 'Vitamin B1 + B6 + B12', form: 'tablet', strength: 'High Potency', isFavorite: false, useCount: 8 },
+  { id: uuidv4(), name: 'Tab. Rivotril 0.5mg', genericName: 'Clonazepam', form: 'tablet', strength: '0.5mg', isFavorite: false, useCount: 5 },
+
+  // Antihypertensives & Cardiovascular
+  { id: uuidv4(), name: 'Tab. Amlodipine 5mg', genericName: 'Amlodipine', form: 'tablet', strength: '5mg', isFavorite: false, useCount: 7 },
+  { id: uuidv4(), name: 'Tab. Bizoran 5/20mg', genericName: 'Amlodipine + Olmesartan', form: 'tablet', strength: '5/20mg', isFavorite: true, useCount: 9 },
+  { id: uuidv4(), name: 'Tab. Losartan 50mg', genericName: 'Losartan Potassium', form: 'tablet', strength: '50mg', isFavorite: false, useCount: 6 },
+  { id: uuidv4(), name: 'Tab. Rosuva 10mg', genericName: 'Rosuvastatin', form: 'tablet', strength: '10mg', isFavorite: false, useCount: 5 },
+
+  // Antidiabetic
+  { id: uuidv4(), name: 'Tab. Metformin 500mg', genericName: 'Metformin HCl', form: 'tablet', strength: '500mg', isFavorite: true, useCount: 8 },
+  { id: uuidv4(), name: 'Tab. Comprid 2mg', genericName: 'Glimepiride', form: 'tablet', strength: '2mg', isFavorite: false, useCount: 4 },
+
+  // Supplements
+  { id: uuidv4(), name: 'Cap. D-Rise 20000 IU', genericName: 'Cholecalciferol (Vit D3)', form: 'capsule', strength: '20000 IU', isFavorite: true, useCount: 7 },
+  { id: uuidv4(), name: 'Tab. Bextram Gold', genericName: 'Multivitamin & Multimineral', form: 'tablet', strength: 'A to Z Gold', isFavorite: false, useCount: 6 },
 ];
 
 export const DEFAULT_DIAGNOSIS_CATALOG: DiagnosisCatalogItem[] = [
-  { id: uuidv4(), text: 'Upper Respiratory Tract Infection (URTI)', isFavorite: true, useCount: 10 },
-  { id: uuidv4(), text: 'Low Back Pain (LBP)', isFavorite: true, useCount: 8 },
-  { id: uuidv4(), text: 'Hypertension (HTN)', isFavorite: false, useCount: 5 },
-  { id: uuidv4(), text: 'Type 2 Diabetes Mellitus (T2DM)', isFavorite: false, useCount: 4 },
-  { id: uuidv4(), text: 'Lumbar Spondylosis', isFavorite: false, useCount: 3 },
-  { id: uuidv4(), text: 'Urinary Tract Infection (UTI)', isFavorite: false, useCount: 3 },
-  { id: uuidv4(), text: 'Anxiety Disorder', isFavorite: false, useCount: 2 },
-  { id: uuidv4(), text: 'Vitamin D Deficiency', isFavorite: false, useCount: 2 },
-  { id: uuidv4(), text: 'Anemia', isFavorite: false, useCount: 2 },
-  { id: uuidv4(), text: 'Cervical Spondylosis', isFavorite: false, useCount: 2 },
-  { id: uuidv4(), text: 'Peptic Ulcer Disease (PUD)', isFavorite: false, useCount: 1 },
-  { id: uuidv4(), text: 'Irritable Bowel Syndrome (IBS)', isFavorite: false, useCount: 1 },
+  { id: uuidv4(), text: 'Upper Respiratory Tract Infection (URTI)', isFavorite: true, useCount: 15 },
+  { id: uuidv4(), text: 'Low Back Pain (LBP)', isFavorite: true, useCount: 12 },
+  { id: uuidv4(), text: 'Hypertension (HTN)', isFavorite: true, useCount: 10 },
+  { id: uuidv4(), text: 'Type 2 Diabetes Mellitus (T2DM)', isFavorite: true, useCount: 10 },
+  { id: uuidv4(), text: 'Peptic Ulcer Disease (PUD) / GERD', isFavorite: true, useCount: 9 },
+  { id: uuidv4(), text: 'Urinary Tract Infection (UTI)', isFavorite: false, useCount: 8 },
+  { id: uuidv4(), text: 'Lumbar Spondylosis', isFavorite: false, useCount: 7 },
+  { id: uuidv4(), text: 'Cervical Spondylosis', isFavorite: false, useCount: 5 },
+  { id: uuidv4(), text: 'Acute Gastroenteritis (AGE)', isFavorite: false, useCount: 6 },
+  { id: uuidv4(), text: 'Bronchial Asthma', isFavorite: false, useCount: 5 },
+  { id: uuidv4(), text: 'Vitamin D Deficiency', isFavorite: false, useCount: 4 },
+  { id: uuidv4(), text: 'Iron Deficiency Anemia', isFavorite: false, useCount: 4 },
+  { id: uuidv4(), text: 'Dengue Fever', isFavorite: false, useCount: 4 },
+  { id: uuidv4(), text: 'Irritable Bowel Syndrome (IBS)', isFavorite: false, useCount: 3 },
+  { id: uuidv4(), text: 'Generalized Anxiety Disorder (GAD)', isFavorite: false, useCount: 3 },
 ];
 
 export const DEFAULT_TEST_CATALOG: TestCatalogItem[] = [
-  { id: uuidv4(), name: 'CBC with ESR', category: 'lab', isFavorite: true, useCount: 10 },
-  { id: uuidv4(), name: 'Blood Glucose (Fasting)', category: 'lab', isFavorite: true, useCount: 8 },
-  { id: uuidv4(), name: 'Serum Creatinine', category: 'lab', isFavorite: false, useCount: 5 },
-  { id: uuidv4(), name: 'Urine R/E', category: 'lab', isFavorite: false, useCount: 4 },
-  { id: uuidv4(), name: 'Dengue NS1 Ag', category: 'lab', isFavorite: false, useCount: 3 },
-  { id: uuidv4(), name: 'Thyroid Profile (T3, T4, TSH)', category: 'lab', isFavorite: false, useCount: 3 },
-  { id: uuidv4(), name: 'Lipid Profile', category: 'lab', isFavorite: false, useCount: 2 },
-  { id: uuidv4(), name: 'HbA1c', category: 'lab', isFavorite: false, useCount: 2 },
-  { id: uuidv4(), name: 'Liver Function Test (LFT)', category: 'lab', isFavorite: false, useCount: 2 },
-  { id: uuidv4(), name: 'X-Ray Chest PA View', category: 'imaging', isFavorite: false, useCount: 3 },
-  { id: uuidv4(), name: 'X-Ray Lumbosacral Spine B/V', category: 'imaging', isFavorite: false, useCount: 2 },
-  { id: uuidv4(), name: 'Ultrasonogram (USG) Abdomen', category: 'imaging', isFavorite: false, useCount: 2 },
-  { id: uuidv4(), name: 'ECG', category: 'other', isFavorite: false, useCount: 2 },
-  { id: uuidv4(), name: 'Blood Pressure Monitoring', category: 'other', isFavorite: false, useCount: 1 },
+  { id: uuidv4(), name: 'CBC with ESR', category: 'lab', isFavorite: true, useCount: 18 },
+  { id: uuidv4(), name: 'Urine R/E', category: 'lab', isFavorite: true, useCount: 14 },
+  { id: uuidv4(), name: 'Blood Glucose (Fasting & 2h ABBF)', category: 'lab', isFavorite: true, useCount: 15 },
+  { id: uuidv4(), name: 'HbA1c', category: 'lab', isFavorite: true, useCount: 12 },
+  { id: uuidv4(), name: 'Serum Creatinine', category: 'lab', isFavorite: true, useCount: 12 },
+  { id: uuidv4(), name: 'Lipid Profile', category: 'lab', isFavorite: false, useCount: 9 },
+  { id: uuidv4(), name: 'Serum SGPT / ALT', category: 'lab', isFavorite: false, useCount: 8 },
+  { id: uuidv4(), name: 'Thyroid Profile (TSH, FT4)', category: 'lab', isFavorite: false, useCount: 7 },
+  { id: uuidv4(), name: 'Serum Electrolytes', category: 'lab', isFavorite: false, useCount: 6 },
+  { id: uuidv4(), name: 'Dengue NS1 Ag & Dengue Antibody', category: 'lab', isFavorite: false, useCount: 6 },
+  { id: uuidv4(), name: 'Serum Uric Acid', category: 'lab', isFavorite: false, useCount: 5 },
+  { id: uuidv4(), name: 'Serum 25-OH Vitamin D', category: 'lab', isFavorite: false, useCount: 5 },
+  { id: uuidv4(), name: 'X-Ray Chest PA View', category: 'imaging', isFavorite: true, useCount: 10 },
+  { id: uuidv4(), name: 'X-Ray Lumbosacral Spine B/V', category: 'imaging', isFavorite: false, useCount: 7 },
+  { id: uuidv4(), name: 'USG of Whole Abdomen', category: 'imaging', isFavorite: false, useCount: 8 },
+  { id: uuidv4(), name: 'ECG (12-Lead)', category: 'other', isFavorite: true, useCount: 11 },
+  { id: uuidv4(), name: 'Echocardiogram', category: 'other', isFavorite: false, useCount: 4 },
 ];
 
 export const DEFAULT_ADVICE_TEMPLATES: AdviceTemplate[] = [
@@ -91,31 +188,39 @@ export const DEFAULT_ADVICE_TEMPLATES: AdviceTemplate[] = [
     id: uuidv4(),
     title: 'General Rest & Hydration',
     content: 'Take plenty of fluids. Rest adequately. Avoid cold food and drinks.',
-    contentBn: 'প্রচুর পানি পান করুন। পর্যাপ্ত বিশ্রাম নিন। ঠান্ডা খাবার ও পানীয় এড়িয়ে চলুন।',
+    contentBn: 'প্রচুর তরল ও কুসুম গরম পানি পান করুন। পর্যাপ্ত বিশ্রাম নিন। ঠান্ডা খাবার ও ফ্রিজের পানি পরিহার করুন।',
     isFavorite: true,
     createdAt: new Date().toISOString(),
   },
   {
     id: uuidv4(),
-    title: 'Diabetic Advice',
-    content: 'Follow strict diabetic diet. Regular exercise. Check blood sugar regularly.',
-    contentBn: 'কঠোর ডায়াবেটিক খাদ্য মেনে চলুন। নিয়মিত ব্যায়াম করুন। নিয়মিত রক্তের চিনি পরীক্ষা করুন।',
-    isFavorite: false,
+    title: 'Gastritis & PUD Advice',
+    content: 'Take meals on time. Avoid oily, spicy, and deep-fried food. Do not lie down immediately after dinner.',
+    contentBn: 'সময়মতো খাবার গ্রহণ করুন। অতিরিক্ত তেল, ঝাল, চর্বিযুক্ত ও ভাজাপোড়া খাবার পরিহার করুন। রাতের খাবারের সাথে সাথেই শুয়ে পড়বেন না (কমপক্ষে ২ ঘণ্টা পর ঘুমাবেন)।',
+    isFavorite: true,
     createdAt: new Date().toISOString(),
   },
   {
     id: uuidv4(),
-    title: 'Hypertension Advice',
-    content: 'Reduce salt intake. Avoid fatty foods. Regular blood pressure monitoring. Take medication regularly.',
-    contentBn: 'লবণ কম খান। চর্বিযুক্ত খাবার এড়িয়ে চলুন। নিয়মিত রক্তচাপ পরীক্ষা করুন। নিয়মিত ওষুধ খান।',
-    isFavorite: false,
+    title: 'Diabetic Lifestyle Advice',
+    content: 'Follow a strict diabetic diet. Engage in brisk walking 30-45 minutes daily. Monitor blood sugar regularly.',
+    contentBn: 'মিষ্টি ও চিনিযুক্ত খাবার সম্পূর্ণ পরিহার করুন। প্রতিদিন কমপক্ষে ৩০-৪০ মিনিট হাঁটুন। নিয়মিত রক্তের গ্লুকোজ পরীক্ষা করুন এবং চার্ট সংরক্ষণ করুন।',
+    isFavorite: true,
     createdAt: new Date().toISOString(),
   },
   {
     id: uuidv4(),
-    title: 'Back Pain Advice',
-    content: 'Apply hot water bag. Avoid heavy lifting. Use lumbar corset. Do regular back strengthening exercises.',
-    contentBn: 'গরম পানির ব্যাগ দিয়ে সেঁক নিন। ভারী জিনিস তোলা থেকে বিরত থাকুন। লাম্বার কর্সেট ব্যবহার করুন। নিয়মিত ব্যায়াম করুন।',
+    title: 'Hypertension & Heart Advice',
+    content: 'Reduce dietary salt strictly (no added salt). Avoid red meat and excess ghee/oil. Check blood pressure regularly.',
+    contentBn: 'খাবারে বাড়তি কাঁচা লবণ ও অতিরিক্ত লবণযুক্ত খাবার সম্পূর্ণ বর্জন করুন। গরু/খাসির মাংস ও চর্বি এড়িয়ে চলুন। নিয়মিত রক্তচাপ মাপুন।',
+    isFavorite: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: uuidv4(),
+    title: 'Back Pain & Spine Advice',
+    content: 'Apply hot compress. Avoid heavy lifting and bending forward. Use hard, flat bed. Wear lumbar support if advised.',
+    contentBn: 'গরম পানির ব্যাগ দিয়ে দিনে ২-৩ বার সেঁক দিন। সামনের দিকে ঝুঁকে ভারী জিনিস তুলবেন না। শক্ত ও সমতল বিছানায় ঘুমাবেন। নিয়মিত পিঠের ব্যায়াম করবেন।',
     isFavorite: false,
     createdAt: new Date().toISOString(),
   },
