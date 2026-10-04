@@ -449,20 +449,31 @@
 
 .form-input {
   width: 100%;
-  border: 1px solid #d1d5db;
+  border: 1.5px solid #94a3b8;
   border-radius: 8px;
-  padding: 8px 12px;
+  padding: 9px 12px;
   font-size: 14px;
   font-family: var(--font-en);
-  color: #1e293b;
-  background: white;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  color: #0f172a;
+  background: #ffffff;
+  transition: all 0.15s ease;
   outline: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.form-input:hover {
+  border-color: #64748b;
 }
 
 .form-input:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+  background: #ffffff;
+}
+
+.form-input::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
 }
 
 .form-input.bn {
@@ -470,38 +481,44 @@
 }
 
 .form-label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
-  color: #475569;
-  margin-bottom: 4px;
+  color: #1e293b;
+  margin-bottom: 5px;
   display: block;
+  letter-spacing: -0.01em;
 }
 
 .form-select {
   width: 100%;
-  border: 1px solid #d1d5db;
+  border: 1.5px solid #94a3b8;
   border-radius: 8px;
-  padding: 8px 12px;
+  padding: 9px 12px;
   font-size: 14px;
-  color: #1e293b;
-  background: white;
+  color: #0f172a;
+  background: #ffffff;
   outline: none;
   cursor: pointer;
-  transition: border-color 0.15s;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.form-select:hover {
+  border-color: #64748b;
 }
 
 .form-select:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
 }
 
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 8px;
+  padding: 3px 9px;
   border-radius: 20px;
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -510,7 +527,7 @@
 .badge-green { background: #dcfce7; color: #15803d; }
 .badge-yellow { background: #fef3c7; color: #b45309; }
 .badge-red { background: #fee2e2; color: #b91c1c; }
-.badge-gray { background: #f1f5f9; color: #475569; }
+.badge-gray { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
 .badge-demo { background: #fef9c3; color: #854d0e; border: 1px dashed #fbbf24; }
 
 /* ─── Autocomplete Dropdown ─────────────────────────────────────────────────── */
@@ -520,50 +537,57 @@
   left: 0;
   right: 0;
   background: white;
-  border: 1px solid #d1d5db;
+  border: 1.5px solid #94a3b8;
   border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
   z-index: 100;
-  max-height: 240px;
+  max-height: 250px;
   overflow-y: auto;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
 .autocomplete-item {
-  padding: 8px 12px;
+  padding: 10px 14px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 13.5px;
+  color: #1e293b;
   transition: background 0.1s;
   border-bottom: 1px solid #f1f5f9;
 }
 
 .autocomplete-item:last-child { border-bottom: none; }
-.autocomplete-item:hover { background: #eff6ff; }
-.autocomplete-item.highlighted { background: #dbeafe; }
+.autocomplete-item:hover { background: #eff6ff; color: #1e40af; }
+.autocomplete-item.highlighted { background: #dbeafe; color: #1e3a8a; }
 
 /* ─── Medicine Entry Card ───────────────────────────────────────────────────── */
 .medicine-card {
-  background: #f8faff;
-  border: 1px solid #c7d7fa;
-  border-radius: 10px;
-  padding: 12px;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 14px 16px;
   position: relative;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  transition: all 0.15s ease;
 }
 
-.medicine-card:hover { border-color: #93c5fd; }
+.medicine-card:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 4px 12px rgba(30, 64, 175, 0.08);
+}
 
 /* ─── Section Panel ─────────────────────────────────────────────────────────── */
 .section-panel {
   background: white;
-  border: 1px solid #e2e8f0;
+  border: 1.5px solid #cbd5e1;
   border-radius: 12px;
   overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
 
 .section-panel-header {
-  background: linear-gradient(135deg, #f8faff, #eff6ff);
-  padding: 10px 16px;
-  border-bottom: 1px solid #e2e8f0;
+  background: linear-gradient(135deg, #f8faff, #f1f5f9);
+  padding: 12px 18px;
+  border-bottom: 1.5px solid #e2e8f0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -571,16 +595,16 @@
 }
 
 .section-panel-title {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
-  color: #1e40af;
+  color: #1e3a8a;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .section-panel-body {
-  padding: 12px 16px;
+  padding: 16px 18px;
 }
 
 /* ─── Stats Card ────────────────────────────────────────────────────────────── */

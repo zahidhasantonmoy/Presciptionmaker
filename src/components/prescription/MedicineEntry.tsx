@@ -118,226 +118,309 @@ export function MedicineEntry({ medicines, onChange, patientAllergies, patientWe
           const allergyAlert = checkDrugAllergy(med.name, med.genericName, patientAllergies);
           const pregSafety = getPregnancySafety(med.name, med.genericName);
           return (
-            <div key={med.id} className="medicine-card" style={allergyAlert.hasAlert ? { borderColor: '#fca5a5', background: '#fff5f5' } : undefined}>
-              {/* Medicine Header Row */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span className="drag-handle" title="Drag to reorder"><GripVertical size={16} /></span>
-                <span style={{
-                  background: allergyAlert.hasAlert ? '#dc2626' : '#1e40af', color: 'white', borderRadius: '50%',
-                  width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 11, fontWeight: 700, flexShrink: 0,
-                }}>{idx + 1}</span>
+            <div
+              key={med.id}
+              className="medicine-card"
+              style={{
+                borderColor: allergyAlert.hasAlert ? '#f87171' : '#cbd5e1',
+                background: allergyAlert.hasAlert ? '#fffafa' : '#ffffff',
+                borderWidth: allergyAlert.hasAlert ? '2px' : '1.5px',
+              }}
+            >
+              {/* Top Row: Index + Form + Name + Quick Actions */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <span
+                  style={{
+                    background: allergyAlert.hasAlert ? '#dc2626' : '#1e40af',
+                    color: 'white',
+                    borderRadius: '50%',
+                    width: 24,
+                    height: 24,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    flexShrink: 0,
+                  }}
+                >
+                  {idx + 1}
+                </span>
 
-                {/* Medicine name autocomplete */}
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
+                {/* Form selector */}
+                <div style={{ width: 110, flexShrink: 0 }}>
+                  <select
+                    className="form-select"
+                    value={med.form}
+                    onChange={e => updateMedicine(med.id, { form: e.target.value as MedicineForm })}
+                    style={{ padding: '8px 10px', fontSize: 13, fontWeight: 600, background: '#f8fafc' }}
+                  >
+                    {MEDICINE_FORMS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                  </select>
+                </div>
+
+                {/* Medicine Name Autocomplete */}
+                <div style={{ flex: 1, minWidth: 220, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <div style={{ flex: 1 }}>
                     <AutocompleteInput
                       value={med.name}
                       onChange={(v) => handleNameChange(med.id, v)}
                       onSelect={(opt) => handleSelectFromCatalog(med.id, opt)}
                       options={catalogOptions}
-                      placeholder="Medicine name (e.g. Tab. Napa 500mg)"
+                      placeholder="Medicine name (e.g. Napa 500mg, Seclo 20mg, Azithrocin 500)"
                       id={`med-name-${med.id}`}
                     />
                   </div>
                   {pregSafety.category !== 'Unknown' && (
-                    <span style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      padding: '2px 6px',
-                      borderRadius: 4,
-                      background: pregSafety.level === 'danger' ? '#fef2f2' : (pregSafety.level === 'caution' ? '#fffbeb' : '#f0fdf4'),
-                      color: pregSafety.level === 'danger' ? '#b91c1c' : (pregSafety.level === 'caution' ? '#b45309' : '#15803d'),
-                      border: `1px solid ${pregSafety.level === 'danger' ? '#fca5a5' : (pregSafety.level === 'caution' ? '#fde68a' : '#bbf7d0')}`,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 3,
-                      flexShrink: 0,
-                    }} title={pregSafety.warningEn}>
-                      {pregSafety.level === 'danger' && <AlertTriangle size={11} />}
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        padding: '4px 8px',
+                        borderRadius: 6,
+                        background: pregSafety.level === 'danger' ? '#fef2f2' : (pregSafety.level === 'caution' ? '#fffbeb' : '#f0fdf4'),
+                        color: pregSafety.level === 'danger' ? '#b91c1c' : (pregSafety.level === 'caution' ? '#b45309' : '#15803d'),
+                        border: `1px solid ${pregSafety.level === 'danger' ? '#fca5a5' : (pregSafety.level === 'caution' ? '#fde68a' : '#bbf7d0')}`,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        flexShrink: 0,
+                      }}
+                      title={pregSafety.warningEn}
+                    >
+                      {pregSafety.level === 'danger' && <AlertTriangle size={12} />}
                       Preg: {pregSafety.category}
                     </span>
                   )}
                 </div>
 
-                {/* Dose quick entry */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-                  <input
-                    className="form-input" style={{ width: 36, padding: '6px 4px', textAlign: 'center', fontSize: 13 }}
-                    value={med.morning} onChange={e => updateMedicine(med.id, { morning: e.target.value })}
-                    title="Morning" aria-label="Morning dose"
-                  />
-                  <span style={{ color: '#94a3b8', fontSize: 11 }}>+</span>
-                  <input
-                    className="form-input" style={{ width: 36, padding: '6px 4px', textAlign: 'center', fontSize: 13 }}
-                    value={med.afternoon} onChange={e => updateMedicine(med.id, { afternoon: e.target.value })}
-                    title="Afternoon" aria-label="Afternoon dose"
-                  />
-                  <span style={{ color: '#94a3b8', fontSize: 11 }}>+</span>
-                  <input
-                    className="form-input" style={{ width: 36, padding: '6px 4px', textAlign: 'center', fontSize: 13 }}
-                    value={med.evening} onChange={e => updateMedicine(med.id, { evening: e.target.value })}
-                    title="Evening" aria-label="Evening dose"
-                  />
-                </div>
-
                 {/* Actions */}
-                <button className="btn-icon" onClick={() => duplicateMedicine(med)} title="Duplicate"><Copy size={14} /></button>
-                <button className="btn-icon" onClick={() => setExpandedId(isExpanded ? null : med.id)} title="More options">
-                  {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                </button>
-                <button className="btn-icon" style={{ color: '#ef4444' }} onClick={() => removeMedicine(med.id)} title="Remove">
-                  <Trash2 size={14} />
-                </button>
-              </div>
-
-              {/* Expanded Details */}
-              {isExpanded && (
-                <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
-                  {/* Form */}
-                  <div>
-                    <label className="form-label">Form</label>
-                    <select className="form-select" value={med.form}
-                      onChange={e => updateMedicine(med.id, { form: e.target.value as MedicineForm })}>
-                      {MEDICINE_FORMS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
-                    </select>
-                  </div>
-
-                  {/* Timing */}
-                  <div>
-                    <label className="form-label">Timing</label>
-                    <select className="form-select" value={med.timing ?? ''}
-                      onChange={e => updateMedicine(med.id, { timing: e.target.value })}>
-                      <option value="">None</option>
-                      {TIMING_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                  </div>
-
-                  {/* Duration */}
-                  <div>
-                    <label className="form-label">Duration</label>
-                    <select className="form-select" value={med.duration ?? ''}
-                      onChange={e => updateMedicine(med.id, { duration: e.target.value })}>
-                      <option value="">None</option>
-                      {DURATION_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
-                    </select>
-                  </div>
-
-                  {/* Strength */}
-                  <div>
-                    <label className="form-label">Strength</label>
-                    <input className="form-input" value={med.strength ?? ''} placeholder="e.g. 500mg"
-                      onChange={e => updateMedicine(med.id, { strength: e.target.value })} />
-                  </div>
-
-                  {/* Instruction (full width) */}
-                  <div style={{ gridColumn: '1/-1' }}>
-                    <label className="form-label">Special Instruction (Bangla/English)</label>
-                    <input className="form-input" value={med.instruction ?? ''} placeholder="e.g. খাবারের আধ ঘন্টা আগে / Take with full glass of water"
-                      onChange={e => updateMedicine(med.id, { instruction: e.target.value })} />
-                  </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                  <button className="btn-icon" onClick={() => duplicateMedicine(med)} title="Duplicate medicine">
+                    <Copy size={16} />
+                  </button>
+                  <button
+                    className="btn-icon"
+                    onClick={() => setExpandedId(isExpanded ? null : med.id)}
+                    title={isExpanded ? 'Hide extra fields' : 'More fields (Strength, Route)'}
+                    style={isExpanded ? { background: '#e0e7ff', color: '#1e40af' } : {}}
+                  >
+                    {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  </button>
+                  <button
+                    className="btn-icon"
+                    style={{ color: '#ef4444' }}
+                    onClick={() => removeMedicine(med.id)}
+                    title="Remove medicine"
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
-              )}
-
-              {/* Quick dose & timing chips for lightning-fast entry */}
-              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 6, paddingLeft: 46 }}>
-                {[
-                  { label: '1+0+1', m: '1', a: '0', e: '1' },
-                  { label: '1+1+1', m: '1', a: '1', e: '1' },
-                  { label: '0+0+1', m: '0', a: '0', e: '1' },
-                  { label: '1+0+0', m: '1', a: '0', e: '0' },
-                ].map(d => (
-                  <button
-                    key={d.label}
-                    type="button"
-                    style={{
-                      cursor: 'pointer',
-                      fontSize: 11,
-                      fontWeight: 600,
-                      padding: '2px 7px',
-                      borderRadius: 6,
-                      background: (med.morning === d.m && med.afternoon === d.a && med.evening === d.e) ? '#dbeafe' : '#f1f5f9',
-                      color: (med.morning === d.m && med.afternoon === d.a && med.evening === d.e) ? '#1e40af' : '#475569',
-                      border: (med.morning === d.m && med.afternoon === d.a && med.evening === d.e) ? '1px solid #93c5fd' : '1px solid #e2e8f0'
-                    }}
-                    onClick={() => updateMedicine(med.id, { morning: d.m, afternoon: d.a, evening: d.e })}
-                  >
-                    {d.label}
-                  </button>
-                ))}
-
-                <span style={{ color: '#cbd5e1', margin: '0 2px' }}>|</span>
-
-                {['খাবারের পরে', 'খাবারের আগে', 'খালি পেটে'].map(t => (
-                  <button
-                    key={t}
-                    type="button"
-                    style={{
-                      cursor: 'pointer',
-                      fontSize: 11,
-                      padding: '2px 7px',
-                      borderRadius: 6,
-                      background: med.timing === t ? '#dcfce7' : '#f8fafc',
-                      color: med.timing === t ? '#166534' : '#64748b',
-                      border: med.timing === t ? '1px solid #86efac' : '1px solid #e2e8f0',
-                      fontFamily: 'var(--font-bn)'
-                    }}
-                    onClick={() => updateMedicine(med.id, { timing: t })}
-                  >
-                    {t}
-                  </button>
-                ))}
-
-                <span style={{ color: '#cbd5e1', margin: '0 2px' }}>|</span>
-
-                {['৩ দিন', '৫ দিন', '৭ দিন', '১৪ দিন', '১ মাস', 'চলবে'].map(dur => (
-                  <button
-                    key={dur}
-                    type="button"
-                    style={{
-                      cursor: 'pointer',
-                      fontSize: 11,
-                      padding: '2px 7px',
-                      borderRadius: 6,
-                      background: med.duration === dur ? '#fef3c7' : '#f8fafc',
-                      color: med.duration === dur ? '#92400e' : '#64748b',
-                      border: med.duration === dur ? '1px solid #fde68a' : '1px solid #e2e8f0',
-                      fontFamily: 'var(--font-bn)'
-                    }}
-                    onClick={() => updateMedicine(med.id, { duration: dur })}
-                  >
-                    {dur}
-                  </button>
-                ))}
               </div>
-
-              {/* Quick dose preview */}
-              {!isExpanded && med.name && (
-                <div style={{ marginTop: 4, fontSize: 11, color: '#64748b', paddingLeft: 46 }}>
-                  {med.morning}+{med.afternoon}+{med.evening}
-                  {med.timing && ` · ${med.timing}`}
-                  {med.duration && ` · ${med.duration}`}
-                </div>
-              )}
 
               {/* Allergy Warning Alert Banner */}
               {allergyAlert.hasAlert && (
-                <div style={{
-                  marginTop: 8,
-                  padding: '6px 12px',
-                  background: '#fef2f2',
-                  border: '1px solid #fecaca',
-                  borderRadius: 6,
-                  color: '#991b1b',
-                  fontSize: 11,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                }}>
-                  <ShieldAlert size={16} color="#dc2626" style={{ flexShrink: 0 }} />
+                <div
+                  style={{
+                    marginTop: 8,
+                    padding: '8px 12px',
+                    background: '#fef2f2',
+                    border: '1.5px solid #f87171',
+                    borderRadius: 8,
+                    color: '#991b1b',
+                    fontSize: 12,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}
+                >
+                  <ShieldAlert size={18} color="#dc2626" style={{ flexShrink: 0 }} />
                   <div>
                     <span style={{ fontWeight: 700 }}>{allergyAlert.warningEn}</span>
                     <span style={{ marginLeft: 6, fontFamily: 'var(--font-bn)' }}>({allergyAlert.warningBn})</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Middle Row: Dose (Morning/Noon/Night) + Quick Dose Pills + Timing + Duration */}
+              <div
+                style={{
+                  marginTop: 10,
+                  paddingTop: 10,
+                  borderTop: '1px solid #e2e8f0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 14,
+                  flexWrap: 'wrap',
+                }}
+              >
+                {/* Labeled Dosage Inputs */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f8fafc', padding: '4px 10px', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#1e3a8a', marginRight: 4 }}>ডোজ:</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: '#64748b', marginBottom: 2 }}>সকাল</span>
+                    <input
+                      className="form-input"
+                      style={{ width: 44, padding: '5px 4px', textAlign: 'center', fontSize: 14, fontWeight: 700, background: 'white' }}
+                      value={med.morning}
+                      onChange={e => updateMedicine(med.id, { morning: e.target.value })}
+                      title="Morning / সকাল"
+                    />
+                  </div>
+                  <span style={{ color: '#94a3b8', fontWeight: 700, marginTop: 14 }}>+</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: '#64748b', marginBottom: 2 }}>দুপুর</span>
+                    <input
+                      className="form-input"
+                      style={{ width: 44, padding: '5px 4px', textAlign: 'center', fontSize: 14, fontWeight: 700, background: 'white' }}
+                      value={med.afternoon}
+                      onChange={e => updateMedicine(med.id, { afternoon: e.target.value })}
+                      title="Afternoon / দুপুর"
+                    />
+                  </div>
+                  <span style={{ color: '#94a3b8', fontWeight: 700, marginTop: 14 }}>+</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: '#64748b', marginBottom: 2 }}>রাত</span>
+                    <input
+                      className="form-input"
+                      style={{ width: 44, padding: '5px 4px', textAlign: 'center', fontSize: 14, fontWeight: 700, background: 'white' }}
+                      value={med.evening}
+                      onChange={e => updateMedicine(med.id, { evening: e.target.value })}
+                      title="Night / রাত"
+                    />
+                  </div>
+                </div>
+
+                {/* Quick Dose Pills */}
+                <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}>
+                  {[
+                    { label: '1+0+1', m: '1', a: '0', e: '1' },
+                    { label: '1+1+1', m: '1', a: '1', e: '1' },
+                    { label: '0+0+1', m: '0', a: '0', e: '1' },
+                    { label: '1+0+0', m: '1', a: '0', e: '0' },
+                  ].map(d => (
+                    <button
+                      key={d.label}
+                      type="button"
+                      style={{
+                        cursor: 'pointer',
+                        fontSize: 11.5,
+                        fontWeight: 700,
+                        padding: '4px 8px',
+                        borderRadius: 6,
+                        background: (med.morning === d.m && med.afternoon === d.a && med.evening === d.e) ? '#dbeafe' : '#f8fafc',
+                        color: (med.morning === d.m && med.afternoon === d.a && med.evening === d.e) ? '#1e40af' : '#475569',
+                        border: (med.morning === d.m && med.afternoon === d.a && med.evening === d.e) ? '1.5px solid #93c5fd' : '1px solid #cbd5e1',
+                      }}
+                      onClick={() => updateMedicine(med.id, { morning: d.m, afternoon: d.a, evening: d.e })}
+                    >
+                      {d.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Timing */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 170 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#334155', whiteSpace: 'nowrap' }}>নিয়ম:</span>
+                  <select
+                    className="form-select"
+                    value={med.timing ?? 'খাবারের পরে'}
+                    onChange={e => updateMedicine(med.id, { timing: e.target.value })}
+                    style={{ padding: '7px 10px', fontSize: 13 }}
+                  >
+                    {TIMING_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+
+                {/* Duration */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, width: 150 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#334155', whiteSpace: 'nowrap' }}>মেয়াদ:</span>
+                  <select
+                    className="form-select"
+                    value={med.duration ?? '৭ দিন'}
+                    onChange={e => updateMedicine(med.id, { duration: e.target.value })}
+                    style={{ padding: '7px 10px', fontSize: 13 }}
+                  >
+                    {DURATION_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {/* Bottom Row: Instruction & Quick Suggestions (Always visible) */}
+              <div
+                style={{
+                  marginTop: 10,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <div style={{ flex: 1, minWidth: 240, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#475569', whiteSpace: 'nowrap' }}>নির্দেশনা:</span>
+                  <input
+                    className="form-input"
+                    value={med.instruction ?? ''}
+                    placeholder="বিশেষ নির্দেশনা (যেমন: খাবারের ৩০ মিনিট আগে, ভরা পেটে, ব্যথা হলে খাবেন)"
+                    onChange={e => updateMedicine(med.id, { instruction: e.target.value })}
+                    style={{ padding: '7px 11px', fontSize: 13 }}
+                  />
+                </div>
+
+                {/* Quick instruction chips */}
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                  {['খাবারের ৩০ মিনিট আগে', 'ভরা পেটে খাবেন', 'ব্যথা হলে খাবেন', 'ঘুমানোর আগে'].map(chip => (
+                    <button
+                      key={chip}
+                      type="button"
+                      className="badge badge-gray"
+                      style={{ cursor: 'pointer', fontSize: 11, padding: '3px 8px' }}
+                      onClick={() => updateMedicine(med.id, { instruction: chip })}
+                    >
+                      {chip}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Extra Details (Strength, Route) if expanded */}
+              {isExpanded && (
+                <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px dashed #cbd5e1', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                  <div>
+                    <label className="form-label">Strength</label>
+                    <input
+                      className="form-input"
+                      value={med.strength ?? ''}
+                      placeholder="e.g. 500mg / 20mg / 10ml"
+                      onChange={e => updateMedicine(med.id, { strength: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label">Route</label>
+                    <select
+                      className="form-select"
+                      value={med.route ?? 'Oral'}
+                      onChange={e => updateMedicine(med.id, { route: e.target.value })}
+                    >
+                      <option value="Oral">Oral (মুখে খাবার)</option>
+                      <option value="IV">IV (শিরায়)</option>
+                      <option value="IM">IM (মাংসপেশিতে)</option>
+                      <option value="Topical">Topical (ত্বকে বাহ্যিক)</option>
+                      <option value="Inhalation">Inhalation (শ্বাসের সাথে)</option>
+                      <option value="Nasal">Nasal (নাকে)</option>
+                      <option value="Ophthalmic">Ophthalmic (চোখে)</option>
+                      <option value="Otic">Otic (কানে)</option>
+                      <option value="Rectal">Rectal (পায়ুপথে)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="form-label">Quantity</label>
+                    <input
+                      className="form-input"
+                      value={med.quantity ?? ''}
+                      placeholder="e.g. 14 tablets / 1 bottle"
+                      onChange={e => updateMedicine(med.id, { quantity: e.target.value })}
+                    />
                   </div>
                 </div>
               )}

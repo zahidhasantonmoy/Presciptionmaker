@@ -50,6 +50,7 @@ export function AutocompleteInput({
     if (e.key === 'Enter' && filtered[highlighted]) {
       e.preventDefault();
       onSelect(filtered[highlighted]);
+      onChange(filtered[highlighted].label);
       setOpen(false);
     }
     if (e.key === 'Escape') setOpen(false);
