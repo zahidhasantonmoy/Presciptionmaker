@@ -3,6 +3,7 @@ import {
   LayoutDashboard, FilePlus, History, BookOpen, Settings, Stethoscope, Globe
 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
+import { DoctorSwitcher } from './DoctorSwitcher';
 
 const NAV_ITEMS = [
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -47,25 +48,8 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* Doctor name */}
-      {doctorProfile && (
-        <div style={{
-          margin: '0 12px 12px', background: 'rgba(255,255,255,0.1)',
-          borderRadius: 8, padding: '8px 12px',
-        }}>
-          <div style={{ color: 'white', fontSize: 12, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {doctorProfile.name}
-          </div>
-          {doctorProfile.nameBn && (
-            <div className="bn" style={{ color: '#93c5fd', fontSize: 11, fontFamily: 'var(--font-bn)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {doctorProfile.nameBn}
-            </div>
-          )}
-          <div style={{ color: '#bfdbfe', fontSize: 10, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {doctorProfile.specialty || 'Doctor'}
-          </div>
-        </div>
-      )}
+      {/* Doctor Profile Switcher */}
+      <DoctorSwitcher />
 
       {/* Nav */}
       <nav style={{ flex: 1, padding: '4px 0' }}>

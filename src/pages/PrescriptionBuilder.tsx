@@ -12,6 +12,7 @@ import { InvestigationEntry } from '../components/prescription/InvestigationEntr
 import { AdviceEntry } from '../components/prescription/AdviceEntry';
 import { PrintPreviewModal } from '../components/prescription/PrintPreviewModal';
 import { KeyboardShortcutsModal } from '../components/modals/KeyboardShortcutsModal';
+import { DoctorSwitcher } from '../components/layout/DoctorSwitcher';
 import { useToast } from '../components/ui/Toast';
 import { calculateAge, formatDateForInput, formatDateDisplay } from '../utils/dateUtils';
 import type { Prescription, PrescriptionTheme } from '../types';
@@ -59,7 +60,7 @@ function SectionHeader({ title, icon, isOpen, onToggle, count }: SectionHeaderPr
 
 export function PrescriptionBuilder() {
   const {
-    currentPrescription, doctorProfile, prescriptionTemplates, updateCurrentPrescription,
+    currentPrescription, doctorProfile, doctorProfiles, activeDoctorId, prescriptionTemplates, updateCurrentPrescription,
     createPrescription, savePrescription, settings, prescriptions
   } = useStore();
   const { showToast } = useToast();
@@ -93,6 +94,7 @@ export function PrescriptionBuilder() {
   if (!currentPrescription) return <div style={{ padding: 32, textAlign: 'center', color: '#94a3b8' }}>Loading...</div>;
 
   const rx = currentPrescription;
+  const effectiveDoctor = doctorProfiles.find(d => d.id === rx.doctorProfileId) || doctorProfile || doctorProfiles[0];
 
   const update = (updates: Partial<Prescription>) => updateCurrentPrescription(updates);
 
@@ -205,9 +207,10 @@ export function PrescriptionBuilder() {
           background: 'white', padding: '12px 16px', borderRadius: 12,
           border: '1px solid #e2e8f0', position: 'sticky', top: 0, zIndex: 10,
         }}>
-          <span style={{ fontWeight: 700, color: '#1e40af', fontSize: 16, marginRight: 8 }}>
+          <span style={{ fontWeight: 700, color: '#1e40af', fontSize: 16, marginRight: 4 }}>
             ✍️ New Prescription
           </span>
+          <DoctorSwitcher compact />
           <button className="btn-ghost btn-sm" onClick={() => setShowTemplatePanel(!showTemplatePanel)}>
             <BookOpen size={14} /> Templates
           </button>
@@ -606,7 +609,7 @@ export function PrescriptionBuilder() {
                 top: 0,
                 left: 0,
               }}>
-                <PrescriptionPreview prescription={rx} doctorProfile={doctorProfile} />
+                <PrescriptionPreview prescription={rx} doctorProfile={effectiveDoctor} />
               </div>
             </div>
           </div>
@@ -617,7 +620,7 @@ export function PrescriptionBuilder() {
       {showPrintModal && (
         <PrintPreviewModal
           prescription={rx}
-          doctorProfile={doctorProfile}
+          doctorProfile={effectiveDoctor}
           onClose={() => setShowPrintModal(false)}
         />
       )}
