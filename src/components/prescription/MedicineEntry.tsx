@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Star, Copy, GripVertical, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, Star, Copy, GripVertical, ChevronDown, ChevronUp, Calculator, ShieldAlert, AlertTriangle } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import type { PrescriptionMedicine, MedicineForm } from '../../types';
 import { AutocompleteInput } from '../ui/AutocompleteInput';
 import { useStore } from '../../store/useStore';
+import { checkDrugAllergy, getPregnancySafety } from '../../utils/clinicalSafety';
+import { PediatricDoseCalculatorModal } from '../modals/PediatricDoseCalculatorModal';
 
 const MEDICINE_FORMS: { value: MedicineForm; label: string }[] = [
   { value: 'tablet', label: 'Tablet' },
@@ -41,12 +43,15 @@ function emptyMedicine(): PrescriptionMedicine {
 interface MedicineEntryProps {
   medicines: PrescriptionMedicine[];
   onChange: (medicines: PrescriptionMedicine[]) => void;
+  patientAllergies?: string;
+  patientWeight?: string;
 }
 
-export function MedicineEntry({ medicines, onChange }: MedicineEntryProps) {
+export function MedicineEntry({ medicines, onChange, patientAllergies, patientWeight }: MedicineEntryProps) {
   const medicineCatalog = useStore(s => s.medicineCatalog);
   const addToCatalog = useStore(s => s.addToCatalog);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [showPediaModal, setShowPediaModal] = useState(false);
 
   const catalogOptions = medicineCatalog
     .sort((a, b) => (b.useCount ?? 0) - (a.useCount ?? 0))
@@ -110,27 +115,49 @@ export function MedicineEntry({ medicines, onChange }: MedicineEntryProps) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {medicines.map((med, idx) => {
           const isExpanded = expandedId === med.id;
+          const allergyAlert = checkDrugAllergy(med.name, med.genericName, patientAllergies);
+          const pregSafety = getPregnancySafety(med.name, med.genericName);
           return (
-            <div key={med.id} className="medicine-card">
+            <div key={med.id} className="medicine-card" style={allergyAlert.hasAlert ? { borderColor: '#fca5a5', background: '#fff5f5' } : undefined}>
               {/* Medicine Header Row */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span className="drag-handle" title="Drag to reorder"><GripVertical size={16} /></span>
                 <span style={{
-                  background: '#1e40af', color: 'white', borderRadius: '50%',
+                  background: allergyAlert.hasAlert ? '#dc2626' : '#1e40af', color: 'white', borderRadius: '50%',
                   width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 11, fontWeight: 700, flexShrink: 0,
                 }}>{idx + 1}</span>
 
                 {/* Medicine name autocomplete */}
-                <div style={{ flex: 1 }}>
-                  <AutocompleteInput
-                    value={med.name}
-                    onChange={(v) => handleNameChange(med.id, v)}
-                    onSelect={(opt) => handleSelectFromCatalog(med.id, opt)}
-                    options={catalogOptions}
-                    placeholder="Medicine name (e.g. Tab. Napa 500mg)"
-                    id={`med-name-${med.id}`}
-                  />
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ flex: 1 }}>
+                    <AutocompleteInput
+                      value={med.name}
+                      onChange={(v) => handleNameChange(med.id, v)}
+                      onSelect={(opt) => handleSelectFromCatalog(med.id, opt)}
+                      options={catalogOptions}
+                      placeholder="Medicine name (e.g. Tab. Napa 500mg)"
+                      id={`med-name-${med.id}`}
+                    />
+                  </div>
+                  {pregSafety.category !== 'Unknown' && (
+                    <span style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      padding: '2px 6px',
+                      borderRadius: 4,
+                      background: pregSafety.level === 'danger' ? '#fef2f2' : (pregSafety.level === 'caution' ? '#fffbeb' : '#f0fdf4'),
+                      color: pregSafety.level === 'danger' ? '#b91c1c' : (pregSafety.level === 'caution' ? '#b45309' : '#15803d'),
+                      border: `1px solid ${pregSafety.level === 'danger' ? '#fca5a5' : (pregSafety.level === 'caution' ? '#fde68a' : '#bbf7d0')}`,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 3,
+                      flexShrink: 0,
+                    }} title={pregSafety.warningEn}>
+                      {pregSafety.level === 'danger' && <AlertTriangle size={11} />}
+                      Preg: {pregSafety.category}
+                    </span>
+                  )}
                 </div>
 
                 {/* Dose quick entry */}
@@ -292,14 +319,67 @@ export function MedicineEntry({ medicines, onChange }: MedicineEntryProps) {
                   {med.duration && ` · ${med.duration}`}
                 </div>
               )}
+
+              {/* Allergy Warning Alert Banner */}
+              {allergyAlert.hasAlert && (
+                <div style={{
+                  marginTop: 8,
+                  padding: '6px 12px',
+                  background: '#fef2f2',
+                  border: '1px solid #fecaca',
+                  borderRadius: 6,
+                  color: '#991b1b',
+                  fontSize: 11,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}>
+                  <ShieldAlert size={16} color="#dc2626" style={{ flexShrink: 0 }} />
+                  <div>
+                    <span style={{ fontWeight: 700 }}>{allergyAlert.warningEn}</span>
+                    <span style={{ marginLeft: 6, fontFamily: 'var(--font-bn)' }}>({allergyAlert.warningBn})</span>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
       </div>
 
-      <button className="btn-secondary" style={{ marginTop: 10, width: '100%' }} onClick={addMedicine}>
-        <Plus size={15} /> Add Medicine
-      </button>
+      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+        <button className="btn-secondary" style={{ flex: 1 }} onClick={addMedicine}>
+          <Plus size={15} /> Add Medicine
+        </button>
+        <button
+          type="button"
+          className="btn-ghost"
+          style={{
+            color: '#16a34a',
+            border: '1px solid #bbf7d0',
+            background: '#f0fdf4',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            fontWeight: 600,
+            fontSize: 12,
+            padding: '8px 14px',
+          }}
+          onClick={() => setShowPediaModal(true)}
+          title="Pediatric Dosage Calculator"
+        >
+          <Calculator size={15} /> Pediatric Dose Calc
+        </button>
+      </div>
+
+      {showPediaModal && (
+        <PediatricDoseCalculatorModal
+          initialWeight={patientWeight}
+          onClose={() => setShowPediaModal(false)}
+          onAddMedicine={(newMed) => {
+            onChange([...medicines, newMed]);
+          }}
+        />
+      )}
     </div>
   );
 }
