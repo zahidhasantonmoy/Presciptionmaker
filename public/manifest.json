@@ -1,0 +1,18 @@
+{
+  "short_name": "EasyPad",
+  "name": "EasyPad – Prescription Software for Doctors",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#f8fafc",
+  "theme_color": "#1e40af",
+  "display": "standalone",
+  "orientation": "any",
+  "categories": ["medical", "productivity", "utilities"],
+  "description": "High-efficiency prescription maker and medical record organizer for doctors in Bangladesh."
+}
