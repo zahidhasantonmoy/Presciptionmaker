@@ -3,8 +3,9 @@ import { Plus, Trash2, Edit3, Save, Star, X } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useToast } from '../components/ui/Toast';
 import { ConfirmModal } from '../components/ui/Modal';
-import type { PrescriptionTemplate } from '../types';
+import type { PrescriptionTemplate, Prescription } from '../types';
 import { v4 as uuidv4 } from 'uuid';
+import { SANOWARA_SAMPLE_PATIENT } from '../data/defaults';
 
 export function TemplatesPage() {
   const {
@@ -12,6 +13,8 @@ export function TemplatesPage() {
     medicineCatalog, adviceTemplates, saveAdviceTemplate, deleteAdviceTemplate,
     toggleAdviceFavorite, toggleMedicineFavorite, toggleDiagnosisFavorite,
     diagnosisCatalog, testCatalog, toggleTestFavorite,
+    createPrescription, updateCurrentPrescription, setActivePage,
+    doctorProfiles, setActiveDoctorId,
   } = useStore();
   const { showToast } = useToast();
 
@@ -22,6 +25,43 @@ export function TemplatesPage() {
   const [newAdviceContent, setNewAdviceContent] = useState('');
   const [newAdviceContentBn, setNewAdviceContentBn] = useState('');
   const [showNewAdvice, setShowNewAdvice] = useState(false);
+
+  const handleUseTemplate = (t: PrescriptionTemplate, loadCase = false) => {
+    const rx = createPrescription();
+    const updates: Partial<Prescription> = {
+      diagnoses: t.diagnoses.map(d => ({ ...d, id: uuidv4() })),
+      medicines: t.medicines.map(m => ({ ...m, id: uuidv4() })),
+      investigations: t.investigations.map(i => ({ ...i, id: uuidv4() })),
+      advice: t.advice,
+      followUpText: t.followUpText,
+      complaints: t.complaints || '',
+      history: t.history || '',
+      additionalNotes: t.additionalNotes || '',
+    };
+    if (t.theme) {
+      updates.theme = t.theme;
+    }
+    if (loadCase && t.id === 'template-sanowara-ortho-plid') {
+      updates.patient = {
+        ...rx.patient,
+        name: SANOWARA_SAMPLE_PATIENT.name,
+        patientId: SANOWARA_SAMPLE_PATIENT.patientId,
+        age: SANOWARA_SAMPLE_PATIENT.age,
+        gender: SANOWARA_SAMPLE_PATIENT.gender,
+      };
+      updates.date = '2026-09-21T10:00:00.000Z';
+    }
+    if (t.doctorProfileId) {
+      const doc = doctorProfiles.find(p => p.id === t.doctorProfileId);
+      if (doc) {
+        setActiveDoctorId(doc.id);
+        updates.doctorProfileId = doc.id;
+      }
+    }
+    updateCurrentPrescription(updates);
+    setActivePage('builder');
+    showToast(`Prescription created with template "${t.name}"`, 'success');
+  };
 
   const handleDeleteTemplate = (id: string) => {
     deletePrescriptionTemplate(id);
@@ -104,6 +144,29 @@ export function TemplatesPage() {
                   {t.medicines.length > 0 && <div>💊 {t.medicines.length} medicine{t.medicines.length !== 1 ? 's' : ''}</div>}
                   {t.investigations.length > 0 && <div>🔬 {t.investigations.length} test{t.investigations.length !== 1 ? 's' : ''}</div>}
                   {t.advice && <div>📋 Has advice</div>}
+                </div>
+                <div style={{ display: 'flex', gap: 6, marginTop: 14, paddingTop: 10, borderTop: '1px solid #f1f5f9' }}>
+                  <button
+                    className="btn-primary btn-sm"
+                    style={{
+                      flex: 1, fontSize: 12,
+                      background: t.id === 'template-sanowara-ortho-plid' ? '#6b1a4f' : undefined,
+                      borderColor: t.id === 'template-sanowara-ortho-plid' ? '#6b1a4f' : undefined
+                    }}
+                    onClick={() => handleUseTemplate(t, false)}
+                  >
+                    ✍️ Use in Prescription
+                  </button>
+                  {t.id === 'template-sanowara-ortho-plid' && (
+                    <button
+                      className="btn-ghost btn-sm"
+                      style={{ fontSize: 11, color: '#6b1a4f', borderColor: '#6b1a4f', background: '#fce7f3', fontWeight: 600 }}
+                      onClick={() => handleUseTemplate(t, true)}
+                      title="Load complete Sanowara case with patient info, Dr. Mizan profile, & all clinical data"
+                    >
+                      Load Patient Case
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

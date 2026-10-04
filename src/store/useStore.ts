@@ -6,7 +6,11 @@ import type {
   MedicineTemplate, MedicineCatalogItem, AdviceTemplate, AppSettings
 } from '../types';
 import { getDhakaNow } from '../utils/dateUtils';
-import { DEMO_TEMPLATES, DEFAULT_MEDICINE_CATALOG, DEFAULT_DIAGNOSIS_CATALOG, DEFAULT_TEST_CATALOG, DEFAULT_ADVICE_TEMPLATES, DEFAULT_DOCTOR_PROFILE } from '../data/defaults';
+import {
+  DEMO_TEMPLATES, DEFAULT_MEDICINE_CATALOG, DEFAULT_DIAGNOSIS_CATALOG,
+  DEFAULT_TEST_CATALOG, DEFAULT_ADVICE_TEMPLATES, DEFAULT_DOCTOR_PROFILE,
+  DEFAULT_DOCTOR_PROFILES, DR_MIZAN_PROFILE, SANOWARA_ORTHO_TEMPLATE
+} from '../data/defaults';
 
 const DEFAULT_SETTINGS: AppSettings = {
   language: 'en',
@@ -72,7 +76,7 @@ export const useStore = create<Store>()(
   persist(
     (set, get) => ({
       // ─── Initial State ─────────────────────────────────────────────────────
-      doctorProfiles: [DEFAULT_DOCTOR_PROFILE],
+      doctorProfiles: DEFAULT_DOCTOR_PROFILES,
       activeDoctorId: DEFAULT_DOCTOR_PROFILE.id,
       doctorProfile: DEFAULT_DOCTOR_PROFILE,
       patients: [],
@@ -394,12 +398,25 @@ export const useStore = create<Store>()(
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {
-          if ((!state.doctorProfiles || state.doctorProfiles.length === 0) && state.doctorProfile) {
-            state.doctorProfiles = [state.doctorProfile];
-            state.activeDoctorId = state.doctorProfile.id;
-          } else if (state.doctorProfiles && state.doctorProfiles.length > 0 && !state.activeDoctorId) {
-            state.activeDoctorId = state.doctorProfiles[0].id;
-            state.doctorProfile = state.doctorProfiles[0];
+          if (!state.doctorProfiles || state.doctorProfiles.length === 0) {
+            state.doctorProfiles = DEFAULT_DOCTOR_PROFILES;
+            state.activeDoctorId = DEFAULT_DOCTOR_PROFILES[0].id;
+            state.doctorProfile = DEFAULT_DOCTOR_PROFILES[0];
+          } else {
+            if (!state.doctorProfiles.some(p => p.id === DR_MIZAN_PROFILE.id || p.name.includes('Mizanur Rahman'))) {
+              state.doctorProfiles.push(DR_MIZAN_PROFILE);
+            }
+            if (!state.activeDoctorId) {
+              state.activeDoctorId = state.doctorProfiles[0].id;
+              state.doctorProfile = state.doctorProfiles[0];
+            }
+          }
+          if (state.prescriptionTemplates) {
+            if (!state.prescriptionTemplates.some(t => t.id === SANOWARA_ORTHO_TEMPLATE.id || t.name.includes('Sanowara'))) {
+              state.prescriptionTemplates = [SANOWARA_ORTHO_TEMPLATE, ...state.prescriptionTemplates];
+            }
+          } else {
+            state.prescriptionTemplates = DEMO_TEMPLATES;
           }
         }
       },

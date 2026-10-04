@@ -789,3 +789,332 @@ textarea.form-input {
 }
 
 .drag-handle:active { cursor: grabbing; }
+
+/* ─── Sanowara Ortho & Spine Theme ────────────────────────────────────────── */
+.theme-sanowara {
+  font-family: "Noto Sans Bengali", "Kalpurush", "SolaimanLipi", Arial, sans-serif;
+  color: #111;
+}
+
+.theme-sanowara .rx-preview-inner {
+  padding: 16px 20px 12px 20px;
+}
+
+.theme-sanowara .rx-sanowara-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 2px 4px 12px 4px;
+  border-bottom: 2px solid #6b1a4f;
+  margin-bottom: 8px;
+}
+
+.theme-sanowara .rx-sanowara-hl {
+  width: 295px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 13.5px;
+  line-height: 19px;
+  white-space: nowrap;
+}
+
+.theme-sanowara .rx-sanowara-hl .nm {
+  font-size: 17.5px;
+  font-weight: 700;
+  line-height: 24px;
+  letter-spacing: -0.3px;
+  margin-bottom: 3px;
+  color: #111;
+}
+
+.theme-sanowara .red {
+  color: #e0161b;
+  font-weight: 700;
+}
+
+.theme-sanowara .green {
+  color: #1f7a2e;
+}
+
+.theme-sanowara .blue {
+  color: #1b2fa0;
+  font-weight: 700;
+}
+
+.theme-sanowara .b {
+  font-weight: 700;
+}
+
+.theme-sanowara .rx-sanowara-hl .cons {
+  font-size: 15.5px;
+  margin-top: 2px;
+  line-height: 20px;
+}
+
+.theme-sanowara .rx-sanowara-hl .sm {
+  font-size: 12px;
+  font-weight: 700;
+  color: #333;
+}
+
+.theme-sanowara .rx-sanowara-hc {
+  width: 160px;
+  text-align: center;
+  padding-top: 6px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.theme-sanowara .rx-sanowara-hc .reg {
+  font-size: 12.5px;
+  line-height: 17px;
+  margin-top: 4px;
+  white-space: nowrap;
+  font-weight: 600;
+  color: #222;
+}
+
+.theme-sanowara .rx-sanowara-hr {
+  width: 285px;
+  text-align: right;
+  font-size: 12px;
+  line-height: 19px;
+  white-space: nowrap;
+}
+
+.theme-sanowara .rx-sanowara-hr .nm {
+  font-size: 17.5px;
+  font-weight: 700;
+  line-height: 24px;
+  margin-bottom: 3px;
+  color: #111;
+}
+
+.theme-sanowara .rx-sanowara-hr .cons {
+  margin-top: 2px;
+  line-height: 20px;
+}
+
+.theme-sanowara .rx-sanowara-hr .sp {
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+/* Sanowara Wine Patient Bar */
+.theme-sanowara .rx-sanowara-bar {
+  background: #6b1a4f;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  color: #fff;
+  font-size: 14.5px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  gap: 8px;
+}
+
+.theme-sanowara .rx-sanowara-lb {
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.theme-sanowara .rx-sanowara-fld {
+  background: #fff;
+  color: #111;
+  height: 28px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  font-family: "Times New Roman", serif;
+  font-size: 15px;
+  font-weight: 600;
+  margin-right: 8px;
+  white-space: nowrap;
+}
+
+.theme-sanowara .rx-sanowara-fld:last-child {
+  margin-right: 0;
+  margin-left: auto;
+}
+
+/* Sanowara Body & Watermark */
+.theme-sanowara .rx-body {
+  position: relative;
+  border-bottom: 1px solid #999;
+  padding-bottom: 10px;
+  margin-bottom: 6px;
+}
+
+.theme-sanowara .rx-left-col {
+  border-right: 1px solid #888;
+  padding-right: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.theme-sanowara .rx-right-col {
+  padding-left: 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+.theme-sanowara .rx-section-title {
+  color: #111;
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-top: 10px;
+  margin-bottom: 3px;
+}
+
+.theme-sanowara .rx-section-title:first-child {
+  margin-top: 0;
+}
+
+.theme-sanowara .rx-symbol {
+  font-family: "Times New Roman", serif;
+  font-size: 24pt;
+  font-weight: 700;
+  color: #111;
+  margin-bottom: 4px;
+}
+
+/* Sanowara QR Box at bottom of left column */
+.rx-sanowara-qr-box {
+  margin-top: auto;
+  padding-top: 16px;
+  margin-bottom: 4px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-family: Arial, sans-serif;
+  font-size: 8pt;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.rx-sanowara-qr-box .id {
+  font-size: 9.5pt;
+  font-weight: 700;
+  color: #333;
+}
+
+/* Sanowara Advice Box */
+.rx-sanowara-advice-box {
+  border: 1px solid #555;
+  border-radius: 8px;
+  padding: 6px 12px 8px 12px;
+  margin-top: auto;
+  background: #fafafa;
+}
+
+.rx-sanowara-advice-box h4 {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 18px;
+  margin-bottom: 3px;
+  color: #111;
+}
+
+.rx-sanowara-follow {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 6px 0 4px 0;
+}
+
+/* Sanowara Footer */
+.rx-sanowara-footer {
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  border-top: 1px solid #bbb;
+  gap: 12px;
+}
+
+.rx-sanowara-fl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 290px;
+}
+
+.rx-sanowara-fl .tx {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #4a1a4a;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+.rx-sanowara-fl .ad {
+  font-size: 9.5px;
+  color: #222;
+  font-weight: 400;
+  line-height: 14px;
+}
+
+.rx-sanowara-room {
+  background: #3a2a6b;
+  color: #fff;
+  text-align: center;
+  padding: 6px 10px;
+  font-size: 12.5px;
+  line-height: 18px;
+  white-space: nowrap;
+  border-radius: 4px;
+}
+
+.rx-sanowara-hot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rx-sanowara-hot .ht {
+  text-align: center;
+}
+
+.rx-sanowara-hot .r {
+  color: #e0161b;
+  font-weight: 700;
+  font-size: 12.5px;
+  line-height: 16px;
+}
+
+.rx-sanowara-hot .nm {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #222;
+  letter-spacing: 0.5px;
+  line-height: 18px;
+}
+
+.rx-sanowara-hot .pill {
+  background: #3a2a6b;
+  color: #fff;
+  border-radius: 5px;
+  font-size: 9px;
+  padding: 2px 6px;
+  line-height: 12px;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.rx-sanowara-fr {
+  text-align: center;
+  font-style: italic;
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+.rx-sanowara-fr .cl {
+  color: #e0161b;
+  font-weight: 700;
+  font-style: normal;
+}

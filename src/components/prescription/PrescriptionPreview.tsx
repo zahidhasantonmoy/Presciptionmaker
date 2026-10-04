@@ -2,6 +2,9 @@ import React, { forwardRef, useState, useEffect } from 'react';
 import QRCode from 'qrcode';
 import type { Prescription, DoctorProfile, PrescriptionTheme, PrescriptionMedicine } from '../../types';
 import { formatDateDisplay } from '../../utils/dateUtils';
+import {
+  CaduceusEmblem, PopularLogoSvg, HotlinePhoneSvg, JotnoQrSvg
+} from '../../assets/sanowaraAssets';
 
 interface PrescriptionPreviewProps {
   prescription: Prescription;
@@ -32,6 +35,7 @@ function getMedicineDisplayName(med: PrescriptionMedicine): string {
 export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPreviewProps>(
   ({ prescription, doctorProfile, scale = 1 }, ref) => {
     const theme: PrescriptionTheme = prescription.theme ?? 'classic';
+    const isSanowaraTheme = theme === 'sanowara';
     const isPadMode = prescription.printMode === 'pad_only';
     const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
 
@@ -71,6 +75,56 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
                 width: '100%',
               }}>
                 📄 Pre-printed Pad Mode (Doctor Header area reserved for your printed pad stationery)
+              </div>
+            </div>
+          ) : isSanowaraTheme ? (
+            /* Specialized Sanowara Ortho & Spine 3-Column Header */
+            <div className="rx-sanowara-header">
+              <div className="rx-sanowara-hl">
+                <div className="nm">{doctorProfile?.name || 'Dr. Md. Mizanur Rahman (Mizan)'}</div>
+                <div><span className="b">MBBS</span> (SZMC), <span className="b">BCS</span> (Health)</div>
+                <div><span className="red">FCPS</span> (Ortho), <span className="red">MS</span> (Ortho)</div>
+                <div><span className="b green">FACS (USA)</span>, <span className="b">CCD</span> (BIRDEM)</div>
+                <div>Member of AO Spine <span className="green">(Switzerland)</span></div>
+                <div>Special Training in Spine &amp; Trauma</div>
+                <div>(AO Spine &amp; AO Trauma Surgery)</div>
+                <div className="cons red">Consultant</div>
+                <div className="blue" style={{ fontSize: 16 }}>Spine, Ortho &amp; Trauma Surgeon</div>
+                <div className="sm">Dhaka Medical College Hospital (Ex)</div>
+                <div className="sm">Pongu Hospital (NITOR), Dhaka (Ex)</div>
+              </div>
+
+              <div className="rx-sanowara-hc">
+                {doctorProfile?.logoUrl ? (
+                  <img
+                    src={doctorProfile.logoUrl}
+                    alt="Logo"
+                    style={{ width: 68, height: 'auto', display: 'block', margin: '0 auto' }}
+                  />
+                ) : (
+                  <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    <CaduceusEmblem size={72} color="#1b2fa0" />
+                  </div>
+                )}
+                <div className="reg">
+                  BMDC Reg. {doctorProfile?.bmdcNumber || 'A-44183'}
+                  <br />
+                  FCPS Fellow ID : {doctorProfile?.fellowId || '8751'}
+                </div>
+              </div>
+
+              <div className="rx-sanowara-hr bn-text">
+                <div className="nm">{doctorProfile?.nameBn || 'ডাঃ মোঃ মিজানুর রহমান (মিজান)'}</div>
+                <div>এমবিবিএস (এসজেডএমসি), বিসিএস (স্বাস্থ্য)</div>
+                <div><span className="red">এফসিপিএস</span> (অর্থো-সার্জারি), <span className="red">এমএস</span> (অর্থো)</div>
+                <div><span className="green b">এফএপিএম (আমেরিকা)</span>, সিসিডি (বারডেম)</div>
+                <div>মেম্বার এও স্পাইন (সুইজারল্যান্ড)</div>
+                <div>স্পাইন এবং ট্রমা সার্জারিতে বিশেষ প্রশিক্ষণ</div>
+                <div>(এও স্পাইন এবং এও ট্রমা সার্জ্যারি)</div>
+                <div className="cons red">কনসালটেন্ট</div>
+                <div className="sp blue">স্পাইন, অর্থোপেডিক ও ট্রমা সার্জন</div>
+                <div>ঢাকা মেডিকেল কলেজ হাসপাতাল (এক্স)</div>
+                <div>পঙ্গু হাসপাতাল (নিটোর), ঢাকা (এক্স)</div>
               </div>
             </div>
           ) : doctorProfile ? (
@@ -132,51 +186,72 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
           )}
 
           {/* ─── PATIENT BAR ─────────────────────────────────────────────── */}
-          <div className="rx-patient-bar">
-            <div className="rx-patient-field">
-              <span className="rx-patient-label">রোগীর নাম:</span>
-              <span className="rx-patient-value bn-text" style={{ fontFamily: prescription.patient.nameBn ? 'var(--font-bn)' : 'inherit' }}>
-                {prescription.patient.nameBn || prescription.patient.name || '–'}
-              </span>
-              {prescription.patient.nameBn && prescription.patient.name && (
-                <span className="rx-patient-value" style={{ marginLeft: 4, color: '#6b7280' }}>({prescription.patient.name})</span>
+          {isSanowaraTheme ? (
+            <div className="rx-sanowara-bar">
+              <span className="rx-sanowara-lb">রোগীর নাম :</span>
+              <div className="rx-sanowara-fld" style={{ minWidth: 160 }}>
+                {prescription.patient.nameBn || prescription.patient.name || 'Sanowara'}
+              </div>
+              <span className="rx-sanowara-lb">আইডি :</span>
+              <div className="rx-sanowara-fld" style={{ minWidth: 90 }}>
+                {prescription.patient.patientId || prescription.prescriptionNumber || '20265435'}
+              </div>
+              <span className="rx-sanowara-lb">বয়স :</span>
+              <div className="rx-sanowara-fld" style={{ minWidth: 60 }}>
+                {patientAge || '70Y'}
+              </div>
+              <span className="rx-sanowara-lb">তারিখ :</span>
+              <div className="rx-sanowara-fld" style={{ minWidth: 120 }}>
+                {formatDateDisplay(prescription.date)}
+              </div>
+            </div>
+          ) : (
+            <div className="rx-patient-bar">
+              <div className="rx-patient-field">
+                <span className="rx-patient-label">রোগীর নাম:</span>
+                <span className="rx-patient-value bn-text" style={{ fontFamily: prescription.patient.nameBn ? 'var(--font-bn)' : 'inherit' }}>
+                  {prescription.patient.nameBn || prescription.patient.name || '–'}
+                </span>
+                {prescription.patient.nameBn && prescription.patient.name && (
+                  <span className="rx-patient-value" style={{ marginLeft: 4, color: '#6b7280' }}>({prescription.patient.name})</span>
+                )}
+              </div>
+              {prescription.patient.patientId && (
+                <div className="rx-patient-field">
+                  <span className="rx-patient-label">ID:</span>
+                  <span className="rx-patient-value">{prescription.patient.patientId}</span>
+                </div>
               )}
+              {patientAge && (
+                <div className="rx-patient-field">
+                  <span className="rx-patient-label">বয়স:</span>
+                  <span className="rx-patient-value">{patientAge}</span>
+                </div>
+              )}
+              {patientGender && (
+                <div className="rx-patient-field">
+                  <span className="rx-patient-label">Gender:</span>
+                  <span className="rx-patient-value">{patientGender}</span>
+                </div>
+              )}
+              {prescription.patient.weight && (
+                <div className="rx-patient-field">
+                  <span className="rx-patient-label">Wt:</span>
+                  <span className="rx-patient-value">{prescription.patient.weight} kg</span>
+                </div>
+              )}
+              {prescription.patient.bloodPressure && (
+                <div className="rx-patient-field">
+                  <span className="rx-patient-label">BP:</span>
+                  <span className="rx-patient-value">{prescription.patient.bloodPressure} mmHg</span>
+                </div>
+              )}
+              <div className="rx-patient-field" style={{ marginLeft: 'auto' }}>
+                <span className="rx-patient-label">তারিখ:</span>
+                <span className="rx-patient-value">{formatDateDisplay(prescription.date)}</span>
+              </div>
             </div>
-            {prescription.patient.patientId && (
-              <div className="rx-patient-field">
-                <span className="rx-patient-label">ID:</span>
-                <span className="rx-patient-value">{prescription.patient.patientId}</span>
-              </div>
-            )}
-            {patientAge && (
-              <div className="rx-patient-field">
-                <span className="rx-patient-label">বয়স:</span>
-                <span className="rx-patient-value">{patientAge}</span>
-              </div>
-            )}
-            {patientGender && (
-              <div className="rx-patient-field">
-                <span className="rx-patient-label">Gender:</span>
-                <span className="rx-patient-value">{patientGender}</span>
-              </div>
-            )}
-            {prescription.patient.weight && (
-              <div className="rx-patient-field">
-                <span className="rx-patient-label">Wt:</span>
-                <span className="rx-patient-value">{prescription.patient.weight} kg</span>
-              </div>
-            )}
-            {prescription.patient.bloodPressure && (
-              <div className="rx-patient-field">
-                <span className="rx-patient-label">BP:</span>
-                <span className="rx-patient-value">{prescription.patient.bloodPressure} mmHg</span>
-              </div>
-            )}
-            <div className="rx-patient-field" style={{ marginLeft: 'auto' }}>
-              <span className="rx-patient-label">তারিখ:</span>
-              <span className="rx-patient-value">{formatDateDisplay(prescription.date)}</span>
-            </div>
-          </div>
+          )}
 
           {/* ─── PRESCRIPTION NUMBER ──────────────────────────────────────── */}
           {prescription.prescriptionNumber && (
@@ -249,6 +324,26 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
                   </ul>
                 </>
               )}
+
+              {/* Additional Notes in Left Column for treatment plan */}
+              {isSanowaraTheme && prescription.additionalNotes && (
+                <div style={{ marginTop: 10, fontSize: '8.5pt', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                  {prescription.additionalNotes}
+                </div>
+              )}
+
+              {/* Sanowara QR & Jotno Info Box at bottom of left column */}
+              {isSanowaraTheme && (
+                <div className="rx-sanowara-qr-box">
+                  <JotnoQrSvg size={52} />
+                  <div>
+                    <div className="id">P-4G5B4HGSR</div>
+                    <div>JOTNO স্বাস্থ্য এ্যাপ্লিকেশন পেতে</div>
+                    <div>QR কোডটি স্ক্যান করুন</div>
+                    <div>Powered By JOTNO</div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* RIGHT COLUMN */}
@@ -287,39 +382,47 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
 
               {/* Advice */}
               {(prescription.advice || prescription.adviceBn) && (
-                <>
-                  <div className="rx-section-title" style={{ marginTop: 10 }}>পরামর্শ / Advice</div>
-                  {prescription.advice && (
-                    <div style={{ fontSize: '9pt', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{prescription.advice}</div>
-                  )}
-                  {prescription.adviceBn && (
-                    <div className="bn-text" style={{ fontSize: '9pt', lineHeight: 1.6, marginTop: 3 }}>
-                      {prescription.adviceBn}
+                isSanowaraTheme ? (
+                  <div className="rx-sanowara-advice-box">
+                    <h4>পরামর্শ</h4>
+                    <div style={{ fontSize: '8.8pt', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>
+                      {prescription.advice}
                     </div>
-                  )}
-                </>
+                  </div>
+                ) : (
+                  <>
+                    <div className="rx-section-title" style={{ marginTop: 10 }}>পরামর্শ / Advice</div>
+                    {prescription.advice && (
+                      <div style={{ fontSize: '9pt', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{prescription.advice}</div>
+                    )}
+                    {prescription.adviceBn && (
+                      <div className="bn-text" style={{ fontSize: '9pt', lineHeight: 1.6, marginTop: 3 }}>
+                        {prescription.adviceBn}
+                      </div>
+                    )}
+                  </>
+                )
               )}
 
               {/* Follow-up */}
               {(prescription.followUpText || prescription.followUpDate) && (
-                <div style={{ marginTop: 10 }}>
-                  <span className="rx-followup">
-                    পরবর্তী সাক্ষাৎ:{' '}
-                    {prescription.followUpText || (prescription.followUpDate && formatDateDisplay(prescription.followUpDate))}
-                  </span>
+                <div style={{ marginTop: isSanowaraTheme ? 6 : 10 }}>
+                  <div className={isSanowaraTheme ? 'rx-sanowara-follow' : 'rx-followup'}>
+                    পরবর্তী সাক্ষাৎ: {prescription.followUpText || (prescription.followUpDate && formatDateDisplay(prescription.followUpDate))}
+                  </div>
                 </div>
               )}
 
-              {/* Additional Notes */}
-              {prescription.additionalNotes && (
+              {/* Additional Notes (for non-sanowara themes) */}
+              {!isSanowaraTheme && prescription.additionalNotes && (
                 <div style={{ marginTop: 8, fontSize: '8.5pt', color: '#374151', fontStyle: 'italic' }}>
                   {prescription.additionalNotes}
                 </div>
               )}
 
               {/* Signature & QR Code */}
-              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 24, gap: 12 }}>
-                {qrCodeUrl && prescription.showQrCode !== false && (
+              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 16, gap: 12 }}>
+                {!isSanowaraTheme && qrCodeUrl && prescription.showQrCode !== false && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <img src={qrCodeUrl} alt="Rx QR Code" style={{ width: 48, height: 48, borderRadius: 4 }} />
                     <div style={{ fontSize: '6.5pt', color: '#64748b', lineHeight: 1.25 }}>
@@ -345,6 +448,43 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
           {/* ─── FOOTER ──────────────────────────────────────────────────── */}
           {isPadMode ? (
             <div style={{ height: '18mm' }} className="pad-footer-spacing" />
+          ) : isSanowaraTheme ? (
+            <div className="rx-sanowara-footer">
+              <div className="rx-sanowara-fl">
+                <PopularLogoSvg size={44} />
+                <div>
+                  <div className="tx bn-text">
+                    {doctorProfile?.clinicNameBn || 'পপুলার ডায়াগনস্টিক সেন্টার লিঃ'}
+                  </div>
+                  <div className="ad bn-text">
+                    {doctorProfile?.addressBn || 'ডবল-২ ও হোটেল সং-বি-৪৫৪, পলাশীপুর, রাজবাড়ী।'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="rx-sanowara-room bn-text">
+                রুম নং-৩২২
+                <br />
+                ৩য় তলা
+              </div>
+
+              <div className="rx-sanowara-hot">
+                <HotlinePhoneSvg size={40} />
+                <div className="ht bn-text">
+                  <div className="r">হটলাইন</div>
+                  <div className="nm">{doctorProfile?.phone || '০১৬৬৩৬৪৪৬১১'}</div>
+                  <div className="pill">ডাক্তারের সিরিয়ালের তথ্য ও যোগাযোগ</div>
+                </div>
+              </div>
+
+              <div className="rx-sanowara-fr bn-text">
+                রোগী দেখার সময়-
+                <br />
+                বিকাল ৩টা - রাত ৯টা
+                <br />
+                <span className="cl">শুক্রবার বন্ধ।</span>
+              </div>
+            </div>
           ) : (
             <div className="rx-footer">
               <div>

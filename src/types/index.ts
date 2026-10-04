@@ -5,7 +5,7 @@
 export type Gender = 'male' | 'female' | 'other';
 export type MedicineForm = 'tablet' | 'capsule' | 'syrup' | 'injection' | 'cream' | 'ointment' | 'drops' | 'inhaler' | 'suppository' | 'other';
 export type Language = 'en' | 'bn';
-export type PrescriptionTheme = 'classic' | 'minimal' | 'modern' | 'compact';
+export type PrescriptionTheme = 'classic' | 'minimal' | 'modern' | 'compact' | 'sanowara';
 
 // ─── Doctor Profile ───────────────────────────────────────────────────────────
 export interface DoctorProfile {
@@ -133,11 +133,18 @@ export interface PrescriptionTemplate {
   id: string;
   name: string;
   description?: string;
+  complaints?: string;
+  complaintsBn?: string;
+  history?: string;
   diagnoses: Diagnosis[];
   medicines: PrescriptionMedicine[];
   investigations: Investigation[];
   advice: string;
+  adviceBn?: string;
   followUpText?: string;
+  additionalNotes?: string;
+  theme?: PrescriptionTheme;
+  doctorProfileId?: string;
   isDemo?: boolean;
   createdAt: string;
 }

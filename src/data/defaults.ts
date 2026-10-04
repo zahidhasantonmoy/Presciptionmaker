@@ -5,7 +5,7 @@ import type {
 } from '../types';
 
 export const DEFAULT_DOCTOR_PROFILE: DoctorProfile = {
-  id: uuidv4(),
+  id: 'dr-rafiqul-islam-medicine',
   name: 'Prof. Dr. Mohammad Rafiqul Islam',
   nameBn: 'অধ্যাপক ডাঃ মোঃ রফিকুল ইসলাম',
   degrees: 'MBBS, FCPS (Medicine), MD (Internal Medicine)',
@@ -29,7 +29,194 @@ export const DEFAULT_DOCTOR_PROFILE: DoctorProfile = {
   updatedAt: new Date().toISOString(),
 };
 
+export const DR_MIZAN_PROFILE: DoctorProfile = {
+  id: 'dr-mizanur-rahman-ortho',
+  name: 'Dr. Md. Mizanur Rahman (Mizan)',
+  nameBn: 'ডাঃ মোঃ মিজানুর রহমান (মিজান)',
+  degrees: 'MBBS (SZMC), BCS (Health), FCPS (Ortho), MS (Ortho), FACS (USA), CCD (BIRDEM), Member of AO Spine (Switzerland), Special Training in Spine & Trauma (AO Spine & AO Trauma Surgery)',
+  degreesBn: 'এমবিবিএস (এসজেডএমসি), বিসিএস (স্বাস্থ্য), এফসিপিএস (অর্থো-সার্জারি), এমএস (অর্থো), এফএপিএম (আমেরিকা), সিসিডি (বারডেম), মেম্বার এও স্পাইন (সুইজারল্যান্ড), স্পাইন এবং ট্রমা সার্জারিতে বিশেষ প্রশিক্ষণ (এও স্পাইন এবং এও ট্রমা সার্জ্যারি)',
+  specialty: 'Consultant – Spine, Ortho & Trauma Surgeon (Ex Dhaka Medical College Hospital & Pongu Hospital NITOR)',
+  specialtyBn: 'কনসালটেন্ট – স্পাইন, অর্থোপেডিক ও ট্রমা সার্জন (ঢাকা মেডিকেল কলেজ হাসপাতাল ও পঙ্গু হাসপাতাল নিটোর এক্স)',
+  bmdcNumber: 'A-44183',
+  fellowId: '8751',
+  clinicName: 'Popular Diagnostic Centre Ltd.',
+  clinicNameBn: 'পপুলার ডায়াগনস্টিক সেন্টার লিঃ',
+  address: 'Room 322 (3rd Floor), Double-2 & Hotel Song-B-454, Palashipur, Rajbari',
+  addressBn: 'রুম নং-৩২২ (৩য় তলা), ডবল-২ ও হোটেল সং-বি-৪৫৪, পলাশীপুর, রাজবাড়ী।',
+  phone: '01663644611',
+  consultationHours: '3:00 PM – 9:00 PM (Friday Closed)',
+  consultationHoursBn: 'বিকাল ৩টা - রাত ৯টা (শুক্রবার বন্ধ)',
+  footerText: 'Popular Diagnostic Centre Ltd. – Room 322 (3rd Floor) | Hotline: 01663644611',
+  footerTextBn: 'পপুলার ডায়াগনস্টিক সেন্টার লিঃ – রুম নং-৩২২ (৩য় তলা) | হটলাইন: ০১৬৬৩৬৪৪৬১১',
+  showBnHeader: true,
+  theme: 'sanowara',
+  updatedAt: new Date().toISOString(),
+};
+
+export const DEFAULT_DOCTOR_PROFILES: DoctorProfile[] = [
+  DEFAULT_DOCTOR_PROFILE,
+  DR_MIZAN_PROFILE,
+];
+
+export const SANOWARA_SAMPLE_PATIENT = {
+  name: 'Sanowara',
+  patientId: '20265435',
+  age: '70Y',
+  gender: 'female' as const,
+  date: '2026-09-21',
+};
+
+export const SANOWARA_ORTHO_TEMPLATE: PrescriptionTemplate = {
+  id: 'template-sanowara-ortho-plid',
+  name: 'Ortho, Spine & PLID (Sanowara)',
+  description: 'Dr. Md. Mizanur Rahman – Lumbar PLID L4/5 & L5/S1 with Spinal Canal Stenosis (Real Bangladeshi Clinical Case)',
+  complaints: 'LBP with radiculopathy ; Both lower limbs\nDifficulty in walking and prolonged standing',
+  history: 'Medical: H/O Fall',
+  diagnoses: [
+    { id: uuidv4(), text: 'LBP due to Lumbar PLID L4/5 & L5/S1 with Spinal Canal Stenosis' },
+  ],
+  medicines: [
+    {
+      id: uuidv4(),
+      name: 'TAB NAPROXCIN 500mg',
+      genericName: 'Naproxen',
+      form: 'tablet',
+      strength: '500mg',
+      morning: '১',
+      afternoon: '০',
+      evening: '১',
+      timing: 'ভরা পেটে',
+      duration: '১৪ দিন',
+      instruction: 'ভরা পেটে',
+    },
+    {
+      id: uuidv4(),
+      name: 'TAB PANTONIX 20mg',
+      genericName: 'Pantoprazole',
+      form: 'tablet',
+      strength: '20mg',
+      morning: '১',
+      afternoon: '০',
+      evening: '১',
+      timing: 'খাওয়ার ৩০ মিনিট আগে',
+      duration: '১৪ দিন',
+      instruction: 'খাওয়ার ৩০ মিনিট আগে',
+    },
+    {
+      id: uuidv4(),
+      name: 'TAB NEUCOS-B 100mg+200mg+200mcg',
+      genericName: 'VITAMIN B1+VITAMIN B6+VITAMIN B12',
+      form: 'tablet',
+      strength: '100mg+200mg+200mcg',
+      morning: '১',
+      afternoon: '০',
+      evening: '১',
+      timing: 'খাওয়ার পরে',
+      duration: '১ মাস',
+      instruction: 'খাওয়ার পরে',
+    },
+    {
+      id: uuidv4(),
+      name: 'TAB NUMIRA 2.5mg',
+      genericName: 'MIROGABALIN BESYLATE',
+      form: 'tablet',
+      strength: '2.5mg',
+      morning: '০',
+      afternoon: '০',
+      evening: '১',
+      timing: 'রাতে',
+      duration: '১ মাস',
+    },
+    {
+      id: uuidv4(),
+      name: 'TAB CORSIL-DX 600mg+400IU',
+      genericName: 'CORAL CALCIUM+VITAMIN D3',
+      form: 'tablet',
+      strength: '600mg+400IU',
+      morning: '০',
+      afternoon: '০',
+      evening: '১',
+      timing: 'খাওয়ার পরে',
+      duration: '১ মাস',
+    },
+    {
+      id: uuidv4(),
+      name: 'TAB EVION 400mg',
+      genericName: 'Vitamin E',
+      form: 'tablet',
+      strength: '400mg',
+      morning: '১',
+      afternoon: '০',
+      evening: '০',
+      timing: 'খাওয়ার পরে',
+      duration: '১ মাস',
+      instruction: 'খাওয়ার পরে',
+    },
+    {
+      id: uuidv4(),
+      name: 'TAB Zinc-B',
+      genericName: 'Zinc + Vitamin B Complex',
+      form: 'tablet',
+      strength: 'Standard',
+      morning: '১',
+      afternoon: '০',
+      evening: '০',
+      timing: 'খাওয়ার পরে',
+      duration: '১ মাস',
+      instruction: 'খাওয়ার পরে',
+    },
+    {
+      id: uuidv4(),
+      name: 'TAB BIZORAN 5mg+40mg',
+      genericName: 'Amlodipine + Olmesartan',
+      form: 'tablet',
+      strength: '5mg+40mg',
+      morning: '১',
+      afternoon: '০',
+      evening: '১',
+      timing: 'নিয়মিত',
+      duration: 'চলবে',
+    },
+    {
+      id: uuidv4(),
+      name: 'VOLTALIN SUPPOSITORY 50mg',
+      genericName: 'DICLOFENAC SODIUM BP',
+      form: 'suppository',
+      strength: '50mg',
+      morning: '১',
+      afternoon: '০',
+      evening: '০',
+      timing: 'ব্যথা খুব বেশি হলে',
+      duration: 'প্রয়োজনে',
+      instruction: 'পায়খানার রাস্তায়; ব্যথা খুব বেশি হলে',
+    },
+  ],
+  investigations: [
+    { id: uuidv4(), name: 'RBS: 6.42 mmol/L', category: 'lab' },
+    { id: uuidv4(), name: 'Serum Creatinine: 0.77 mg/dl', category: 'lab' },
+    { id: uuidv4(), name: 'S.Uric Acid: 5.3 mg/dl', category: 'lab' },
+    { id: uuidv4(), name: 'RA Test: Negative', category: 'lab' },
+    { id: uuidv4(), name: 'MRI: LUMBOSACRAL SPINE; Moderate Spinal Canal Stenosis, Bulging C4-C6 & Herniation L4/5, L5/S1', category: 'imaging' },
+  ],
+  advice: `১. Hot water ব্যাগ দিয়ে কোমরে সেঁক দিবেন।
+২. Lumbar Corset ব্যবহার করবেন।
+৩. অনেকক্ষণ নিচু হয়ে বা ঝুঁকে কাজ করবেন না। ভারী জিনিস তুলবেন না।
+৪. পাতলা ও নরম একটি বালিশ ব্যবহার করবেন।
+৫. চেয়ারে বসে নামাজ পড়বেন।
+৬. হাই কমোড বা চেয়ার কমোড ব্যবহার করবেন।
+৭. Physio-Therapy: Pelvic Intermittent Traction, IFT, UST, Back Muscle strengthening exercise - Lower Back`,
+  followUpText: '১ মাস পর (BMD রিপোর্ট সহ)',
+  additionalNotes: `Treatment plan:
+Adv: BMD of Lumbar Spine.
+Decompression & Fixation for PLID (Subject to BMD report).`,
+  theme: 'sanowara',
+  doctorProfileId: 'dr-mizanur-rahman-ortho',
+  isDemo: true,
+  createdAt: new Date().toISOString(),
+};
+
 export const DEMO_TEMPLATES: PrescriptionTemplate[] = [
+  SANOWARA_ORTHO_TEMPLATE,
   {
     id: uuidv4(),
     name: 'Upper Respiratory Infection (Demo)',
@@ -96,6 +283,14 @@ export const DEMO_TEMPLATES: PrescriptionTemplate[] = [
 ];
 
 export const DEFAULT_MEDICINE_CATALOG: MedicineCatalogItem[] = [
+  // Ortho & Spine / Anti-inflammatory
+  { id: uuidv4(), name: 'Tab. Naproxcin 500mg', genericName: 'Naproxen', form: 'tablet', strength: '500mg', isFavorite: true, useCount: 20 },
+  { id: uuidv4(), name: 'Tab. Neucos-B', genericName: 'Vitamin B1 + B6 + B12', form: 'tablet', strength: '100mg+200mg+200mcg', isFavorite: true, useCount: 19 },
+  { id: uuidv4(), name: 'Tab. Numira 2.5mg', genericName: 'Mirogabalin Besylate', form: 'tablet', strength: '2.5mg', isFavorite: true, useCount: 16 },
+  { id: uuidv4(), name: 'Tab. Corsil-DX 600mg+400IU', genericName: 'Coral Calcium + Vitamin D3', form: 'tablet', strength: '600mg+400IU', isFavorite: true, useCount: 18 },
+  { id: uuidv4(), name: 'Tab. Evion 400mg', genericName: 'Vitamin E', form: 'tablet', strength: '400mg', isFavorite: true, useCount: 15 },
+  { id: uuidv4(), name: 'Tab. Zinc-B', genericName: 'Zinc + Vitamin B Complex', form: 'tablet', strength: 'Standard', isFavorite: true, useCount: 14 },
+  { id: uuidv4(), name: 'Voltalin Suppository 50mg', genericName: 'Diclofenac Sodium BP', form: 'suppository', strength: '50mg', isFavorite: true, useCount: 12 },
   // Antipyretics / Analgesics
   { id: uuidv4(), name: 'Tab. Napa 500mg', genericName: 'Paracetamol', form: 'tablet', strength: '500mg', isFavorite: true, useCount: 15 },
   { id: uuidv4(), name: 'Tab. Napa Extend 665mg', genericName: 'Paracetamol', form: 'tablet', strength: '665mg', isFavorite: true, useCount: 14 },

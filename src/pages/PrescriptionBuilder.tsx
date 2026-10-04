@@ -16,12 +16,14 @@ import { DoctorSwitcher } from '../components/layout/DoctorSwitcher';
 import { useToast } from '../components/ui/Toast';
 import { calculateAge, formatDateForInput, formatDateDisplay } from '../utils/dateUtils';
 import type { Prescription, PrescriptionTheme } from '../types';
+import { SANOWARA_SAMPLE_PATIENT } from '../data/defaults';
 
 const THEME_OPTIONS: { value: PrescriptionTheme; label: string }[] = [
   { value: 'classic', label: 'Classic' },
   { value: 'minimal', label: 'Minimal' },
   { value: 'modern', label: 'Modern' },
   { value: 'compact', label: 'Compact' },
+  { value: 'sanowara', label: 'Sanowara (Ortho & Spine)' },
 ];
 
 interface SectionToggle {
@@ -60,7 +62,7 @@ function SectionHeader({ title, icon, isOpen, onToggle, count }: SectionHeaderPr
 
 export function PrescriptionBuilder() {
   const {
-    currentPrescription, doctorProfile, doctorProfiles, activeDoctorId, prescriptionTemplates, updateCurrentPrescription,
+    currentPrescription, doctorProfile, doctorProfiles, activeDoctorId, setActiveDoctorId, prescriptionTemplates, updateCurrentPrescription,
     createPrescription, savePrescription, settings, prescriptions
   } = useStore();
   const { showToast } = useToast();
@@ -180,18 +182,53 @@ export function PrescriptionBuilder() {
   const toggleSection = (key: keyof SectionToggle) =>
     setSections(s => ({ ...s, [key]: !s[key] }));
 
-  const applyTemplate = (templateId: string) => {
+  const applyTemplate = (templateId: string, includeSamplePatient = false) => {
     const tmpl = prescriptionTemplates.find(t => t.id === templateId);
     if (!tmpl) return;
-    update({
+    const updates: Partial<Prescription> = {
       diagnoses: tmpl.diagnoses.map(d => ({ ...d, id: uuidv4() })),
       medicines: tmpl.medicines.map(m => ({ ...m, id: uuidv4() })),
       investigations: tmpl.investigations.map(i => ({ ...i, id: uuidv4() })),
       advice: tmpl.advice,
       followUpText: tmpl.followUpText,
+      complaints: tmpl.complaints || rx.complaints,
+      history: tmpl.history || rx.history,
+      additionalNotes: tmpl.additionalNotes || rx.additionalNotes,
+    };
+    if (tmpl.theme) {
+      updates.theme = tmpl.theme;
+    }
+    if (includeSamplePatient && tmpl.id === 'template-sanowara-ortho-plid') {
+      updates.patient = {
+        ...rx.patient,
+        name: SANOWARA_SAMPLE_PATIENT.name,
+        patientId: SANOWARA_SAMPLE_PATIENT.patientId,
+        age: SANOWARA_SAMPLE_PATIENT.age,
+        gender: SANOWARA_SAMPLE_PATIENT.gender,
+      };
+      updates.date = '2026-09-21T10:00:00.000Z';
+    }
+    if (tmpl.doctorProfileId) {
+      const doc = doctorProfiles.find(p => p.id === tmpl.doctorProfileId);
+      if (doc) {
+        setActiveDoctorId(doc.id);
+        updates.doctorProfileId = doc.id;
+      }
+    }
+    update(updates);
+    setSections({
+      complaints: true,
+      examination: false,
+      history: !!tmpl.history,
+      diagnosis: true,
+      medicines: true,
+      investigations: true,
+      advice: true,
+      followup: true,
+      notes: !!tmpl.additionalNotes,
     });
     setShowTemplatePanel(false);
-    showToast(`Template "${tmpl.name}" applied`, 'success');
+    showToast(`Template "${tmpl.name}" applied!`, 'success');
   };
 
   return (
@@ -309,20 +346,76 @@ export function PrescriptionBuilder() {
         {/* Template Panel */}
         {showTemplatePanel && (
           <div className="card" style={{ padding: 16, flexShrink: 0 }}>
-            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10, color: '#1e40af' }}>
-              📋 Apply Template
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: '#1e40af' }}>
+                📋 Apply Prescription Template
+              </div>
+              <button className="btn-ghost btn-sm" onClick={() => setShowTemplatePanel(false)}>
+                ✕ Close
+              </button>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 8 }}>
-              {prescriptionTemplates.map(t => (
-                <div key={t.id} onClick={() => applyTemplate(t.id)} style={{
-                  padding: '10px 14px', background: '#f8faff', border: '1px solid #c7d7fa',
-                  borderRadius: 8, cursor: 'pointer', transition: 'all 0.15s',
-                }}>
-                  <div style={{ fontWeight: 600, fontSize: 13, color: '#1e40af' }}>{t.name}</div>
-                  {t.isDemo && <span className="badge badge-demo" style={{ marginTop: 4 }}>Demo</span>}
-                  {t.description && <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{t.description}</div>}
-                </div>
-              ))}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 10 }}>
+              {prescriptionTemplates.map(t => {
+                const isSanowara = t.id === 'template-sanowara-ortho-plid' || t.name.includes('Sanowara');
+                return (
+                  <div key={t.id} style={{
+                    padding: '12px 14px',
+                    background: isSanowara ? '#fdf2f8' : '#f8faff',
+                    border: isSanowara ? '2px solid #6b1a4f' : '1px solid #c7d7fa',
+                    borderRadius: 8,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 6,
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ fontWeight: 700, fontSize: 13, color: isSanowara ? '#6b1a4f' : '#1e40af' }}>{t.name}</div>
+                      {isSanowara ? (
+                        <span style={{ background: '#6b1a4f', color: 'white', fontSize: 10, padding: '1px 6px', borderRadius: 4, fontWeight: 700 }}>
+                          Featured
+                        </span>
+                      ) : t.isDemo ? (
+                        <span className="badge badge-demo">Demo</span>
+                      ) : null}
+                    </div>
+                    {t.description && <div style={{ fontSize: 11, color: '#64748b' }}>{t.description}</div>}
+                    <div style={{ fontSize: 11, color: '#475569', marginTop: 2 }}>
+                      💊 {t.medicines.length} meds • 🔬 {t.investigations.length} tests
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                      <button
+                        className="btn-primary btn-sm"
+                        style={{
+                          flex: 1,
+                          fontSize: 11,
+                          padding: '4px 8px',
+                          background: isSanowara ? '#6b1a4f' : undefined,
+                          borderColor: isSanowara ? '#6b1a4f' : undefined
+                        }}
+                        onClick={() => applyTemplate(t.id, false)}
+                      >
+                        Apply Template
+                      </button>
+                      {isSanowara && (
+                        <button
+                          className="btn-ghost btn-sm"
+                          style={{
+                            fontSize: 10.5,
+                            padding: '4px 8px',
+                            color: '#6b1a4f',
+                            borderColor: '#6b1a4f',
+                            background: '#fce7f3',
+                            fontWeight: 600,
+                          }}
+                          onClick={() => applyTemplate(t.id, true)}
+                          title="Load with patient Sanowara (70Y, Female, ID: 20265435), Dr. Mizanur Rahman, & full case"
+                        >
+                          Load Patient Case
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
               {prescriptionTemplates.length === 0 && (
                 <div style={{ color: '#94a3b8', fontSize: 13 }}>No templates yet. Create one in Settings.</div>
               )}
