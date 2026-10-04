@@ -72,6 +72,8 @@ export interface PrescriptionMedicine {
   quantity?: string;
   instruction?: string;
   isFavorite?: boolean;
+  pregnancyCategory?: 'A' | 'B' | 'C' | 'D' | 'X';
+  isLactationSafe?: boolean;
 }
 
 // ─── Diagnosis ────────────────────────────────────────────────────────────────
@@ -111,6 +113,8 @@ export interface Prescription {
   additionalNotes?: string;
   language: Language;
   theme: PrescriptionTheme;
+  printMode?: 'full' | 'pad_only';
+  showQrCode?: boolean;
   isDraft: boolean;
   createdAt: string;
   updatedAt: string;
@@ -147,6 +151,8 @@ export interface MedicineCatalogItem {
   isFavorite: boolean;
   useCount: number;
   lastUsed?: string;
+  pregnancyCategory?: 'A' | 'B' | 'C' | 'D' | 'X';
+  isLactationSafe?: boolean;
 }
 
 // ─── Diagnosis Catalog ────────────────────────────────────────────────────────
@@ -185,6 +191,10 @@ export interface AppSettings {
   autoSave: boolean;
   prescriptionNumberPrefix: string;
   prescriptionNumberCounter: number;
+  defaultPrintMode?: 'full' | 'pad_only';
+  padTopMarginMm?: number;
+  padBottomMarginMm?: number;
+  showQrCode?: boolean;
   lastBackup?: string;
 }
 
