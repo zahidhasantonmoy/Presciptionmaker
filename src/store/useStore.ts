@@ -21,8 +21,12 @@ const DEFAULT_SETTINGS: AppSettings = {
 };
 
 interface AppActions {
-  // Doctor
+  // Doctor Profiles
   setDoctorProfile: (profile: DoctorProfile) => void;
+  addDoctorProfile: (profile: Omit<DoctorProfile, 'id' | 'updatedAt'>) => DoctorProfile;
+  updateDoctorProfile: (id: string, updates: Partial<DoctorProfile>) => void;
+  deleteDoctorProfile: (id: string) => void;
+  setActiveDoctorId: (id: string) => void;
   // Patients
   addPatient: (patient: Omit<Patient, 'id' | 'createdAt' | 'updatedAt'>) => Patient;
   updatePatient: (id: string, updates: Partial<Patient>) => void;
@@ -68,6 +72,8 @@ export const useStore = create<Store>()(
   persist(
     (set, get) => ({
       // ─── Initial State ─────────────────────────────────────────────────────
+      doctorProfiles: [DEFAULT_DOCTOR_PROFILE],
+      activeDoctorId: DEFAULT_DOCTOR_PROFILE.id,
       doctorProfile: DEFAULT_DOCTOR_PROFILE,
       patients: [],
       prescriptions: [],
@@ -81,8 +87,59 @@ export const useStore = create<Store>()(
       currentPrescription: null,
       activePage: 'dashboard',
 
-      // ─── Doctor ─────────────────────────────────────────────────────────────
-      setDoctorProfile: (profile) => set({ doctorProfile: { ...profile, updatedAt: getDhakaNow() } }),
+      // ─── Doctor Profiles ───────────────────────────────────────────────────
+      setDoctorProfile: (profile) => set((s) => {
+        const updated = { ...profile, updatedAt: getDhakaNow() };
+        const list = s.doctorProfiles.map(p => p.id === profile.id ? updated : p);
+        if (!list.some(p => p.id === profile.id)) list.push(updated);
+        return { doctorProfiles: list, activeDoctorId: profile.id, doctorProfile: updated };
+      }),
+
+      addDoctorProfile: (data) => {
+        const profile: DoctorProfile = {
+          ...data,
+          id: uuidv4(),
+          updatedAt: getDhakaNow(),
+        };
+        set((s) => ({
+          doctorProfiles: [...s.doctorProfiles, profile],
+          activeDoctorId: profile.id,
+          doctorProfile: profile,
+        }));
+        return profile;
+      },
+
+      updateDoctorProfile: (id, updates) => {
+        set((s) => {
+          const updatedList = s.doctorProfiles.map(p =>
+            p.id === id ? { ...p, ...updates, updatedAt: getDhakaNow() } : p
+          );
+          const active = updatedList.find(p => p.id === s.activeDoctorId) || updatedList[0] || null;
+          return { doctorProfiles: updatedList, doctorProfile: active };
+        });
+      },
+
+      deleteDoctorProfile: (id) => {
+        set((s) => {
+          if (s.doctorProfiles.length <= 1) return s;
+          const filtered = s.doctorProfiles.filter(p => p.id !== id);
+          const nextActiveId = s.activeDoctorId === id ? filtered[0].id : s.activeDoctorId;
+          const active = filtered.find(p => p.id === nextActiveId) || filtered[0] || null;
+          return { doctorProfiles: filtered, activeDoctorId: nextActiveId, doctorProfile: active };
+        });
+      },
+
+      setActiveDoctorId: (id) => {
+        set((s) => {
+          const active = s.doctorProfiles.find(p => p.id === id);
+          if (!active) return s;
+          let currentPrescription = s.currentPrescription;
+          if (currentPrescription) {
+            currentPrescription = { ...currentPrescription, doctorProfileId: id };
+          }
+          return { activeDoctorId: id, doctorProfile: active, currentPrescription };
+        });
+      },
 
       // ─── Patients ───────────────────────────────────────────────────────────
       addPatient: (data) => {
@@ -103,14 +160,15 @@ export const useStore = create<Store>()(
       },
 
       createPrescription: (patientId?) => {
-        const { patients, doctorProfile, settings } = get();
+        const { patients, doctorProfile, activeDoctorId, doctorProfiles, settings } = get();
+        const effectiveDoctor = doctorProfile || doctorProfiles.find(d => d.id === activeDoctorId) || doctorProfiles[0];
         const patient = patientId ? patients.find(p => p.id === patientId) : undefined;
         const now = getDhakaNow();
         const rx: Prescription = {
           id: uuidv4(),
           prescriptionNumber: get().getNextPrescriptionNumber(),
           date: now,
-          doctorProfileId: doctorProfile?.id ?? '',
+          doctorProfileId: effectiveDoctor?.id ?? activeDoctorId,
           patient: patient ?? {
             id: uuidv4(), name: '', createdAt: now, updatedAt: now
           },
@@ -303,7 +361,9 @@ export const useStore = create<Store>()(
       },
 
       clearAllData: () => set({
-        doctorProfile: null,
+        doctorProfiles: [DEFAULT_DOCTOR_PROFILE],
+        activeDoctorId: DEFAULT_DOCTOR_PROFILE.id,
+        doctorProfile: DEFAULT_DOCTOR_PROFILE,
         patients: [],
         prescriptions: [],
         prescriptionTemplates: DEMO_TEMPLATES,
@@ -319,6 +379,8 @@ export const useStore = create<Store>()(
     {
       name: 'easypad-store',
       partialize: (state) => ({
+        doctorProfiles: state.doctorProfiles,
+        activeDoctorId: state.activeDoctorId,
         doctorProfile: state.doctorProfile,
         patients: state.patients,
         prescriptions: state.prescriptions,
@@ -330,6 +392,17 @@ export const useStore = create<Store>()(
         adviceTemplates: state.adviceTemplates,
         settings: state.settings,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          if ((!state.doctorProfiles || state.doctorProfiles.length === 0) && state.doctorProfile) {
+            state.doctorProfiles = [state.doctorProfile];
+            state.activeDoctorId = state.doctorProfile.id;
+          } else if (state.doctorProfiles && state.doctorProfiles.length > 0 && !state.activeDoctorId) {
+            state.activeDoctorId = state.doctorProfiles[0].id;
+            state.doctorProfile = state.doctorProfiles[0];
+          }
+        }
+      },
     }
   )
 );
