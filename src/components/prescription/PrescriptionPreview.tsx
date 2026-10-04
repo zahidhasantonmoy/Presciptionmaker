@@ -1,5 +1,5 @@
 import React, { forwardRef } from 'react';
-import type { Prescription, DoctorProfile, PrescriptionTheme } from '../../types';
+import type { Prescription, DoctorProfile, PrescriptionTheme, PrescriptionMedicine } from '../../types';
 import { formatDateDisplay } from '../../utils/dateUtils';
 
 interface PrescriptionPreviewProps {
@@ -10,11 +10,22 @@ interface PrescriptionPreviewProps {
 
 function getMedicineFormLabel(form: string): string {
   const map: Record<string, string> = {
-    tablet: 'Tab.', capsule: 'Cap.', syrup: 'Susp.', injection: 'Inj.',
+    tablet: 'Tab.', capsule: 'Cap.', syrup: 'Syp.', injection: 'Inj.',
     cream: 'Cr.', ointment: 'Oint.', drops: 'Drops', inhaler: 'Inhaler',
     suppository: 'Supp.', other: ''
   };
   return map[form] ?? '';
+}
+
+function getMedicineDisplayName(med: PrescriptionMedicine): string {
+  const name = (med.name || '').trim();
+  if (!name) return '';
+  const formLabel = getMedicineFormLabel(med.form);
+  if (!formLabel) return name;
+  if (/^(tab|cap|inj|syp|susp|drop|drops|cr|cream|oint|ointment|supp|inhaler)\.?\s+/i.test(name)) {
+    return name;
+  }
+  return `${formLabel} ${name}`;
 }
 
 export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPreviewProps>(
@@ -224,7 +235,13 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
               {prescription.medicines.map((med, idx) => (
                 <div key={med.id} className="rx-medicine-row">
                   <div className="rx-medicine-name">
-                    {idx + 1}. {med.name}
+                    <span style={{ fontWeight: 700 }}>{idx + 1}.</span>{' '}
+                    <span>{getMedicineDisplayName(med)}</span>
+                    {med.genericName && (
+                      <span style={{ fontSize: '8pt', color: '#64748b', fontWeight: 400, marginLeft: 6, fontStyle: 'italic' }}>
+                        ({med.genericName})
+                      </span>
+                    )}
                   </div>
                   <div className="rx-medicine-dose">
                     <div className="rx-medicine-dose-grid">
