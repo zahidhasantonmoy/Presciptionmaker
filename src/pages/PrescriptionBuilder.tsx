@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Save, Printer, Eye, ChevronDown, ChevronUp,
-  User, Stethoscope, FlaskConical, BookOpen, Calendar, FileText
+  User, Stethoscope, FlaskConical, BookOpen, Calendar, FileText, Keyboard, Clock, RotateCcw
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useStore } from '../store/useStore';
@@ -11,8 +11,9 @@ import { DiagnosisEntry } from '../components/prescription/DiagnosisEntry';
 import { InvestigationEntry } from '../components/prescription/InvestigationEntry';
 import { AdviceEntry } from '../components/prescription/AdviceEntry';
 import { PrintPreviewModal } from '../components/prescription/PrintPreviewModal';
+import { KeyboardShortcutsModal } from '../components/modals/KeyboardShortcutsModal';
 import { useToast } from '../components/ui/Toast';
-import { calculateAge, formatDateForInput } from '../utils/dateUtils';
+import { calculateAge, formatDateForInput, formatDateDisplay } from '../utils/dateUtils';
 import type { Prescription, PrescriptionTheme } from '../types';
 
 const THEME_OPTIONS: { value: PrescriptionTheme; label: string }[] = [
@@ -59,12 +60,13 @@ function SectionHeader({ title, icon, isOpen, onToggle, count }: SectionHeaderPr
 export function PrescriptionBuilder() {
   const {
     currentPrescription, doctorProfile, prescriptionTemplates, updateCurrentPrescription,
-    createPrescription, savePrescription, settings
+    createPrescription, savePrescription, settings, prescriptions
   } = useStore();
   const { showToast } = useToast();
 
   const [showPreview, setShowPreview] = useState(true);
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   const [sections, setSections] = useState<SectionToggle>({
     complaints: true, examination: false, history: false, diagnosis: true,
     medicines: true, investigations: true, advice: true, followup: true, notes: false,
@@ -103,14 +105,75 @@ export function PrescriptionBuilder() {
     update({ patient: { ...rx.patient, dateOfBirth: dob, age } });
   };
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     if (!rx.patient.name.trim()) {
       showToast('Patient name is required', 'error');
       return;
     }
     savePrescription({ ...rx, isDraft: false });
     showToast('Prescription saved!', 'success');
+  }, [rx, savePrescription, showToast]);
+
+  // Check if patient has any previous visit recorded in history
+  const pastPrescription = prescriptions.find(p =>
+    p.id !== rx.id && (
+      (rx.patient.phone && rx.patient.phone.trim().length > 6 && p.patient.phone === rx.patient.phone) ||
+      (rx.patient.name && rx.patient.name.trim().length > 2 && p.patient.name.toLowerCase() === rx.patient.name.toLowerCase())
+    )
+  );
+
+  const copyPreviousMedicines = () => {
+    if (!pastPrescription || pastPrescription.medicines.length === 0) return;
+    const copied = pastPrescription.medicines.map(m => ({ ...m, id: uuidv4() }));
+    update({ medicines: [...rx.medicines, ...copied] });
+    showToast(`Copied ${copied.length} medicines from past visit (${formatDateDisplay(pastPrescription.date)})`, 'success');
   };
+
+  // Keyboard Shortcuts Listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        handleSave();
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        setShowPrintModal(true);
+      } else if (e.altKey && e.key.toLowerCase() === 'm') {
+        e.preventDefault();
+        setSections(s => ({ ...s, medicines: true }));
+        showToast('Medicines section (Alt+M)', 'info');
+      } else if (e.altKey && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        setSections(s => ({ ...s, diagnosis: true }));
+        showToast('Diagnosis section (Alt+D)', 'info');
+      } else if (e.altKey && e.key.toLowerCase() === 't') {
+        e.preventDefault();
+        setSections(s => ({ ...s, investigations: true }));
+        showToast('Tests section (Alt+T)', 'info');
+      } else if (e.altKey && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        const nextMode = rx.printMode === 'pad_only' ? 'full' : 'pad_only';
+        update({ printMode: nextMode });
+        showToast(`Pad mode ${nextMode === 'pad_only' ? 'ON' : 'OFF'} (Alt+P)`, 'info');
+      } else if (e.altKey && e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        createPrescription();
+        showToast('New prescription started (Alt+N)', 'info');
+      } else if (e.altKey && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setShowShortcutsModal(true);
+      } else if (!isInput && e.key === '?') {
+        e.preventDefault();
+        setShowShortcutsModal(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [rx, handleSave, createPrescription, showToast]);
 
   const toggleSection = (key: keyof SectionToggle) =>
     setSections(s => ({ ...s, [key]: !s[key] }));
@@ -149,6 +212,27 @@ export function PrescriptionBuilder() {
             <BookOpen size={14} /> Templates
           </button>
           <div style={{ flex: 1 }} />
+          {/* Pad Mode Toggle */}
+          <button
+            className={`btn-sm ${rx.printMode === 'pad_only' ? 'btn-primary' : 'btn-ghost'}`}
+            onClick={() => {
+              const nextMode = rx.printMode === 'pad_only' ? 'full' : 'pad_only';
+              update({ printMode: nextMode });
+              showToast(`Pad Mode: ${nextMode === 'pad_only' ? 'Active (Pre-printed pad spacing)' : 'Full (Header & Footer included)'}`, 'info');
+            }}
+            title="Toggle Pre-printed Pad Mode (Alt+P)"
+            style={rx.printMode === 'pad_only' ? { background: '#d97706', borderColor: '#b45309', color: 'white' } : {}}
+          >
+            📄 {rx.printMode === 'pad_only' ? 'Pad Mode ON' : 'Pad Mode'}
+          </button>
+          {/* Shortcuts Info */}
+          <button
+            className="btn-ghost btn-sm"
+            onClick={() => setShowShortcutsModal(true)}
+            title="Keyboard Shortcuts (Alt+K or ?)"
+          >
+            <Keyboard size={14} /> Keys
+          </button>
           {/* Theme */}
           <select className="form-select" style={{ width: 110 }} value={rx.theme}
             onChange={e => update({ theme: e.target.value as PrescriptionTheme })}>
@@ -164,6 +248,51 @@ export function PrescriptionBuilder() {
             <Save size={14} /> Save
           </button>
         </div>
+
+        {/* Returning Patient Detection Banner */}
+        {pastPrescription && (
+          <div style={{
+            background: '#f0fdf4',
+            border: '1px solid #86efac',
+            borderRadius: 10,
+            padding: '10px 14px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#166534' }}>
+              <Clock size={16} color="#16a34a" />
+              <div>
+                <strong>Previous visit detected:</strong> {pastPrescription.patient.name} on {formatDateDisplay(pastPrescription.date)}
+                {pastPrescription.medicines.length > 0 && ` • ${pastPrescription.medicines.length} previous medicine(s)`}
+                {pastPrescription.diagnoses.length > 0 && ` (${pastPrescription.diagnoses.map(d => d.name).join(', ')})`}
+              </div>
+            </div>
+            <button
+              className="btn-sm"
+              style={{
+                background: '#16a34a',
+                color: 'white',
+                border: 'none',
+                borderRadius: 6,
+                padding: '6px 12px',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                fontSize: 12,
+                fontWeight: 600,
+              }}
+              onClick={copyPreviousMedicines}
+              disabled={pastPrescription.medicines.length === 0}
+            >
+              <RotateCcw size={13} /> Copy Previous Meds ({pastPrescription.medicines.length})
+            </button>
+          </div>
+        )}
 
         {/* Template Panel */}
         {showTemplatePanel && (
@@ -347,7 +476,12 @@ export function PrescriptionBuilder() {
           <SectionHeader title="Medicines (℞)" icon={<span style={{ fontFamily: 'serif', fontStyle: 'italic', fontSize: 16 }}>℞</span>} isOpen={sections.medicines} onToggle={() => toggleSection('medicines')} count={rx.medicines.length} />
           {sections.medicines && (
             <div className="section-panel-body">
-              <MedicineEntry medicines={rx.medicines} onChange={m => update({ medicines: m })} />
+              <MedicineEntry
+                medicines={rx.medicines}
+                onChange={m => update({ medicines: m })}
+                patientAllergies={rx.patient.allergies}
+                patientWeight={rx.patient.weight}
+              />
             </div>
           )}
         </div>
@@ -486,6 +620,11 @@ export function PrescriptionBuilder() {
           doctorProfile={doctorProfile}
           onClose={() => setShowPrintModal(false)}
         />
+      )}
+
+      {/* Keyboard Shortcuts Modal */}
+      {showShortcutsModal && (
+        <KeyboardShortcutsModal onClose={() => setShowShortcutsModal(false)} />
       )}
     </div>
   );
