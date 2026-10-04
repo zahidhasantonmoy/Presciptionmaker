@@ -737,11 +737,7 @@
 
 /* ─── Responsive ────────────────────────────────────────────────────────────── */
 @media (max-width: 1024px) {
-  .rx-preview { 
-    width: 100%; 
-    min-height: unset;
-    transform-origin: top left;
-  }
+  /* Keep standard 210mm A4 canvas inside scaled transform wrappers */
 }
 
 /* ─── Drag Handle ────────────────────────────────────────────────────────────── */
