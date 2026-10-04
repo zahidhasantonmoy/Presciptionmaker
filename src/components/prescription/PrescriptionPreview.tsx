@@ -210,7 +210,7 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
           </div>
 
           <div className="rx-sanowara-hot">
-            <HotlinePhoneSvg size={36} />
+            <HotlinePhoneSvg size={38} />
             <div className="ht bn-text">
               <div className="r">হটলাইন</div>
               <div className="nm">{doctorProfile?.phone || '০১৬৬৩৬৪৪৬১১'}</div>
@@ -256,25 +256,25 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
           <div className="rx-sanowara-item">
             <span className="rx-sanowara-lb">রোগীর নাম :</span>
             <div className="rx-sanowara-fld rx-fld-name">
-              {prescription.patient.nameBn || prescription.patient.name || 'Jesmin'}
+              <span>{prescription.patient.nameBn || prescription.patient.name || 'Jesmin'}</span>
             </div>
           </div>
           <div className="rx-sanowara-item">
             <span className="rx-sanowara-lb">আইডি :</span>
             <div className="rx-sanowara-fld rx-fld-id">
-              {prescription.patient.patientId || prescription.prescriptionNumber || 'P - 202610339'}
+              <span>{prescription.patient.patientId || prescription.prescriptionNumber || 'P - 202610339'}</span>
             </div>
           </div>
           <div className="rx-sanowara-item">
             <span className="rx-sanowara-lb">বয়স :</span>
             <div className="rx-sanowara-fld rx-fld-age">
-              {patientAge || '40Y22D'}
+              <span>{patientAge || '40Y22D'}</span>
             </div>
           </div>
           <div className="rx-sanowara-item">
             <span className="rx-sanowara-lb">তারিখ :</span>
             <div className="rx-sanowara-fld rx-fld-date">
-              {formatDateDisplay(prescription.date)}
+              <span>{formatDateDisplay(prescription.date)}</span>
             </div>
           </div>
         </div>

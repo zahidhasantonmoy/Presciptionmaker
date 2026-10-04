@@ -1,7 +1,7 @@
 import React, { useRef, useState, useCallback } from 'react';
 import {
   Printer, Download, X, MessageSquare, FileText, Layers,
-  ZoomIn, ZoomOut, Maximize2
+  ZoomIn, ZoomOut, Maximize2, Image as ImageIcon
 } from 'lucide-react';
 import type { Prescription, DoctorProfile } from '../../types';
 import { PrescriptionPreview } from './PrescriptionPreview';
@@ -42,7 +42,7 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose }: Prin
 
   const handleDownloadPDF = useCallback(async () => {
     if (!previewRef.current) return;
-    showToast('Generating high-resolution 1-Page A4 PDF...', 'info');
+    showToast('Generating high-resolution 1-Page A4 PDF (300 DPI)...', 'info');
     try {
       const sheets = previewRef.current.querySelectorAll<HTMLElement>('.rx-page-sheet');
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -54,7 +54,7 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose }: Prin
           if (i > 0) pdf.addPage();
           const sheet = sheets[i];
           const canvas = await html2canvas(sheet, {
-            scale: 2,
+            scale: 3,
             useCORS: true,
             allowTaint: true,
             backgroundColor: '#ffffff',
@@ -68,7 +68,7 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose }: Prin
         }
       } else {
         const canvas = await html2canvas(previewRef.current, {
-          scale: 2,
+          scale: 3,
           useCORS: true,
           allowTaint: true,
           backgroundColor: '#ffffff',
@@ -87,6 +87,61 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose }: Prin
     } catch (err) {
       console.error(err);
       showToast('Failed to generate PDF. Try printing instead.', 'error');
+    }
+  }, [prescription, showToast]);
+
+  const handleDownloadJPG = useCallback(async () => {
+    if (!previewRef.current) return;
+    showToast('Generating high-resolution JPG image (300 DPI)...', 'info');
+    try {
+      const sheets = previewRef.current.querySelectorAll<HTMLElement>('.rx-page-sheet');
+      const patientName = (prescription.patient.name || 'Patient').replace(/\s+/g, '_');
+      const date = prescription.date.substring(0, 10);
+
+      const downloadCanvasAsJpg = (canvas: HTMLCanvasElement, filename: string) => {
+        const link = document.createElement('a');
+        link.download = filename;
+        link.href = canvas.toDataURL('image/jpeg', 0.98);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      };
+
+      if (sheets.length > 0) {
+        for (let i = 0; i < sheets.length; i++) {
+          const sheet = sheets[i];
+          const canvas = await html2canvas(sheet, {
+            scale: 3,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#ffffff',
+            width: sheet.scrollWidth,
+            height: sheet.scrollHeight,
+            windowWidth: sheet.scrollWidth,
+            windowHeight: sheet.scrollHeight,
+          });
+          const pageSuffix = sheets.length > 1 ? `_page${i + 1}` : '';
+          downloadCanvasAsJpg(canvas, `Rx_${patientName}_${date}${pageSuffix}.jpg`);
+          if (i < sheets.length - 1) {
+            await new Promise((resolve) => setTimeout(resolve, 300));
+          }
+        }
+      } else {
+        const canvas = await html2canvas(previewRef.current, {
+          scale: 3,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff',
+          width: previewRef.current.scrollWidth,
+          height: previewRef.current.scrollHeight,
+        });
+        downloadCanvasAsJpg(canvas, `Rx_${patientName}_${date}.jpg`);
+      }
+
+      showToast('High-quality JPG image downloaded successfully!', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to generate JPG image.', 'error');
     }
   }, [prescription, showToast]);
 
@@ -249,6 +304,10 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose }: Prin
 
         <button className="btn-secondary btn-sm" style={{ padding: '6px 14px', fontSize: 12 }} onClick={handleDownloadPDF}>
           <Download size={14} /> Download PDF ({isMultiPage ? '2 Pages' : '1 Page'})
+        </button>
+
+        <button className="btn-secondary btn-sm" style={{ padding: '6px 14px', fontSize: 12, background: '#f8fafc', color: '#0f172a', border: '1px solid #cbd5e1' }} onClick={handleDownloadJPG} title="Download high-resolution JPG image (300 DPI)">
+          <ImageIcon size={14} color="#2563eb" /> Download Image (JPG)
         </button>
 
         <button className="btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={onClose} title="Close Preview">
