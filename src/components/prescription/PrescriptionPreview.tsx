@@ -53,10 +53,10 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
       ? (prescription.patient.gender.charAt(0).toUpperCase() + prescription.patient.gender.slice(1))
       : '';
 
-    // Multi-page calculation
+    // Multi-page calculation (defaults to 1 page unless explicitly set to '2' or 'auto' with >11 medicines)
     const totalMedicines = prescription.medicines.length;
-    const pageCountSetting = prescription.pageCount ?? 'auto';
-    const shouldSplit = pageCountSetting === '2' || (pageCountSetting === 'auto' && totalMedicines > 7);
+    const pageCountSetting = prescription.pageCount ?? '1';
+    const shouldSplit = pageCountSetting === '2' || (pageCountSetting === 'auto' && totalMedicines > 11);
 
     const defaultSplit = Math.min(6, Math.max(1, Math.ceil(totalMedicines / 2)));
     const splitIndex = (prescription.splitAfterMedicine && prescription.splitAfterMedicine > 0 && prescription.splitAfterMedicine < totalMedicines)
@@ -80,11 +80,11 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
         </div>
         <div className="rx-medicine-dose">
           {isSanowaraTheme && med.instruction && med.instruction.includes('\n') ? (
-            <div style={{ marginTop: 2 }}>
+            <div style={{ marginTop: 1 }}>
               {med.instruction.split('\n').map((line, lIdx) => {
                 const parts = line.split(/\s{2,}|\t/);
                 return (
-                  <div key={lIdx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8.8pt', lineHeight: 1.35, marginTop: 1 }}>
+                  <div key={lIdx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8.5pt', lineHeight: 1.3, marginTop: 1 }}>
                     <span style={{ fontWeight: 600 }}>{parts[0]}</span>
                     <span style={{ color: '#111', whiteSpace: 'nowrap' }}>{parts[1] || ''}</span>
                   </div>
@@ -92,7 +92,7 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
               })}
             </div>
           ) : isSanowaraTheme ? (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8.8pt', marginTop: 1 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8.5pt', marginTop: 1 }}>
               <span className="rx-dose-value" style={{ fontWeight: 600 }}>
                 {med.morning}+{med.afternoon}+{med.evening}
               </span>
@@ -124,18 +124,18 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
         isSanowaraTheme ? (
           <div className="rx-sanowara-advice-box">
             <h4>পরামর্শ</h4>
-            <div style={{ fontSize: '8.8pt', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>
+            <div style={{ fontSize: '8.5pt', lineHeight: 1.45, whiteSpace: 'pre-wrap' }}>
               {prescription.advice}
             </div>
           </div>
         ) : (
           <>
-            <div className="rx-section-title" style={{ marginTop: 10 }}>পরামর্শ / Advice</div>
+            <div className="rx-section-title" style={{ marginTop: 8 }}>পরামর্শ / Advice</div>
             {prescription.advice && (
-              <div style={{ fontSize: '9pt', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{prescription.advice}</div>
+              <div style={{ fontSize: '8.8pt', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{prescription.advice}</div>
             )}
             {prescription.adviceBn && (
-              <div className="bn-text" style={{ fontSize: '9pt', lineHeight: 1.6, marginTop: 3 }}>
+              <div className="bn-text" style={{ fontSize: '8.8pt', lineHeight: 1.5, marginTop: 2 }}>
                 {prescription.adviceBn}
               </div>
             )}
@@ -147,7 +147,7 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
     // Helper: render follow-up section
     const renderFollowUpSection = () => (
       (prescription.followUpText || prescription.followUpDate) && (
-        <div style={{ marginTop: isSanowaraTheme ? 6 : 10 }}>
+        <div style={{ marginTop: isSanowaraTheme ? 4 : 8 }}>
           <div className={isSanowaraTheme ? 'rx-sanowara-follow' : 'rx-followup'}>
             পরবর্তী সাক্ষাৎ: {prescription.followUpText || (prescription.followUpDate && formatDateDisplay(prescription.followUpDate))}
           </div>
@@ -155,13 +155,13 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
       )
     );
 
-    // Helper: render signature and QR code
+    // Helper: render signature and QR code for classic themes
     const renderSignatureSection = () => (
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 16, gap: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 10, gap: 12 }}>
         {!isSanowaraTheme && qrCodeUrl && prescription.showQrCode !== false && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <img src={qrCodeUrl} alt="Rx QR Code" style={{ width: 48, height: 48, borderRadius: 4 }} />
-            <div style={{ fontSize: '6.5pt', color: '#64748b', lineHeight: 1.25 }}>
+            <img src={qrCodeUrl} alt="Rx QR Code" style={{ width: 44, height: 44, borderRadius: 4 }} />
+            <div style={{ fontSize: '6.5pt', color: '#64748b', lineHeight: 1.2 }}>
               <div style={{ fontWeight: 700, color: '#1e40af' }}>{prescription.prescriptionNumber}</div>
               <div>Scan to verify e-Rx</div>
               <div style={{ color: '#94a3b8' }}>EasyPad BD</div>
@@ -171,11 +171,11 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
 
         <div className="rx-signature-area" style={{ marginLeft: 'auto' }}>
           {doctorProfile?.signatureUrl ? (
-            <img src={doctorProfile.signatureUrl} alt="Signature" style={{ maxWidth: 120, maxHeight: 60 }} />
+            <img src={doctorProfile.signatureUrl} alt="Signature" style={{ maxWidth: 100, maxHeight: 40 }} />
           ) : (
-            <div style={{ borderBottom: '1px solid #374151', width: 100, marginLeft: 'auto', marginBottom: 4 }}></div>
+            <div style={{ borderBottom: '1px solid #374151', width: 90, marginLeft: 'auto', marginBottom: 2 }}></div>
           )}
-          <div style={{ fontSize: '8pt', color: '#374151', textAlign: 'right' }}>Signature</div>
+          <div style={{ fontSize: '7.5pt', color: '#374151', textAlign: 'right' }}>Signature</div>
         </div>
       </div>
     );
@@ -187,7 +187,7 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
       ) : isSanowaraTheme ? (
         <div className="rx-sanowara-footer">
           <div className="rx-sanowara-fl">
-            <PopularLogoSvg size={44} />
+            <PopularLogoSvg size={40} />
             <div>
               <div className="tx bn-text">
                 {doctorProfile?.clinicNameBn || 'পপুলার ডায়াগনস্টিক সেন্টার লিঃ'}
@@ -205,7 +205,7 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
           </div>
 
           <div className="rx-sanowara-hot">
-            <HotlinePhoneSvg size={40} />
+            <HotlinePhoneSvg size={36} />
             <div className="ht bn-text">
               <div className="r">হটলাইন</div>
               <div className="nm">{doctorProfile?.phone || '০১৬৬৩৬৪৪৬১১'}</div>
@@ -238,31 +238,39 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
           <div style={{ textAlign: 'right' }}>
             {doctorProfile?.footerText && <div>{doctorProfile.footerText}</div>}
             {doctorProfile?.footerTextBn && <div className="bn-text">{doctorProfile.footerTextBn}</div>}
-            <div style={{ color: '#94a3b8', fontSize: '7pt', marginTop: 2 }}>Powered by EasyPad</div>
+            <div style={{ color: '#94a3b8', fontSize: '7pt', marginTop: 1 }}>Powered by EasyPad</div>
           </div>
         </div>
       )
     );
 
-    // Helper: render patient bar
+    // Helper: render patient bar with proper grouping
     const renderPatientBar = () => (
       isSanowaraTheme ? (
         <div className="rx-sanowara-bar">
-          <span className="rx-sanowara-lb">রোগীর নাম :</span>
-          <div className="rx-sanowara-fld" style={{ minWidth: 160 }}>
-            {prescription.patient.nameBn || prescription.patient.name || 'Sanowara'}
+          <div className="rx-sanowara-item">
+            <span className="rx-sanowara-lb">রোগীর নাম :</span>
+            <div className="rx-sanowara-fld rx-fld-name">
+              {prescription.patient.nameBn || prescription.patient.name || 'Jesmin'}
+            </div>
           </div>
-          <span className="rx-sanowara-lb">আইডি :</span>
-          <div className="rx-sanowara-fld" style={{ minWidth: 90 }}>
-            {prescription.patient.patientId || prescription.prescriptionNumber || '20265435'}
+          <div className="rx-sanowara-item">
+            <span className="rx-sanowara-lb">আইডি :</span>
+            <div className="rx-sanowara-fld rx-fld-id">
+              {prescription.patient.patientId || prescription.prescriptionNumber || 'P - 202610339'}
+            </div>
           </div>
-          <span className="rx-sanowara-lb">বয়স :</span>
-          <div className="rx-sanowara-fld" style={{ minWidth: 60 }}>
-            {patientAge || '70Y'}
+          <div className="rx-sanowara-item">
+            <span className="rx-sanowara-lb">বয়স :</span>
+            <div className="rx-sanowara-fld rx-fld-age">
+              {patientAge || '40Y22D'}
+            </div>
           </div>
-          <span className="rx-sanowara-lb">তারিখ :</span>
-          <div className="rx-sanowara-fld" style={{ minWidth: 120 }}>
-            {formatDateDisplay(prescription.date)}
+          <div className="rx-sanowara-item">
+            <span className="rx-sanowara-lb">তারিখ :</span>
+            <div className="rx-sanowara-fld rx-fld-date">
+              {formatDateDisplay(prescription.date)}
+            </div>
           </div>
         </div>
       ) : (
@@ -328,12 +336,12 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
                 ))}
               </ul>
             ) : (
-              <div style={{ fontSize: '9pt', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+              <div style={{ fontSize: '8.8pt', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
                 {prescription.complaints}
               </div>
             )}
             {prescription.complaintsBn && (
-              <div className="bn-text" style={{ fontSize: '9pt', lineHeight: 1.6, marginTop: 2 }}>
+              <div className="bn-text" style={{ fontSize: '8.8pt', lineHeight: 1.5, marginTop: 1 }}>
                 {prescription.complaintsBn}
               </div>
             )}
@@ -351,7 +359,7 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
                 ))}
               </ul>
             ) : (
-              <div style={{ fontSize: '9pt', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{prescription.history}</div>
+              <div style={{ fontSize: '8.8pt', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{prescription.history}</div>
             )}
           </>
         )}
@@ -375,7 +383,7 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
                       <li key={inv.id}>
                         {inv.name}
                         {inv.instruction && !inv.instruction.toLowerCase().includes('requested') && (
-                          <span style={{ color: '#6b7280', fontSize: '8.5pt' }}> ({inv.instruction})</span>
+                          <span style={{ color: '#6b7280', fontSize: '8pt' }}> ({inv.instruction})</span>
                         )}
                       </li>
                     ))}
@@ -394,7 +402,7 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
                       ))}
                     </ul>
                   ) : (
-                    <div style={{ fontSize: '9pt', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{prescription.onExamination}</div>
+                    <div style={{ fontSize: '8.8pt', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{prescription.onExamination}</div>
                   )}
                 </>
               )}
@@ -417,7 +425,7 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
         {prescription.investigations.length === 0 && prescription.onExamination && (
           <>
             <div className="rx-section-title">{isSanowaraTheme ? 'FINDINGS' : 'On Examination'}</div>
-            <div style={{ fontSize: '9pt', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{prescription.onExamination}</div>
+            <div style={{ fontSize: '8.8pt', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{prescription.onExamination}</div>
           </>
         )}
 
@@ -429,7 +437,7 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
               {prescription.diagnoses.map(d => (
                 <li key={d.id}>
                   {d.text}
-                  {d.note && <span style={{ color: '#6b7280', fontSize: '8.5pt' }}> – {d.note}</span>}
+                  {d.note && <span style={{ color: '#6b7280', fontSize: '8pt' }}> – {d.note}</span>}
                 </li>
               ))}
             </ul>
@@ -438,14 +446,14 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
 
         {/* If Single Page: Additional Notes & QR box in left column */}
         {!isMultiPageMode && isSanowaraTheme && prescription.additionalNotes && (
-          <div style={{ marginTop: 10, fontSize: '8.5pt', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+          <div style={{ marginTop: 6, fontSize: '8pt', lineHeight: 1.4, whiteSpace: 'pre-wrap' }}>
             {prescription.additionalNotes}
           </div>
         )}
 
         {!isMultiPageMode && isSanowaraTheme && (
           <div className="rx-sanowara-qr-box" style={{ marginTop: 'auto' }}>
-            <JotnoQrSvg size={52} />
+            <JotnoQrSvg size={46} />
             <div>
               <div className="id">P-4G5B4HGSR</div>
               <div>JOTNO স্বাস্থ্য এ্যাপ্লিকেশন পেতে</div>
@@ -491,17 +499,17 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
                   <div>Special Training in Spine &amp; Trauma</div>
                   <div>(AO Spine &amp; AO Trauma Surgery)</div>
                   <div className="cons red">Consultant</div>
-                  <div className="blue" style={{ fontSize: 16 }}>Spine, Ortho &amp; Trauma Surgeon</div>
+                  <div className="blue" style={{ fontSize: 15 }}>Spine, Ortho &amp; Trauma Surgeon</div>
                   <div className="sm">Dhaka Medical College Hospital (Ex)</div>
                   <div className="sm">Pongu Hospital (NITOR), Dhaka (Ex)</div>
                 </div>
 
                 <div className="rx-sanowara-hc">
                   {doctorProfile?.logoUrl ? (
-                    <img src={doctorProfile.logoUrl} alt="Logo" style={{ width: 68, height: 'auto', display: 'block', margin: '0 auto' }} />
+                    <img src={doctorProfile.logoUrl} alt="Logo" style={{ width: 64, height: 'auto', display: 'block', margin: '0 auto' }} />
                   ) : (
                     <div style={{ display: 'flex', justifyContent: 'center' }}>
-                      <CaduceusEmblem size={72} color="#1b2fa0" />
+                      <CaduceusEmblem size={68} color="#1b2fa0" />
                     </div>
                   )}
                   <div className="reg">
@@ -546,13 +554,13 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
 
                 <div className="rx-header-center">
                   {doctorProfile.logoUrl ? (
-                    <img src={doctorProfile.logoUrl} alt="Logo" style={{ maxWidth: 60, maxHeight: 60, objectFit: 'contain' }} />
+                    <img src={doctorProfile.logoUrl} alt="Logo" style={{ maxWidth: 56, maxHeight: 56, objectFit: 'contain' }} />
                   ) : (
                     <div style={{
-                      width: 60, height: 60, borderRadius: '50%',
+                      width: 56, height: 56, borderRadius: '50%',
                       background: 'linear-gradient(135deg, #1e40af, #3b82f6)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: 'white', fontWeight: 700, fontSize: '14pt'
+                      color: 'white', fontWeight: 700, fontSize: '13pt'
                     }}>
                       {doctorProfile.name?.charAt(0) ?? 'D'}
                     </div>
@@ -579,15 +587,15 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
             {/* Patient Bar */}
             {renderPatientBar()}
 
-            {/* Prescription Number */}
-            {prescription.prescriptionNumber && (
-              <div style={{ fontSize: '8pt', color: '#6b7280', marginBottom: '6px', textAlign: 'right' }}>
+            {/* Prescription Number (Only for non-sanowara themes since sanowara already has it in patient bar) */}
+            {!isSanowaraTheme && prescription.prescriptionNumber && (
+              <div style={{ fontSize: '8pt', color: '#6b7280', marginBottom: '4px', textAlign: 'right' }}>
                 Rx# {prescription.prescriptionNumber}
               </div>
             )}
 
             {/* Body */}
-            <div className="rx-body" style={{ flex: 1 }}>
+            <div className="rx-body" style={{ flex: 1, minHeight: 0 }}>
               {/* Left Column */}
               {renderLeftColumn(shouldSplit)}
 
@@ -601,19 +609,39 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
                 )}
                 {page1Meds.map((med, idx) => renderMedicineRow(med, idx + 1))}
 
-                {/* If Single Page: Advice, Followup, Signature right here */}
+                {/* If Single Page: Advice, Followup, Signature */}
                 {!shouldSplit && (
                   <>
                     {renderAdviceSection()}
-                    {renderFollowUpSection()}
-                    {!isSanowaraTheme && prescription.additionalNotes && (
-                      <div style={{ marginTop: 8, fontSize: '8.5pt', color: '#374151', fontStyle: 'italic' }}>
-                        {prescription.additionalNotes}
+                    {isSanowaraTheme ? (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 4, marginBottom: 2 }}>
+                        {(prescription.followUpText || prescription.followUpDate) ? (
+                          <div className="rx-sanowara-follow" style={{ margin: 0 }}>
+                            পরবর্তী সাক্ষাৎ: {prescription.followUpText || (prescription.followUpDate && formatDateDisplay(prescription.followUpDate))}
+                          </div>
+                        ) : <div />}
+                        <div className="rx-signature-area" style={{ marginLeft: 'auto', textAlign: 'right' }}>
+                          {doctorProfile?.signatureUrl ? (
+                            <img src={doctorProfile.signatureUrl} alt="Signature" style={{ maxWidth: 85, maxHeight: 26 }} />
+                          ) : (
+                            <div style={{ borderBottom: '1px solid #333', width: 80, marginBottom: 2 }} />
+                          )}
+                          <div style={{ fontSize: '7.5pt', color: '#333' }}>Signature</div>
+                        </div>
                       </div>
+                    ) : (
+                      <>
+                        {renderFollowUpSection()}
+                        {prescription.additionalNotes && (
+                          <div style={{ marginTop: 6, fontSize: '8pt', color: '#374151', fontStyle: 'italic' }}>
+                            {prescription.additionalNotes}
+                          </div>
+                        )}
+                        <div style={{ marginTop: 'auto' }}>
+                          {renderSignatureSection()}
+                        </div>
+                      </>
                     )}
-                    <div style={{ marginTop: 'auto' }}>
-                      {renderSignatureSection()}
-                    </div>
                   </>
                 )}
               </div>
@@ -700,15 +728,15 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
               )}
 
               {/* Page 2 Body */}
-              <div className="rx-body" style={{ flex: 1 }}>
-                {/* Left column on Page 2: Clinical Treatment Plan or General Guidance */}
+              <div className="rx-body" style={{ flex: 1, minHeight: 0 }}>
+                {/* Left column on Page 2 */}
                 <div className="rx-left-col" style={{ display: 'flex', flexDirection: 'column' }}>
                   {prescription.additionalNotes ? (
                     <>
                       <div className="rx-section-title">
                         {isSanowaraTheme ? 'TREATMENT PLAN' : 'Treatment Plan / Notes'}
                       </div>
-                      <div style={{ fontSize: '8.8pt', lineHeight: 1.6, whiteSpace: 'pre-wrap', color: '#334155' }}>
+                      <div style={{ fontSize: '8.5pt', lineHeight: 1.5, whiteSpace: 'pre-wrap', color: '#334155' }}>
                         {prescription.additionalNotes}
                       </div>
                     </>
@@ -717,10 +745,10 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
                       <div className="rx-section-title">
                         {isSanowaraTheme ? 'INSTRUCTIONS' : 'General Instructions'}
                       </div>
-                      <div style={{ fontSize: '8.5pt', lineHeight: 1.6, color: '#475569' }}>
-                        <p style={{ margin: '0 0 6px 0' }}>• সকল ঔষধ চিকিৎসকের নির্দেশিত মাত্রা ও সময় অনুযায়ী গ্রহণ করুন।</p>
-                        <p style={{ margin: '0 0 6px 0' }}>• কোন ঔষধের অস্বাভাবিক প্রতিক্রিয়া দেখা দিলে অবিলম্বে চিকিৎসকের সাথে যোগাযোগ করুন।</p>
-                        <p style={{ margin: '0 0 6px 0' }}>• পরবর্তী সাক্ষাতের সময় পূর্বের সকল কাগজপত্র সাথে আনবেন।</p>
+                      <div style={{ fontSize: '8.5pt', lineHeight: 1.5, color: '#475569' }}>
+                        <p style={{ margin: '0 0 5px 0' }}>• সকল ঔষধ চিকিৎসকের নির্দেশিত মাত্রা ও সময় অনুযায়ী গ্রহণ করুন।</p>
+                        <p style={{ margin: '0 0 5px 0' }}>• কোন ঔষধের অস্বাভাবিক প্রতিক্রিয়া দেখা দিলে অবিলম্বে চিকিৎসকের সাথে যোগাযোগ করুন।</p>
+                        <p style={{ margin: '0 0 5px 0' }}>• পরবর্তী সাক্ষাতের সময় পূর্বের সকল কাগজপত্র সাথে আনবেন।</p>
                       </div>
                     </>
                   )}
@@ -728,7 +756,7 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
                   {/* Sanowara QR Box */}
                   {isSanowaraTheme && (
                     <div className="rx-sanowara-qr-box" style={{ marginTop: 'auto' }}>
-                      <JotnoQrSvg size={52} />
+                      <JotnoQrSvg size={46} />
                       <div>
                         <div className="id">P-4G5B4HGSR</div>
                         <div>JOTNO স্বাস্থ্য এ্যাপ্লিকেশন পেতে</div>
@@ -741,9 +769,9 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
 
                 {/* Right column on Page 2: Remaining Medicines, Advice, Follow-up, Signature */}
                 <div className="rx-right-col" style={{ display: 'flex', flexDirection: 'column' }}>
-                  <div className="rx-symbol" style={{ fontSize: '20pt', marginBottom: 4, display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                  <div className="rx-symbol" style={{ fontSize: '18pt', marginBottom: 2, display: 'flex', alignItems: 'baseline', gap: 8 }}>
                     ℞
-                    <span style={{ fontSize: '9pt', fontStyle: 'normal', fontWeight: 600, color: '#64748b' }}>
+                    <span style={{ fontSize: '8.5pt', fontStyle: 'normal', fontWeight: 600, color: '#64748b' }}>
                       (চলমান / Continued)
                     </span>
                   </div>
@@ -754,13 +782,31 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
                   {/* Advice Box */}
                   {renderAdviceSection()}
 
-                  {/* Follow-up */}
-                  {renderFollowUpSection()}
-
-                  {/* Signature & QR */}
-                  <div style={{ marginTop: 'auto' }}>
-                    {renderSignatureSection()}
-                  </div>
+                  {/* Follow-up & Signature */}
+                  {isSanowaraTheme ? (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 4, marginBottom: 2 }}>
+                      {(prescription.followUpText || prescription.followUpDate) ? (
+                        <div className="rx-sanowara-follow" style={{ margin: 0 }}>
+                          পরবর্তী সাক্ষাৎ: {prescription.followUpText || (prescription.followUpDate && formatDateDisplay(prescription.followUpDate))}
+                        </div>
+                      ) : <div />}
+                      <div className="rx-signature-area" style={{ marginLeft: 'auto', textAlign: 'right' }}>
+                        {doctorProfile?.signatureUrl ? (
+                          <img src={doctorProfile.signatureUrl} alt="Signature" style={{ maxWidth: 85, maxHeight: 26 }} />
+                        ) : (
+                          <div style={{ borderBottom: '1px solid #333', width: 80, marginBottom: 2 }} />
+                        )}
+                        <div style={{ fontSize: '7.5pt', color: '#333' }}>Signature</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {renderFollowUpSection()}
+                      <div style={{ marginTop: 'auto' }}>
+                        {renderSignatureSection()}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 

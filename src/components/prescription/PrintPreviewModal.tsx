@@ -17,7 +17,8 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose }: Prin
   const previewRef = useRef<HTMLDivElement>(null);
   const { showToast } = useToast();
   const [isPadMode, setIsPadMode] = useState<boolean>(prescription.printMode === 'pad_only');
-  const [pageMode, setPageMode] = useState<'auto' | '1' | '2'>(prescription.pageCount || 'auto');
+  // Default to '1' page unless explicitly set to '2' or auto with >11 medicines
+  const [pageMode, setPageMode] = useState<'1' | '2' | 'auto'>(prescription.pageCount || '1');
   const [splitAfter, setSplitAfter] = useState<number>(
     prescription.splitAfterMedicine || Math.min(6, Math.max(1, Math.ceil((prescription.medicines.length || 1) / 2)))
   );
@@ -29,7 +30,7 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose }: Prin
     splitAfterMedicine: splitAfter,
   };
 
-  const isMultiPage = pageMode === '2' || (pageMode === 'auto' && prescription.medicines.length > 7);
+  const isMultiPage = pageMode === '2' || (pageMode === 'auto' && prescription.medicines.length > 11);
 
   const handlePrint = useCallback(() => {
     window.print();
@@ -58,7 +59,7 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose }: Prin
             windowWidth: sheet.scrollWidth,
             windowHeight: sheet.scrollHeight,
           });
-          const imgData = canvas.toDataURL('image/jpeg', 0.95);
+          const imgData = canvas.toDataURL('image/jpeg', 0.98);
           pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
         }
       } else {
@@ -70,7 +71,7 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose }: Prin
           width: previewRef.current.scrollWidth,
           height: previewRef.current.scrollHeight,
         });
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const imgData = canvas.toDataURL('image/jpeg', 0.98);
         pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
       }
 
@@ -106,12 +107,12 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose }: Prin
             className="form-select"
             style={{ fontSize: 12, padding: '2px 8px', height: 28, width: 95 }}
             value={pageMode}
-            onChange={(e) => setPageMode(e.target.value as 'auto' | '1' | '2')}
-            title="Auto (1 page if <= 7 meds, 2 pages if > 7 meds), or force 1 or 2 pages"
+            onChange={(e) => setPageMode(e.target.value as '1' | '2' | 'auto')}
+            title="Page Count: 1 Page (default), 2 Pages, or Auto"
           >
-            <option value="auto">Auto ({isMultiPage ? '2 Pgs' : '1 Pg'})</option>
             <option value="1">1 Page</option>
             <option value="2">2 Pages</option>
+            <option value="auto">Auto ({isMultiPage ? '2 Pgs' : '1 Pg'})</option>
           </select>
 
           {isMultiPage && prescription.medicines.length > 1 && (
@@ -170,7 +171,7 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose }: Prin
         </button>
 
         <button className="btn-secondary btn-sm" onClick={handleDownloadPDF}>
-          <Download size={15} /> Download PDF
+          <Download size={15} /> Download PDF ({isMultiPage ? '2 Pages' : '1 Page'})
         </button>
 
         <button className="btn-ghost btn-sm" onClick={onClose}>

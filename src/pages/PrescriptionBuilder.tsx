@@ -98,7 +98,7 @@ export function PrescriptionBuilder() {
 
   const rx = currentPrescription;
   const effectiveDoctor = doctorProfiles.find(d => d.id === rx.doctorProfileId) || doctorProfile || doctorProfiles[0];
-  const isMultiPage = rx.pageCount === '2' || (rx.pageCount !== '1' && rx.medicines.length > 7);
+  const isMultiPage = rx.pageCount === '2' || (rx.pageCount === 'auto' && rx.medicines.length > 11);
   const totalPages = isMultiPage ? 2 : 1;
 
   const update = (updates: Partial<Prescription>) => updateCurrentPrescription(updates);
@@ -342,13 +342,13 @@ export function PrescriptionBuilder() {
             <select
               className="form-select"
               style={{ fontSize: 12, padding: '2px 6px', height: 26, width: 85 }}
-              value={rx.pageCount || 'auto'}
+              value={rx.pageCount || '1'}
               onChange={e => update({ pageCount: e.target.value as 'auto' | '1' | '2' })}
-              title="Page splitting mode: Auto (splits when >7 medicines), 1 Page (force single), or 2 Pages"
+              title="Page splitting mode: 1 Page (default), 2 Pages, or Auto"
             >
-              <option value="auto">Auto ({isMultiPage ? '2 Pgs' : '1 Pg'})</option>
               <option value="1">1 Page</option>
               <option value="2">2 Pages</option>
+              <option value="auto">Auto ({isMultiPage ? '2 Pgs' : '1 Pg'})</option>
             </select>
             {isMultiPage && rx.medicines.length > 1 && (
               <select
