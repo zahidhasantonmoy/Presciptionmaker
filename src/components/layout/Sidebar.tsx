@@ -28,7 +28,7 @@ export function Sidebar() {
   };
 
   return (
-    <div className="sidebar" style={{ width: 220, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
+    <div className="sidebar no-print" style={{ width: 220, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
       {/* Brand */}
       <div style={{ padding: '20px 16px 16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
