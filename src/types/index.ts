@@ -33,6 +33,7 @@ export interface DoctorProfile {
   footerTextBn?: string;
   showBnHeader: boolean;
   theme: PrescriptionTheme;
+  isDefault?: boolean;
   updatedAt: string;
 }
 
@@ -200,6 +201,8 @@ export interface AppSettings {
 
 // ─── App Store State ──────────────────────────────────────────────────────────
 export interface AppState {
+  doctorProfiles: DoctorProfile[];
+  activeDoctorId: string;
   doctorProfile: DoctorProfile | null;
   patients: Patient[];
   prescriptions: Prescription[];
