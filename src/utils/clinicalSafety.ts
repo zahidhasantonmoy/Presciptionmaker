@@ -182,3 +182,79 @@ export function getPregnancySafety(
 
   return { category: 'Unknown', level: 'unknown' };
 }
+
+// ─── Duplicate Medicine Detection ──────────────────────────────────────────
+export interface DuplicateMedicineIssue {
+  medicineId: string;
+  medicineName: string;
+  duplicateOfId: string;
+  duplicateOfName: string;
+  duplicateIndex: number; // 1-based index of original
+  matchType: 'exact_name' | 'same_generic';
+  warningEn: string;
+  warningBn: string;
+}
+
+export function normalizeMedicineName(name: string): string {
+  if (!name) return '';
+  return name
+    .toLowerCase()
+    .replace(/\b(tab|tablet|cap|capsule|syp|syrup|inj|injection|supp|suppository|oint|ointment|cream|drop|drops)\.?\s+/gi, '')
+    .replace(/[^\w\s]/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export function detectDuplicateMedicines(
+  medicines: { id: string; name: string; genericName?: string }[]
+): DuplicateMedicineIssue[] {
+  const issues: DuplicateMedicineIssue[] = [];
+
+  for (let i = 0; i < medicines.length; i++) {
+    const current = medicines[i];
+    if (!current.name || !current.name.trim()) continue;
+
+    const normCurrent = normalizeMedicineName(current.name);
+    const genCurrent = current.genericName ? current.genericName.toLowerCase().trim() : '';
+
+    for (let j = 0; j < i; j++) {
+      const prev = medicines[j];
+      if (!prev.name || !prev.name.trim()) continue;
+
+      const normPrev = normalizeMedicineName(prev.name);
+      const genPrev = prev.genericName ? prev.genericName.toLowerCase().trim() : '';
+
+      // Check 1: Exact or normalized brand name match
+      if (normCurrent === normPrev && normCurrent.length > 2) {
+        issues.push({
+          medicineId: current.id,
+          medicineName: current.name,
+          duplicateOfId: prev.id,
+          duplicateOfName: prev.name,
+          duplicateIndex: j + 1,
+          matchType: 'exact_name',
+          warningEn: `Duplicate: "${current.name}" is already prescribed as Medicine #${j + 1}`,
+          warningBn: `সতর্কতা: "${current.name}" ইতিপূর্বে ${j + 1} নম্বর ওষুধে যুক্ত করা আছে!`,
+        });
+        break;
+      }
+
+      // Check 2: Same active generic match (Therapeutic duplication)
+      if (genCurrent && genPrev && genCurrent === genPrev && genCurrent.length > 3) {
+        issues.push({
+          medicineId: current.id,
+          medicineName: current.name,
+          duplicateOfId: prev.id,
+          duplicateOfName: prev.name,
+          duplicateIndex: j + 1,
+          matchType: 'same_generic',
+          warningEn: `Therapeutic Duplicate: Same active generic (${current.genericName}) as Medicine #${j + 1} (${prev.name})`,
+          warningBn: `একই জেনেরিক সতর্কতা: ${j + 1} নম্বর ওষুধের (${prev.name}) সাথে একই উপাদান (${current.genericName}) রয়েছে!`,
+        });
+        break;
+      }
+    }
+  }
+
+  return issues;
+}

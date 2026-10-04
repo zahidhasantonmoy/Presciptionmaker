@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Save, Printer, Eye, ChevronDown, ChevronUp,
-  User, Stethoscope, FlaskConical, BookOpen, Calendar, FileText, Keyboard, Clock, RotateCcw
+  User, Stethoscope, FlaskConical, BookOpen, Calendar, FileText, Keyboard, Clock, RotateCcw,
+  Layers
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useStore } from '../store/useStore';
@@ -97,6 +98,8 @@ export function PrescriptionBuilder() {
 
   const rx = currentPrescription;
   const effectiveDoctor = doctorProfiles.find(d => d.id === rx.doctorProfileId) || doctorProfile || doctorProfiles[0];
+  const isMultiPage = rx.pageCount === '2' || (rx.pageCount !== '1' && rx.medicines.length > 7);
+  const totalPages = isMultiPage ? 2 : 1;
 
   const update = (updates: Partial<Prescription>) => updateCurrentPrescription(updates);
 
@@ -324,6 +327,44 @@ export function PrescriptionBuilder() {
           </div>
 
           <div style={{ flex: 1 }} />
+          {/* Page Mode Selector */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            background: '#f8fafc',
+            padding: '3px 8px',
+            borderRadius: 8,
+            border: '1px solid #cbd5e1',
+          }}>
+            <Layers size={13} color="#475569" />
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#475569' }}>Pages:</span>
+            <select
+              className="form-select"
+              style={{ fontSize: 12, padding: '2px 6px', height: 26, width: 85 }}
+              value={rx.pageCount || 'auto'}
+              onChange={e => update({ pageCount: e.target.value as 'auto' | '1' | '2' })}
+              title="Page splitting mode: Auto (splits when >7 medicines), 1 Page (force single), or 2 Pages"
+            >
+              <option value="auto">Auto ({isMultiPage ? '2 Pgs' : '1 Pg'})</option>
+              <option value="1">1 Page</option>
+              <option value="2">2 Pages</option>
+            </select>
+            {isMultiPage && rx.medicines.length > 1 && (
+              <select
+                className="form-select"
+                style={{ fontSize: 11, padding: '2px 4px', height: 26, width: 72 }}
+                value={rx.splitAfterMedicine || Math.min(6, Math.max(1, Math.ceil(rx.medicines.length / 2)))}
+                onChange={e => update({ splitAfterMedicine: Number(e.target.value) })}
+                title="Split after medicine number"
+              >
+                {rx.medicines.slice(0, -1).map((_, idx) => (
+                  <option key={idx + 1} value={idx + 1}>Med #{idx + 1}</option>
+                ))}
+              </select>
+            )}
+          </div>
+
           {/* Pad Mode Toggle */}
           <button
             className={`btn-sm ${rx.printMode === 'pad_only' ? 'btn-primary' : 'btn-ghost'}`}
@@ -753,7 +794,9 @@ export function PrescriptionBuilder() {
             padding: '10px 14px', background: 'white', borderBottom: '1px solid #e2e8f0',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 5,
           }}>
-            <span style={{ fontWeight: 700, fontSize: 13, color: '#1e40af' }}>📄 Live A4 Preview</span>
+            <span style={{ fontWeight: 700, fontSize: 13, color: '#1e40af' }}>
+              📄 Live A4 Preview {totalPages > 1 ? '• 2 Pages' : '• 1 Page'}
+            </span>
             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
               <button className="btn-icon" onClick={() => setPreviewScale(s => Math.max(0.3, parseFloat((s - 0.05).toFixed(2))))} title="Zoom out">−</button>
               <span style={{ fontSize: 11, color: '#64748b', minWidth: 36, textAlign: 'center' }}>{Math.round(previewScale * 100)}%</span>
@@ -764,7 +807,7 @@ export function PrescriptionBuilder() {
           <div style={{ padding: '16px 8px', display: 'flex', justifyContent: 'center', overflowX: 'auto', flex: 1 }}>
             <div style={{
               width: `${Math.round(794 * previewScale)}px`,
-              height: `${Math.round(1123 * previewScale)}px`,
+              height: `${Math.round((1123 * totalPages + (totalPages > 1 ? 24 : 0)) * previewScale)}px`,
               position: 'relative',
               flexShrink: 0,
               boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
@@ -774,7 +817,6 @@ export function PrescriptionBuilder() {
             }}>
               <div style={{
                 width: '210mm',
-                minHeight: '297mm',
                 transform: `scale(${previewScale})`,
                 transformOrigin: 'top left',
                 position: 'absolute',

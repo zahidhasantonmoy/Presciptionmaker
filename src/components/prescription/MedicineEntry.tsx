@@ -4,8 +4,9 @@ import { v4 as uuidv4 } from 'uuid';
 import type { PrescriptionMedicine, MedicineForm } from '../../types';
 import { AutocompleteInput } from '../ui/AutocompleteInput';
 import { useStore } from '../../store/useStore';
-import { checkDrugAllergy, getPregnancySafety } from '../../utils/clinicalSafety';
+import { checkDrugAllergy, getPregnancySafety, detectDuplicateMedicines, normalizeMedicineName } from '../../utils/clinicalSafety';
 import { PediatricDoseCalculatorModal } from '../modals/PediatricDoseCalculatorModal';
+import { useToast } from '../ui/Toast';
 
 const MEDICINE_FORMS: { value: MedicineForm; label: string }[] = [
   { value: 'tablet', label: 'Tablet' },
@@ -50,12 +51,28 @@ interface MedicineEntryProps {
 export function MedicineEntry({ medicines, onChange, patientAllergies, patientWeight }: MedicineEntryProps) {
   const medicineCatalog = useStore(s => s.medicineCatalog);
   const addToCatalog = useStore(s => s.addToCatalog);
+  const { showToast } = useToast();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showPediaModal, setShowPediaModal] = useState(false);
 
+  // Clinical safety check: Detect duplicate medicines
+  const duplicateIssues = detectDuplicateMedicines(medicines);
+
   const catalogOptions = medicineCatalog
     .sort((a, b) => (b.useCount ?? 0) - (a.useCount ?? 0))
-    .map(m => ({ id: m.id, label: m.name, sublabel: m.genericName, isFavorite: m.isFavorite, useCount: m.useCount }));
+    .map(m => {
+      const isAlreadyAdded = medicines.some(med =>
+        normalizeMedicineName(med.name) === normalizeMedicineName(m.name) ||
+        (med.genericName && m.genericName && med.genericName.toLowerCase().trim() === m.genericName.toLowerCase().trim())
+      );
+      return {
+        id: m.id,
+        label: m.name,
+        sublabel: isAlreadyAdded ? `${m.genericName ?? ''} • ⚠️ Already in Rx` : m.genericName,
+        isFavorite: m.isFavorite,
+        useCount: m.useCount,
+      };
+    });
 
   const addMedicine = () => {
     const m = emptyMedicine();
@@ -71,6 +88,7 @@ export function MedicineEntry({ medicines, onChange, patientAllergies, patientWe
     const updated = [...medicines];
     updated.splice(idx + 1, 0, dup);
     onChange(updated);
+    showToast(`Medicine duplicated as row #${idx + 2}`, 'info');
   };
 
   const updateMedicine = (id: string, updates: Partial<PrescriptionMedicine>) => {
@@ -79,6 +97,18 @@ export function MedicineEntry({ medicines, onChange, patientAllergies, patientWe
 
   const handleSelectFromCatalog = (id: string, option: { id: string; label: string; sublabel?: string }) => {
     const catalogItem = medicineCatalog.find(m => m.id === option.id);
+    
+    // Check if selecting an item that is already in another row
+    const existing = medicines.find(m =>
+      m.id !== id && (
+        normalizeMedicineName(m.name) === normalizeMedicineName(option.label) ||
+        (m.genericName && option.sublabel && m.genericName.toLowerCase().trim() === option.sublabel.toLowerCase().trim())
+      )
+    );
+    if (existing) {
+      showToast(`⚠️ সতর্কতা: "${option.label}" ইতিমধ্যে প্রেসক্রিপশনে যুক্ত আছে!`, 'warning');
+    }
+
     updateMedicine(id, {
       name: option.label,
       genericName: option.sublabel,
@@ -96,11 +126,40 @@ export function MedicineEntry({ medicines, onChange, patientAllergies, patientWe
   const handleNameBlur = (med: PrescriptionMedicine) => {
     if (med.name.trim()) {
       addToCatalog({ name: med.name, genericName: med.genericName, form: med.form, strength: med.strength });
+      // Duplicate check on blur
+      const isDup = medicines.some(m => m.id !== med.id && normalizeMedicineName(m.name) === normalizeMedicineName(med.name) && normalizeMedicineName(m.name).length > 2);
+      if (isDup) {
+        showToast(`⚠️ সতর্কতা: "${med.name}" ইতিমধ্যে প্রেসক্রিপশনে বিদ্যমান!`, 'warning');
+      }
     }
   };
 
   return (
     <div>
+      {/* Duplicate Medicine Warning Banner */}
+      {duplicateIssues.length > 0 && (
+        <div style={{
+          background: '#fffbeb',
+          border: '1.5px solid #f59e0b',
+          borderRadius: 10,
+          padding: '10px 14px',
+          marginBottom: 12,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#92400e' }}>
+            <AlertTriangle size={18} color="#d97706" style={{ flexShrink: 0 }} />
+            <div>
+              <strong>ডুপ্লিকেট ওষুধ সতর্কতা ({duplicateIssues.length}টি সনাক্ত):</strong>{' '}
+              একই ওষুধ বা একই সক্রিয় জেনেরিক উপাদান একাধিকবার প্রেসক্রিপশনে এসেছে। ওভারডোজ এড়াতে নিচের চিহ্নিত ওষুধগুলো যাচাই করুন।
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Medicine List */}
       {medicines.length === 0 && (
         <div style={{
@@ -117,14 +176,17 @@ export function MedicineEntry({ medicines, onChange, patientAllergies, patientWe
           const isExpanded = expandedId === med.id;
           const allergyAlert = checkDrugAllergy(med.name, med.genericName, patientAllergies);
           const pregSafety = getPregnancySafety(med.name, med.genericName);
+          const dupIssue = duplicateIssues.find(d => d.medicineId === med.id);
+          const hasIssue = allergyAlert.hasAlert || !!dupIssue;
+
           return (
             <div
               key={med.id}
               className="medicine-card"
               style={{
-                borderColor: allergyAlert.hasAlert ? '#f87171' : '#cbd5e1',
-                background: allergyAlert.hasAlert ? '#fffafa' : '#ffffff',
-                borderWidth: allergyAlert.hasAlert ? '2px' : '1.5px',
+                borderColor: allergyAlert.hasAlert ? '#f87171' : dupIssue ? '#f59e0b' : '#cbd5e1',
+                background: allergyAlert.hasAlert ? '#fffafa' : dupIssue ? '#fffdf7' : '#ffffff',
+                borderWidth: hasIssue ? '2px' : '1.5px',
               }}
             >
               {/* Top Row: Index + Form + Name + Quick Actions */}
@@ -239,6 +301,42 @@ export function MedicineEntry({ medicines, onChange, patientAllergies, patientWe
                     <span style={{ fontWeight: 700 }}>{allergyAlert.warningEn}</span>
                     <span style={{ marginLeft: 6, fontFamily: 'var(--font-bn)' }}>({allergyAlert.warningBn})</span>
                   </div>
+                </div>
+              )}
+
+              {/* Duplicate Medicine Warning Banner */}
+              {dupIssue && (
+                <div
+                  style={{
+                    marginTop: 8,
+                    padding: '8px 12px',
+                    background: '#fffbeb',
+                    border: '1.5px solid #f59e0b',
+                    borderRadius: 8,
+                    color: '#92400e',
+                    fontSize: 12,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 8,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <AlertTriangle size={18} color="#d97706" style={{ flexShrink: 0 }} />
+                    <div>
+                      <span style={{ fontWeight: 700 }}>{dupIssue.warningEn}</span>
+                      <span style={{ marginLeft: 6, fontFamily: 'var(--font-bn)' }}>({dupIssue.warningBn})</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-danger btn-sm"
+                    style={{ padding: '2px 8px', fontSize: 11, background: '#fee2e2', color: '#b91c1c' }}
+                    onClick={() => removeMedicine(med.id)}
+                    title="Remove this duplicate medicine"
+                  >
+                    ডুপ্লিকেট মুছুন
+                  </button>
                 </div>
               )}
 

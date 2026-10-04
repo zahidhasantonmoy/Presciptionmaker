@@ -115,6 +115,8 @@ export interface Prescription {
   language: Language;
   theme: PrescriptionTheme;
   printMode?: 'full' | 'pad_only';
+  pageCount?: 'auto' | '1' | '2';
+  splitAfterMedicine?: number;
   showQrCode?: boolean;
   isDraft: boolean;
   createdAt: string;

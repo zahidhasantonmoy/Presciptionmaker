@@ -72,9 +72,34 @@
   .rx-preview { 
     box-shadow: none !important; 
     margin: 0 auto !important; 
-    padding: 0 !important;
+    padding: 0 !important; 
     width: 210mm !important;
-    min-height: 297mm !important;
+    min-height: auto !important;
+    background: transparent !important;
+    gap: 0 !important;
+  }
+  .rx-page-sheet {
+    box-shadow: none !important; 
+    margin: 0 !important; 
+    padding: 0 !important; 
+    width: 210mm !important;
+    height: 297mm !important;
+    max-height: 297mm !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+  .rx-page-sheet:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
+  .rx-preview-inner {
+    height: 100% !important;
+    max-height: 297mm !important;
+    box-sizing: border-box !important;
   }
   @page {
     size: A4 portrait;
@@ -85,6 +110,15 @@
 /* ─── Prescription A4 Preview ──────────────────────────────────────────────── */
 .rx-preview {
   width: 210mm;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  background: transparent;
+  position: relative;
+}
+
+.rx-page-sheet {
+  width: 210mm;
   min-height: 297mm;
   background: white;
   font-family: var(--font-en);
@@ -93,6 +127,9 @@
   color: #1a1a1a;
   position: relative;
   box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
 }
 
 .rx-preview .bn-text {
@@ -104,6 +141,80 @@
   min-height: 297mm;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
+  flex: 1;
+}
+
+/* ─── Page Continuation & Multi-Page ───────────────────────────────────────── */
+.rx-page-continuation {
+  margin-top: auto;
+  padding: 8px 14px;
+  background: #f0f7ff;
+  border: 1px dashed #93c5fd;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 8.5pt;
+  font-weight: 600;
+  color: #1e40af;
+  margin-bottom: 6px;
+}
+
+.rx-page-continuation-sanowara {
+  margin-top: auto;
+  padding: 8px 14px;
+  background: #fdf2f8;
+  border: 1px dashed #f472b6;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 8.5pt;
+  font-weight: 600;
+  color: #6b1a4f;
+  margin-bottom: 6px;
+}
+
+.rx-page2-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #1e40af;
+  margin-bottom: 8px;
+  gap: 12px;
+}
+
+.rx-page2-header-sanowara {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #6b1a4f;
+  margin-bottom: 8px;
+  gap: 12px;
+}
+
+.rx-page2-badge {
+  background: #eff6ff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+  border-radius: 9999px;
+  padding: 3px 12px;
+  font-size: 8pt;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.rx-page2-badge-sanowara {
+  background: #6b1a4f;
+  color: white;
+  border-radius: 9999px;
+  padding: 3px 12px;
+  font-size: 8.5pt;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 /* ─── Prescription Header ──────────────────────────────────────────────────── */
@@ -754,6 +865,7 @@ textarea.form-input {
 .toast-success { border-color: #16a34a; }
 .toast-error { border-color: #dc2626; }
 .toast-info { border-color: #3b82f6; }
+.toast-warning { border-color: #f59e0b; background: #fffbeb; color: #92400e; }
 
 /* ─── Prescription Theme Variants ──────────────────────────────────────────── */
 .theme-classic .rx-header { border-bottom-color: #1e40af; }
