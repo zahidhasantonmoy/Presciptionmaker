@@ -4,13 +4,12 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import {
   Train, Download, Printer, Plus, CheckCircle2,
-  Trash2, ArrowRight, ShieldCheck, Sparkles, Clock, MapPin,
-  RefreshCw, Check, PenTool
+  Trash2, PenTool
 } from 'lucide-react';
-import { RailwayLogo } from './RailwayLogo';
+import { ShohozLogo } from './ShohozLogo';
 import {
   RAILWAY_STATIONS, RAILWAY_TRAINS, RAILWAY_CLASSES,
-  toBanglaDigits, formatRailwayDateTime, getStationBanglaName,
+  toBanglaDigits, getStationBanglaName,
   formatCoachSeat
 } from './railwayData';
 
@@ -51,7 +50,7 @@ export interface BangladeshRailwayTicket {
 
 const DEFAULT_BR_TICKET: BangladeshRailwayTicket = {
   id: 'BR-' + Math.floor(100000 + Math.random() * 900000),
-  pnrNumber: '6ABA12DE75581',
+  pnrNumber: '6ABA16FCEEBCA',
   passengerName: 'MD. ZAHID HASAN',
   idType: 'NID',
   idTypeBn: 'এন আই ডি',
@@ -60,25 +59,25 @@ const DEFAULT_BR_TICKET: BangladeshRailwayTicket = {
   mobileNumber: '017*****000',
   mobileNumberBn: '০১৭*****০০০',
   issueDate: '2026-09-28',
-  issueTime: '13:10',
-  journeyDate: '2026-10-03',
-  journeyTime: '16:00',
-  fromStation: 'Rajshahi',
-  fromStationBn: 'রাজশাহী',
-  toStation: 'Dhaka',
-  toStationBn: 'ঢাকা',
-  trainName: 'PADMA EXPRESS',
-  trainNameBn: 'পদ্মা এক্সপ্রেস',
-  trainNumber: '760',
+  issueTime: '13:27',
+  journeyDate: '2026-10-01',
+  journeyTime: '19:30',
+  fromStation: 'Dhaka',
+  fromStationBn: 'ঢাকা',
+  toStation: 'Bheramara',
+  toStationBn: 'ভেড়ামারা',
+  trainName: 'CHITRA EXPRESS',
+  trainNameBn: 'চিত্রা',
+  trainNumber: '764',
   className: 'S_CHAIR',
-  classNameBn: 'শো.চেয়ার',
-  coachSeat: 'THA-92',
-  coachSeatBn: 'ঠ-৯২',
+  classNameBn: 'শো.চেয়ার',
+  coachSeat: 'TA-34',
+  coachSeatBn: 'ট-৩৪',
   numSeats: 1,
   numAdults: 1,
   numSeniors: 0,
   numChildren: 0,
-  fare: 450,
+  fare: 455,
   vat: 0,
   serviceCharge: 20,
   createdAt: new Date().toISOString(),
@@ -146,7 +145,7 @@ export function TicketMaker() {
         fromStationBn: fromStMatch?.nameBn || prev.fromStationBn,
         toStation: match.toStation,
         toStationBn: toStMatch?.nameBn || prev.toStationBn,
-        journeyTime: match.departureTime, // Auto-adjust train departure time!
+        journeyTime: match.departureTime,
         fare: autoFare,
       }));
     }
@@ -211,7 +210,7 @@ export function TicketMaker() {
 
     QRCode.toDataURL(qrPayload, {
       width: 140,
-      margin: 1,
+      margin: 0,
       color: { dark: '#000000', light: '#ffffff' }
     }).then(setQrDataUrl).catch(console.error);
   }, [ticket.pnrNumber, ticket.passengerName, ticket.trainName, ticket.trainNumber, ticket.journeyDate, ticket.journeyTime, ticket.coachSeat, ticket.fare]);
@@ -220,6 +219,19 @@ export function TicketMaker() {
   const isBeddingClass = ticket.className === 'AC_B' || ticket.className === 'F_BERTH';
   const beddingCharge = isBeddingClass ? 50 * ticket.numSeats : 0;
   const totalFare = (ticket.fare * ticket.numAdults) + ticket.vat + ticket.serviceCharge + beddingCharge;
+
+  // Format date helper
+  const formatDateEn = (dateStr: string, timeStr: string) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    const formatted = parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : dateStr;
+    return `${formatted} ${timeStr || '00:00'}`;
+  };
+
+  const formatDateBn = (dateStr: string, timeStr: string) => {
+    const en = formatDateEn(dateStr, timeStr);
+    return toBanglaDigits(en);
+  };
 
   // Save current ticket
   const saveCurrentTicket = () => {
@@ -251,7 +263,7 @@ export function TicketMaker() {
     localStorage.setItem('personal_railway_tickets_db', JSON.stringify(filtered));
   };
 
-  // Download High-Resolution A4 PDF
+  // Download High-Resolution A4 PDF matching exact points
   const handleDownloadPdf = async () => {
     if (!ticketRef.current) return;
     setIsGeneratingPdf(true);
@@ -262,9 +274,9 @@ export function TicketMaker() {
         backgroundColor: '#ffffff',
       });
       const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdf = new jsPDF('p', 'pt', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      const pdfHeight = pdf.internal.pageSize.getHeight();
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`BR_ETicket_${ticket.pnrNumber}_${ticket.passengerName.replace(/\s+/g, '_')}.pdf`);
     } catch (err) {
@@ -298,15 +310,15 @@ export function TicketMaker() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{
             width: 38, height: 38, borderRadius: 10,
-            background: 'linear-gradient(135deg, #008037 0%, #047857 100%)',
+            background: 'linear-gradient(135deg, #039d48 0%, #05b454 100%)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#fff', boxShadow: '0 4px 12px rgba(0, 128, 55, 0.35)'
+            color: '#fff', boxShadow: '0 4px 12px rgba(3, 157, 72, 0.35)'
           }}>
             <Train size={22} />
           </div>
           <div>
             <h1 style={{ fontSize: 17, fontWeight: 700, margin: 0 }}>Bangladesh Railway Ticket Maker</h1>
-            <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>Official E-Ticket Generator with Exact 1:1 Pixel Match & Schedule Auto-Sync</p>
+            <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>100% Exact Official Template with Pixel-to-Pixel Alignment & Automated Schedule</p>
           </div>
         </div>
 
@@ -316,7 +328,7 @@ export function TicketMaker() {
               <button
                 onClick={() => setMobileTab('editor')}
                 style={{
-                  background: mobileTab === 'editor' ? '#008037' : 'transparent',
+                  background: mobileTab === 'editor' ? '#039d48' : 'transparent',
                   color: '#fff', border: 'none', borderRadius: 6, padding: '5px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer'
                 }}
               >
@@ -325,7 +337,7 @@ export function TicketMaker() {
               <button
                 onClick={() => setMobileTab('preview')}
                 style={{
-                  background: mobileTab === 'preview' ? '#008037' : 'transparent',
+                  background: mobileTab === 'preview' ? '#039d48' : 'transparent',
                   color: '#fff', border: 'none', borderRadius: 6, padding: '5px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer'
                 }}
               >
@@ -369,10 +381,10 @@ export function TicketMaker() {
             disabled={isGeneratingPdf}
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
-              background: 'linear-gradient(135deg, #008037 0%, #059669 100%)',
+              background: 'linear-gradient(135deg, #039d48 0%, #05b454 100%)',
               color: '#fff', border: 'none', padding: '7px 14px', borderRadius: 8,
               fontSize: 12, fontWeight: 700, cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(0, 128, 55, 0.4)'
+              boxShadow: '0 4px 12px rgba(3, 157, 72, 0.4)'
             }}
           >
             <Download size={15} /> {isGeneratingPdf ? 'Generating...' : 'PDF Download'}
@@ -408,7 +420,7 @@ export function TicketMaker() {
                   <button
                     onClick={() => setManualStationMode(!manualStationMode)}
                     style={{
-                      background: manualStationMode ? '#008037' : 'rgba(255,255,255,0.06)',
+                      background: manualStationMode ? '#039d48' : 'rgba(255,255,255,0.06)',
                       border: '1px solid rgba(255,255,255,0.12)',
                       borderRadius: 6,
                       padding: '3px 8px',
@@ -471,7 +483,7 @@ export function TicketMaker() {
                           type="text"
                           value={ticket.fromStation}
                           onChange={e => setTicket({ ...ticket, fromStation: e.target.value })}
-                          placeholder="e.g. Rajshahi"
+                          placeholder="e.g. Dhaka"
                           style={{ width: '100%', padding: '6px 8px', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, color: '#fff', fontSize: 12, boxSizing: 'border-box' }}
                         />
                       </div>
@@ -481,7 +493,7 @@ export function TicketMaker() {
                           type="text"
                           value={ticket.fromStationBn}
                           onChange={e => setTicket({ ...ticket, fromStationBn: e.target.value })}
-                          placeholder="যেমনঃ রাজশাহী"
+                          placeholder="যেমনঃ ঢাকা"
                           style={{ width: '100%', padding: '6px 8px', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, color: '#fff', fontSize: 12, boxSizing: 'border-box' }}
                         />
                       </div>
@@ -493,7 +505,7 @@ export function TicketMaker() {
                           type="text"
                           value={ticket.toStation}
                           onChange={e => setTicket({ ...ticket, toStation: e.target.value })}
-                          placeholder="e.g. Dhaka"
+                          placeholder="e.g. Bheramara"
                           style={{ width: '100%', padding: '6px 8px', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, color: '#fff', fontSize: 12, boxSizing: 'border-box' }}
                         />
                       </div>
@@ -503,7 +515,7 @@ export function TicketMaker() {
                           type="text"
                           value={ticket.toStationBn}
                           onChange={e => setTicket({ ...ticket, toStationBn: e.target.value })}
-                          placeholder="যেমনঃ ঢাকা"
+                          placeholder="যেমনঃ ভেড়ামারা"
                           style={{ width: '100%', padding: '6px 8px', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, color: '#fff', fontSize: 12, boxSizing: 'border-box' }}
                         />
                       </div>
@@ -519,7 +531,7 @@ export function TicketMaker() {
                   <button
                     onClick={() => setManualTrainMode(!manualTrainMode)}
                     style={{
-                      background: manualTrainMode ? '#008037' : 'rgba(255,255,255,0.06)',
+                      background: manualTrainMode ? '#039d48' : 'rgba(255,255,255,0.06)',
                       border: '1px solid rgba(255,255,255,0.12)',
                       borderRadius: 6,
                       padding: '3px 8px',
@@ -566,7 +578,7 @@ export function TicketMaker() {
                         type="text"
                         value={ticket.trainName}
                         onChange={e => setTicket({ ...ticket, trainName: e.target.value })}
-                        placeholder="PADMA EXPRESS"
+                        placeholder="CHITRA EXPRESS"
                         style={{ width: '100%', padding: '6px 8px', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, color: '#fff', fontSize: 12, boxSizing: 'border-box' }}
                       />
                     </div>
@@ -576,7 +588,7 @@ export function TicketMaker() {
                         type="text"
                         value={ticket.trainNameBn}
                         onChange={e => setTicket({ ...ticket, trainNameBn: e.target.value })}
-                        placeholder="পদ্মা এক্সপ্রেস"
+                        placeholder="চিত্রা"
                         style={{ width: '100%', padding: '6px 8px', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, color: '#fff', fontSize: 12, boxSizing: 'border-box' }}
                       />
                     </div>
@@ -586,7 +598,7 @@ export function TicketMaker() {
                         type="text"
                         value={ticket.trainNumber}
                         onChange={e => setTicket({ ...ticket, trainNumber: e.target.value })}
-                        placeholder="760"
+                        placeholder="764"
                         style={{ width: '100%', padding: '6px 8px', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, color: '#fff', fontSize: 12, boxSizing: 'border-box' }}
                       />
                     </div>
@@ -601,7 +613,7 @@ export function TicketMaker() {
                   <button
                     onClick={() => setManualClassMode(!manualClassMode)}
                     style={{
-                      background: manualClassMode ? '#008037' : 'rgba(255,255,255,0.06)',
+                      background: manualClassMode ? '#039d48' : 'rgba(255,255,255,0.06)',
                       border: '1px solid rgba(255,255,255,0.12)',
                       borderRadius: 6,
                       padding: '3px 8px',
@@ -649,7 +661,7 @@ export function TicketMaker() {
                           type="text"
                           value={ticket.classNameBn}
                           onChange={e => setTicket({ ...ticket, classNameBn: e.target.value })}
-                          placeholder="শো.চেয়ার"
+                          placeholder="শো.চেয়ার"
                           style={{ width: '100%', padding: '6px', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, color: '#fff', fontSize: 11.5, boxSizing: 'border-box' }}
                         />
                       </div>
@@ -671,7 +683,7 @@ export function TicketMaker() {
                           coachSeatBn: matchBn ? matchBn[1] : toBanglaDigits(val)
                         });
                       }}
-                      placeholder="THA-92"
+                      placeholder="TA-34"
                       style={{ width: '100%', padding: '7px 8px', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, color: '#fff', fontSize: 12, boxSizing: 'border-box' }}
                     />
                   </div>
@@ -807,7 +819,7 @@ export function TicketMaker() {
                         type="text"
                         value={ticket.pnrNumber}
                         onChange={e => setTicket({ ...ticket, pnrNumber: e.target.value.toUpperCase() })}
-                        placeholder="6ABA12DE75581"
+                        placeholder="6ABA16FCEEBCA"
                         style={{ width: '100%', padding: '6px 8px', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, color: '#fff', fontSize: 12, boxSizing: 'border-box', fontFamily: 'monospace' }}
                       />
                     </div>
@@ -907,7 +919,7 @@ export function TicketMaker() {
                     onClick={() => setTicket(item)}
                     style={{
                       background: item.id === ticket.id ? '#1e293b' : 'rgba(255, 255, 255, 0.03)',
-                      border: `1px solid ${item.id === ticket.id ? '#008037' : 'rgba(255, 255, 255, 0.06)'}`,
+                      border: `1px solid ${item.id === ticket.id ? '#039d48' : 'rgba(255, 255, 255, 0.06)'}`,
                       borderRadius: 6,
                       padding: '7px 10px',
                       cursor: 'pointer',
@@ -941,7 +953,7 @@ export function TicketMaker() {
           </div>
         )}
 
-        {/* Right Preview: Live A4 Bangladesh Railway Ticket View (Exact 100% pixel match to uploaded PDF) */}
+        {/* Right Preview: Live A4 Bangladesh Railway Ticket View (Exact official HTML/SVG system match) */}
         {(!isMobile || mobileTab === 'preview') && (
           <div style={{
             flex: 1,
@@ -952,422 +964,686 @@ export function TicketMaker() {
             background: '#040711',
             overflowY: 'auto'
           }}>
-            {/* A4 Paper Sheet (White Paper with Margins) */}
+            {/* 1:1 Exact Official Bangladesh Railway Ticket Board */}
             <div
+              id="page"
               ref={ticketRef}
               style={{
-                width: 794, // Standard A4 width in px @ 96 DPI
-                minHeight: 1123, // Standard A4 height in px
+                position: 'relative',
+                width: '595.28pt',
+                height: '841.89pt',
+                margin: '0 auto',
                 background: '#ffffff',
-                color: '#000000',
-                padding: '28px 30px', // Exact margin around official green box
-                boxSizing: 'border-box',
-                boxShadow: '0 20px 40px rgba(0,0,0,0.85)',
-                fontFamily: "'Hind Siliguri', 'Noto Sans Bengali', Arial, sans-serif",
-                WebkitFontSmoothing: 'antialiased',
+                overflow: 'hidden',
+                boxShadow: '0 20px 50px rgba(0,0,0,0.85)',
+                userSelect: 'none',
               }}
             >
-              {/* Official Bangladesh Railway Green Outer Frame */}
-              <div style={{
-                border: '2px solid #008037',
-                borderRadius: 4,
-                padding: '20px 22px 16px 22px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                minHeight: 1065,
-                boxSizing: 'border-box',
-                background: '#ffffff',
-              }}>
-                <div>
-                  {/* ─── Official Header: Authentic Emblem, Title, Powered by & QR (Exact 1:1 match) ─── */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    {/* Official Bangladesh Railway Crest */}
-                    <RailwayLogo size={74} />
+              {/* Green Outer Frame */}
+              <div
+                id="frame"
+                style={{
+                  position: 'absolute',
+                  left: '42.5pt',
+                  top: '45.4pt',
+                  width: '510.3pt',
+                  height: '735pt',
+                  boxSizing: 'border-box',
+                  border: '3.6pt solid #039d48',
+                  background: '#ffffff',
+                }}
+              />
 
-                    {/* Title (BANGLADESH RAILWAY / বাংলাদেশ রেলওয়ে in exact #005d8f deep teal) */}
-                    <div style={{ textAlign: 'center', flex: 1, padding: '0 8px' }}>
-                      <h1 style={{
-                        fontSize: 22,
-                        fontWeight: 800,
-                        color: '#005d8f',
-                        letterSpacing: '0.02em',
-                        margin: 0,
-                        lineHeight: 1.15,
-                        fontFamily: 'Inter, Arial, sans-serif'
-                      }}>
-                        BANGLADESH RAILWAY
-                      </h1>
-                      <h2 style={{
-                        fontSize: 20,
-                        fontWeight: 700,
-                        color: '#005d8f',
-                        margin: '3px 0 0',
-                        lineHeight: 1.2,
-                        fontFamily: "'Hind Siliguri', 'Noto Sans Bengali', sans-serif"
-                      }}>
-                        বাংলাদেশ রেলওয়ে
-                      </h2>
-                    </div>
+              {/* Exact Official SVG Canvas Layer */}
+              <svg
+                style={{ position: 'absolute', left: 0, top: 0, pointerEvents: 'none' }}
+                width="595.28pt"
+                height="841.89pt"
+                viewBox="0 0 595.28 841.89"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                {/* Table Header Banners & Highlight Boxes */}
+                <rect x="57.895" y="169.123" width="479.491" height="22.461" fill="#039d48" />
+                <rect x="57.895" y="411.371" width="479.491" height="22.461" fill="#039d48" />
+                <rect x="57.520" y="602.113" width="480.241" height="43.200" fill="#e8f5e9" />
+                <rect x="57.520" y="650.188" width="480.241" height="24.600" fill="#fdebd3" />
 
-                    {/* Powered By & Official QR Code */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, textAlign: 'right' }}>
-                      <div style={{ lineHeight: 1.25 }}>
-                        <div style={{ fontSize: 9.5, color: '#334155', fontWeight: 500 }}>Powered by</div>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: '#005d8f' }}>Shohoz</div>
-                        <div style={{ fontSize: 11, fontWeight: 600, color: '#475569' }}>Synesis</div>
-                        <div style={{ fontSize: 11, fontWeight: 600, color: '#008037' }}>
-                          Vincen <span style={{ fontSize: 13, fontWeight: 900, color: '#16a34a' }}>JV</span>
-                        </div>
-                      </div>
+                {/* Table 1: Outer & Inner Grid Lines */}
+                <line x1="57.895" y1="169.123" x2="57.895" y2="191.209" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="537.385" y1="169.123" x2="537.385" y2="191.209" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="57.895" y1="169.123" x2="537.385" y2="169.123" stroke="#05b454" strokeWidth="0.750" />
 
-                      {qrDataUrl && (
-                        <img
-                          src={qrDataUrl}
-                          alt="E-Ticket QR"
-                          style={{ width: 80, height: 80, display: 'block' }}
-                        />
-                      )}
-                    </div>
-                  </div>
+                <line x1="57.895" y1="191.584" x2="57.895" y2="204.450" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="191.584" x2="297.640" y2="204.450" stroke="#999999" strokeWidth="0.750" />
+                <line x1="57.895" y1="191.584" x2="297.640" y2="191.584" stroke="#999999" strokeWidth="0.750" />
 
-                  {/* ─── Greeting / Introduction Block (Direct continuation without divider line) ─── */}
-                  <div style={{ margin: '14px 0 12px', fontSize: 10.5, color: '#000000', lineHeight: 1.38 }}>
-                    <div style={{ fontWeight: 600, marginBottom: 2 }}>Dear {ticket.passengerName},</div>
-                    <div>
-                      Your request to book e-ticket for your journey in Bangladesh Railway was successful. You can travel on the train mentioned in the ticket subject to showing your NID or Photo ID card. The details of your e-ticket are as below:
-                    </div>
-                    <div style={{ marginTop: 5, fontFamily: "'Hind Siliguri', 'Noto Sans Bengali', sans-serif" }}>
-                      বাংলাদেশ রেলওয়েতে ভ্রমণের জন্য আপনার চাহিত ই-টিকিট সফলভাবে প্রদান করা হয়েছে। আপনার এনআইডি কিংবা ছবি সম্বলিত আইডি দেখানো সাপেক্ষে আপনি টিকিটে বর্ণিত ট্রেনে যাত্রা করতে পারবেন। ই-টিকিটের বিস্তারিত নিম্নে দেয়া হল:-
-                    </div>
-                  </div>
+                <line x1="57.895" y1="204.450" x2="57.895" y2="217.317" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="204.450" x2="297.640" y2="217.317" stroke="#999999" strokeWidth="0.750" />
+                <line x1="57.895" y1="204.450" x2="297.640" y2="204.450" stroke="#999999" strokeWidth="0.750" />
 
-                  {/* ─── Table 1: Journey Information (যাত্রার তথ্য) ─── */}
-                  <div style={{ marginBottom: 12 }}>
-                    {/* Green Header Banner */}
-                    <div style={{
-                      background: '#008037',
-                      color: '#ffffff',
-                      fontWeight: 700,
-                      fontSize: 12,
-                      padding: '3.5px 8px',
-                      borderRadius: '3px 3px 0 0',
-                    }}>
-                      Journey Information (যাত্রার তথ্য)
-                    </div>
+                <line x1="57.895" y1="217.317" x2="57.895" y2="230.183" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="217.317" x2="297.640" y2="230.183" stroke="#999999" strokeWidth="0.750" />
+                <line x1="57.895" y1="217.317" x2="297.640" y2="217.317" stroke="#999999" strokeWidth="0.750" />
 
-                    {/* Table Body - Exact clean white rows matching official ticket */}
-                    <table style={{
-                      width: '100%',
-                      borderCollapse: 'collapse',
-                      fontSize: 10,
-                      border: '1px solid #c8d1dc',
-                      borderTop: 'none',
-                    }}>
-                      <tbody>
-                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                          <td style={{ padding: '2.8px 8px', width: '48%', fontWeight: 500, color: '#000000' }}>
-                            Issue Date & Time (প্রদানের তারিখ ও সময়)
-                          </td>
-                          <td style={{ padding: '2.8px 8px', width: '52%', color: '#000000', fontWeight: 500 }}>
-                            {formatRailwayDateTime(ticket.issueDate, ticket.issueTime)}
-                          </td>
-                        </tr>
+                <line x1="57.895" y1="230.183" x2="57.895" y2="243.049" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="230.183" x2="297.640" y2="243.049" stroke="#999999" strokeWidth="0.750" />
+                <line x1="57.895" y1="230.183" x2="297.640" y2="230.183" stroke="#999999" strokeWidth="0.750" />
 
-                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
-                            Journey Date & Time (যাত্রার তারিখ ও সময়)
-                          </td>
-                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
-                            {formatRailwayDateTime(ticket.journeyDate, ticket.journeyTime)}
-                          </td>
-                        </tr>
+                <line x1="57.895" y1="243.049" x2="57.895" y2="255.915" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="243.049" x2="297.640" y2="255.915" stroke="#999999" strokeWidth="0.750" />
+                <line x1="57.895" y1="243.049" x2="297.640" y2="243.049" stroke="#999999" strokeWidth="0.750" />
 
-                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
-                            Train Name & Number (ট্রেন নম্বর ও নাম)
-                          </td>
-                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
-                            {ticket.trainName} [{ticket.trainNumber}] ({ticket.trainNameBn} [{toBanglaDigits(ticket.trainNumber)}])
-                          </td>
-                        </tr>
+                <line x1="57.895" y1="255.915" x2="57.895" y2="268.782" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="255.915" x2="297.640" y2="268.782" stroke="#999999" strokeWidth="0.750" />
+                <line x1="57.895" y1="255.915" x2="297.640" y2="255.915" stroke="#999999" strokeWidth="0.750" />
 
-                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
-                            From Station (প্রারম্ভিক স্টেশন)
-                          </td>
-                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
-                            {ticket.fromStation} ({ticket.fromStationBn || getStationBanglaName(ticket.fromStation)})
-                          </td>
-                        </tr>
+                <line x1="57.895" y1="268.782" x2="57.895" y2="281.648" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="268.782" x2="297.640" y2="281.648" stroke="#999999" strokeWidth="0.750" />
+                <line x1="57.895" y1="268.782" x2="297.640" y2="268.782" stroke="#999999" strokeWidth="0.750" />
 
-                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
-                            To Station (গন্তব্য স্টেশন)
-                          </td>
-                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
-                            {ticket.toStation} ({ticket.toStationBn || getStationBanglaName(ticket.toStation)})
-                          </td>
-                        </tr>
+                <line x1="57.895" y1="281.648" x2="57.895" y2="294.514" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="281.648" x2="297.640" y2="294.514" stroke="#999999" strokeWidth="0.750" />
+                <line x1="57.895" y1="281.648" x2="297.640" y2="281.648" stroke="#999999" strokeWidth="0.750" />
 
-                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
-                            Class Name (শ্রেণির নাম)
-                          </td>
-                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
-                            {ticket.className} ({ticket.classNameBn})
-                          </td>
-                        </tr>
+                <line x1="57.895" y1="294.514" x2="57.895" y2="307.380" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="294.514" x2="297.640" y2="307.380" stroke="#999999" strokeWidth="0.750" />
+                <line x1="57.895" y1="294.514" x2="297.640" y2="294.514" stroke="#999999" strokeWidth="0.750" />
 
-                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
-                            Coach Name / Seat(s) (কোচের নাম / আসন)
-                          </td>
-                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
-                            {formatCoachSeat(ticket.coachSeat, ticket.coachSeatBn)}
-                          </td>
-                        </tr>
+                <line x1="57.895" y1="307.380" x2="57.895" y2="320.247" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="307.380" x2="297.640" y2="320.247" stroke="#999999" strokeWidth="0.750" />
+                <line x1="57.895" y1="307.380" x2="297.640" y2="307.380" stroke="#999999" strokeWidth="0.750"/>
 
-                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
-                            No. of Seats (আসন সংখ্যা)
-                          </td>
-                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
-                            {ticket.numSeats} ({toBanglaDigits(ticket.numSeats)})
-                          </td>
-                        </tr>
+                <line x1="57.895" y1="320.247" x2="57.895" y2="333.113" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="320.247" x2="297.640" y2="333.113" stroke="#999999" strokeWidth="0.750" />
+                <line x1="57.895" y1="320.247" x2="297.640" y2="320.247" stroke="#999999" strokeWidth="0.750" />
 
-                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
-                            No. of Adult Passenger(s) (প্রাপ্তবয়স্ক যাত্রীর সংখ্যা)
-                          </td>
-                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
-                            {ticket.numAdults} ({toBanglaDigits(ticket.numAdults)})
-                          </td>
-                        </tr>
+                <line x1="57.895" y1="333.113" x2="57.895" y2="345.979" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="333.113" x2="297.640" y2="345.979" stroke="#999999" strokeWidth="0.750" />
+                <line x1="57.895" y1="333.113" x2="297.640" y2="333.113" stroke="#999999" strokeWidth="0.750" />
 
-                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
-                            No. of Senior Citizen Passenger(s) (প্রবীণ যাত্রীর সংখ্যা)
-                          </td>
-                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
-                            {ticket.numSeniors} ({toBanglaDigits(ticket.numSeniors)})
-                          </td>
-                        </tr>
+                <line x1="57.895" y1="345.979" x2="57.895" y2="358.845" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="345.979" x2="297.640" y2="358.845" stroke="#999999" strokeWidth="0.750" />
+                <line x1="57.895" y1="345.979" x2="297.640" y2="345.979" stroke="#999999" strokeWidth="0.750" />
 
-                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
-                            No. of Child Passenger(s) (শিশু যাত্রীর সংখ্যা)
-                          </td>
-                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
-                            {ticket.numChildren} ({toBanglaDigits(ticket.numChildren)})
-                          </td>
-                        </tr>
+                <line x1="57.895" y1="358.845" x2="57.895" y2="371.712" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="358.845" x2="297.640" y2="371.712" stroke="#999999" strokeWidth="0.750" />
+                <line x1="57.895" y1="358.845" x2="297.640" y2="358.845" stroke="#999999" strokeWidth="0.750" />
 
-                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
-                            Fare (ভাড়া)
-                          </td>
-                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
-                            BDT {ticket.fare.toFixed(2)} ({toBanglaDigits(ticket.fare.toFixed(2))} টাকা)
-                          </td>
-                        </tr>
+                <line x1="57.895" y1="371.712" x2="57.895" y2="384.578" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="371.712" x2="297.640" y2="384.578" stroke="#999999" strokeWidth="0.750" />
+                <line x1="57.895" y1="371.712" x2="297.640" y2="371.712" stroke="#999999" strokeWidth="0.750" />
 
-                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
-                            VAT (ভ্যাট)
-                          </td>
-                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
-                            BDT {ticket.vat.toFixed(2)} ({toBanglaDigits(ticket.vat.toFixed(2))} টাকা)
-                          </td>
-                        </tr>
+                <line x1="57.895" y1="384.578" x2="57.895" y2="395.621" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="57.895" y1="395.621" x2="537.385" y2="395.621" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="537.385" y1="384.578" x2="537.385" y2="395.621" stroke="#999999" strokeWidth="0.750" />
+                <line x1="57.895" y1="384.578" x2="537.385" y2="384.578" stroke="#999999" strokeWidth="0.750" />
 
-                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
-                            Service Charge (সেবা খরচ)
-                          </td>
-                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
-                            BDT {ticket.serviceCharge.toFixed(2)} ({toBanglaDigits(ticket.serviceCharge.toFixed(2))} টাকা)
-                          </td>
-                        </tr>
+                {/* Table 1: Right Column Lines */}
+                <line x1="537.385" y1="191.584" x2="537.385" y2="204.450" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="191.584" x2="537.385" y2="191.584" stroke="#999999" strokeWidth="0.750" />
+                <line x1="537.385" y1="204.450" x2="537.385" y2="217.317" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="204.450" x2="537.385" y2="204.450" stroke="#999999" strokeWidth="0.750" />
+                <line x1="537.385" y1="217.317" x2="537.385" y2="230.183" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="217.317" x2="537.385" y2="217.317" stroke="#999999" strokeWidth="0.750" />
+                <line x1="537.385" y1="230.183" x2="537.385" y2="243.049" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="230.183" x2="537.385" y2="230.183" stroke="#999999" strokeWidth="0.750" />
+                <line x1="537.385" y1="243.049" x2="537.385" y2="255.915" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="243.049" x2="537.385" y2="243.049" stroke="#999999" strokeWidth="0.750" />
+                <line x1="537.385" y1="255.915" x2="537.385" y2="268.782" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="255.915" x2="537.385" y2="255.915" stroke="#999999" strokeWidth="0.750" />
+                <line x1="537.385" y1="268.782" x2="537.385" y2="281.648" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="268.782" x2="537.385" y2="268.782" stroke="#999999" strokeWidth="0.750" />
+                <line x1="537.385" y1="281.648" x2="537.385" y2="294.514" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="281.648" x2="537.385" y2="281.648" stroke="#999999" strokeWidth="0.750" />
+                <line x1="537.385" y1="294.514" x2="537.385" y2="307.380" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="294.514" x2="537.385" y2="294.514" stroke="#999999" strokeWidth="0.750" />
+                <line x1="537.385" y1="307.380" x2="537.385" y2="320.247" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="307.380" x2="537.385" y2="307.380" stroke="#999999" strokeWidth="0.750" />
+                <line x1="537.385" y1="320.247" x2="537.385" y2="333.113" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="320.247" x2="537.385" y2="320.247" stroke="#999999" strokeWidth="0.750" />
+                <line x1="537.385" y1="333.113" x2="537.385" y2="345.979" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="333.113" x2="537.385" y2="333.113" stroke="#999999" strokeWidth="0.750" />
+                <line x1="537.385" y1="345.979" x2="537.385" y2="358.845" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="345.979" x2="537.385" y2="345.979" stroke="#999999" strokeWidth="0.750" />
+                <line x1="537.385" y1="358.845" x2="537.385" y2="371.712" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="358.845" x2="537.385" y2="358.845" stroke="#999999" strokeWidth="0.750" />
+                <line x1="537.385" y1="371.712" x2="537.385" y2="384.203" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="371.712" x2="537.385" y2="371.712" stroke="#999999" strokeWidth="0.750" />
 
-                        <tr>
-                          <td style={{ padding: '3.5px 8px', fontWeight: 700, color: '#000000' }}>
-                            Total Fare (মোট ভাড়া)**
-                          </td>
-                          <td style={{ padding: '3.5px 8px', color: '#000000', fontWeight: 700 }}>
-                            BDT {totalFare.toFixed(2)} ({toBanglaDigits(totalFare.toFixed(2))} টাকা)
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
+                {/* Table 2: Passenger Information Grid Lines */}
+                <line x1="57.895" y1="411.371" x2="57.895" y2="433.457" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="537.385" y1="411.371" x2="537.385" y2="433.457" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="57.895" y1="411.371" x2="537.385" y2="411.371" stroke="#05b454" strokeWidth="0.750" />
 
-                    {/* Bedding Charges Footnote */}
-                    <div style={{ fontSize: 8.5, color: '#222222', marginTop: 2.5, lineHeight: 1.3 }}>
-                      ** Total Fare includes BDT 50 Bedding Charges per seat for AC_B and F_BERTH seat classes. (এসি_বি এবং এফ_বাথ সিট ক্লাসের প্রতি সিটে মোট ভাড়ার সাথে ৳৫০ বেডিং চার্জ অন্তর্ভুক্ত)
-                    </div>
-                  </div>
+                <line x1="57.895" y1="433.832" x2="57.895" y2="446.698" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="433.832" x2="297.640" y2="446.698" stroke="#999999" strokeWidth="0.750" />
+                <line x1="57.895" y1="433.832" x2="297.640" y2="433.832" stroke="#999999" strokeWidth="0.750" />
 
-                  {/* ─── Table 2: Passenger Information (যাত্রীর তথ্য) ─── */}
-                  <div style={{ marginBottom: 12 }}>
-                    {/* Green Header Banner */}
-                    <div style={{
-                      background: '#008037',
-                      color: '#ffffff',
-                      fontWeight: 700,
-                      fontSize: 12,
-                      padding: '3.5px 8px',
-                      borderRadius: '3px 3px 0 0',
-                    }}>
-                      Passenger Information (যাত্রীর তথ্য)
-                    </div>
+                <line x1="57.895" y1="446.698" x2="57.895" y2="459.564" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="446.698" x2="297.640" y2="459.564" stroke="#999999" strokeWidth="0.750" />
+                <line x1="57.895" y1="446.698" x2="297.640" y2="446.698" stroke="#999999" strokeWidth="0.750" />
 
-                    <table style={{
-                      width: '100%',
-                      borderCollapse: 'collapse',
-                      fontSize: 10,
-                      border: '1px solid #c8d1dc',
-                      borderTop: 'none',
-                    }}>
-                      <tbody>
-                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                          <td style={{ padding: '2.8px 8px', width: '48%', fontWeight: 500, color: '#000000' }}>
-                            Passenger Name (যাত্রীর নাম)
-                          </td>
-                          <td style={{ padding: '2.8px 8px', width: '52%', color: '#000000', fontWeight: 500 }}>
-                            {ticket.passengerName}
-                          </td>
-                        </tr>
+                <line x1="57.895" y1="459.564" x2="57.895" y2="472.431" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="459.564" x2="297.640" y2="472.431" stroke="#999999" strokeWidth="0.750" />
+                <line x1="57.895" y1="459.564" x2="297.640" y2="459.564" stroke="#999999" strokeWidth="0.750" />
 
-                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
-                            Identification Type (পরিচয়পত্র ধরণ)
-                          </td>
-                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
-                            {ticket.idType} ({ticket.idTypeBn || (ticket.idType === 'NID' ? 'এন আই ডি' : ticket.idType === 'Birth Certificate' ? 'জন্ম নিবন্ধন সনদ' : 'পাসপোর্ট')})
-                          </td>
-                        </tr>
+                <line x1="57.895" y1="472.431" x2="57.895" y2="485.297" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="472.431" x2="297.640" y2="485.297" stroke="#999999" strokeWidth="0.750" />
+                <line x1="57.895" y1="472.431" x2="297.640" y2="472.431" stroke="#999999" strokeWidth="0.750" />
 
-                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
-                            Identification Number (পরিচয়পত্র নম্বর)
-                          </td>
-                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
-                            {ticket.idNumber} ({ticket.idNumberBn || toBanglaDigits(ticket.idNumber)})
-                          </td>
-                        </tr>
+                <line x1="57.895" y1="485.297" x2="57.895" y2="498.163" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="57.895" y1="498.163" x2="297.640" y2="498.163" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="485.297" x2="297.640" y2="498.163" stroke="#999999" strokeWidth="0.750" />
+                <line x1="57.895" y1="485.297" x2="297.640" y2="485.297" stroke="#999999" strokeWidth="0.750" />
 
-                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
-                            Mobile Number (মোবাইল নম্বর)
-                          </td>
-                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
-                            {ticket.mobileNumber} ({ticket.mobileNumberBn || toBanglaDigits(ticket.mobileNumber)})
-                          </td>
-                        </tr>
+                <line x1="537.385" y1="433.832" x2="537.385" y2="446.698" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="433.832" x2="537.385" y2="433.832" stroke="#999999" strokeWidth="0.750" />
+                <line x1="537.385" y1="446.698" x2="537.385" y2="459.564" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="446.698" x2="537.385" y2="446.698" stroke="#999999" strokeWidth="0.750" />
+                <line x1="537.385" y1="459.564" x2="537.385" y2="472.431" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="459.564" x2="537.385" y2="459.564" stroke="#999999" strokeWidth="0.750" />
+                <line x1="537.385" y1="472.431" x2="537.385" y2="485.297" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="472.431" x2="537.385" y2="472.431" stroke="#999999" strokeWidth="0.750" />
+                <line x1="297.640" y1="498.163" x2="537.385" y2="498.163" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="537.385" y1="485.297" x2="537.385" y2="498.163" stroke="#05b454" strokeWidth="0.750" />
+                <line x1="297.640" y1="485.297" x2="537.385" y2="485.297" stroke="#999999" strokeWidth="0.750" />
 
-                        <tr>
-                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
-                            PNR Number (পিএনআর নম্বর)
-                          </td>
-                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 700, letterSpacing: '0.02em' }}>
-                            {ticket.pnrNumber}
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
+                {/* Outer Frame Edge Accents */}
+                <line x1="42.520" y1="47.229" x2="552.760" y2="47.229" stroke="#039d48" strokeWidth="3.750" />
+                <line x1="42.520" y1="778.479" x2="552.760" y2="778.479" stroke="#039d48" strokeWidth="3.750" />
+                <line x1="44.395" y1="45.354" x2="44.395" y2="780.354" stroke="#039d48" strokeWidth="3.750" />
+                <line x1="550.885" y1="45.354" x2="550.885" y2="780.354" stroke="#039d48" strokeWidth="3.750" />
+              </svg>
 
-                  {/* ─── Section 3: Please Note / খেয়াল করুনঃ- (Exact bilingual format from official ticket) ─── */}
-                  <div style={{
-                    border: '1px solid #c8d1dc',
-                    borderRadius: 3,
-                    padding: '6px 10px',
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    columnGap: 16,
-                    fontSize: 9.2,
-                    lineHeight: 1.4,
-                    color: '#000000',
-                    marginBottom: 10,
-                  }}>
-                    {/* English Instructions */}
-                    <div>
-                      <div style={{ fontWeight: 700, marginBottom: 2, color: '#000000' }}>Please Note:-</div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                        <div>• Carrying NID or Photo ID while travelling is mandatory for each passenger.</div>
-                        <div>• You can carry either soft copy or printed copy of your e-ticket while travelling.</div>
-                        <div>• No need to print e-ticket from the counter.</div>
-                        <div>• It is mandatory for children between 3 to 12 years old to purchase minor tickets.</div>
-                      </div>
-                    </div>
+              {/* Official Bangladesh Railway Crest */}
+              <img
+                alt="Bangladesh Railway"
+                style={{
+                  position: 'absolute',
+                  left: '57.5pt',
+                  top: '60.4pt',
+                  width: '45pt',
+                  height: '45pt',
+                  objectFit: 'contain',
+                  display: 'block'
+                }}
+                src="/20428_4-78474535-icon.png"
+              />
 
-                    {/* Bangla Instructions */}
-                    <div style={{ fontFamily: "'Hind Siliguri', 'Noto Sans Bengali', sans-serif" }}>
-                      <div style={{ fontWeight: 700, marginBottom: 2, color: '#000000' }}>খেয়াল করুনঃ-</div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                        <div>- ভ্রমণের সময় প্রত্যেক যাত্রীর এনআইডি/ ছবি সম্বলিত পরিচয়পত্র সাথে রাখা বাধ্যতামূলক।</div>
-                        <div>- ট্রেন ভ্রমণে আপনার ই-টিকিটের প্রিন্টেড কপি অথবা অনলাইন কপি সাথে রাখুন।</div>
-                        <div>- কাউন্টার থেকে টিকিট প্রিন্ট করার প্রয়োজন নেই।</div>
-                        <div>- তিন থেকে বারো বছরের শিশুদের জন্য অপ্রাপ্ত বয়স্ক টিকিট ক্রয় বাধ্যতামূলক।</div>
-                      </div>
-                    </div>
-                  </div>
+              {/* Official Powered By Shohoz Synesis Vincen JV Branding Block */}
+              <ShohozLogo
+                style={{
+                  position: 'absolute',
+                  left: '477.7pt',
+                  top: '64.1pt',
+                  width: '52.5pt',
+                  height: '37.6pt',
+                }}
+              />
 
-                  {/* ─── Helpline & Anti-Smoking Notices (Exact colors & wording) ─── */}
-                  <div style={{ textAlign: 'center', marginBottom: 8 }}>
-                    <div style={{
-                      color: '#d01c1c',
-                      fontSize: 10.5,
-                      fontWeight: 700,
-                      fontFamily: "'Hind Siliguri', 'Noto Sans Bengali', sans-serif",
-                      lineHeight: 1.4,
-                      marginBottom: 6
-                    }}>
-                      রেলওয়ে সেবার জন্য ১৩১ এবং আইন শৃঙ্খলা বিষয়ক সহায়তার জন্য রেলওয়ে পুলিশ হটলাইন ০১৩২০১৭৭৫৯৮ নম্বরে<br />যোগাযোগ করুন।
-                    </div>
+              {/* Dynamic QR Code */}
+              {qrDataUrl && (
+                <img
+                  src={qrDataUrl}
+                  alt="QR Code"
+                  style={{
+                    position: 'absolute',
+                    left: '477.7pt',
+                    top: '105.4pt',
+                    width: '58.3pt',
+                    height: '58.3pt',
+                    display: 'block'
+                  }}
+                />
+              )}
 
-                    <div style={{
-                      background: '#fee2e2',
-                      border: '1px solid #fca5a5',
-                      color: '#b91c1c',
-                      fontSize: 10.5,
-                      fontWeight: 700,
-                      padding: '3px 12px',
-                      borderRadius: 3,
-                      display: 'inline-block',
-                      fontFamily: "'Hind Siliguri', 'Noto Sans Bengali', sans-serif"
-                    }}>
-                      "ধূমপান ও তামাকজাত দ্রব্য ব্যবহার হইতে বিরত থাকুন, ইহা শাস্তিযোগ্য অপরাধ"
-                    </div>
-                  </div>
-                </div>
+              {/* ─── EXACT POSITIONED TEXT SPANS (Points coordinate engine) ─── */}
+              {/* Header Titles */}
+              <span className="ticket-span ticket-r" style={{ left: '212.218pt', top: '63.723pt', fontSize: '15.00pt', color: '#1f7ec7', WebkitTextStroke: '0.500pt #1f7ec7' }}>
+                BANGLADESH RAILWAY
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '242.293pt', top: '82.633pt', fontSize: '15.00pt', color: '#1f7ec7' }}>
+                বাংলাদেশ রেলওয়ে
+              </span>
 
-                {/* ─── Bottom Sign-Off (Exact matching text & alignment) ─── */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'flex-end',
-                  justifyContent: 'space-between',
-                  paddingTop: 4,
-                  fontSize: 10,
-                  lineHeight: 1.35,
-                  color: '#000000'
-                }}>
-                  <div>
-                    Wishing you a pleasant and safe journey-<br />
-                    <strong style={{ fontSize: 11, fontWeight: 700, color: '#000000' }}>Bangladesh Railway</strong>
-                  </div>
+              {/* Greeting & Introductory Confirmation */}
+              <span className="ticket-span ticket-r" style={{ left: '57.270pt', top: '103.937pt', fontSize: '7.50pt', color: '#333333' }}>
+                Dear {ticket.passengerName},
+              </span>
+              <span className="ticket-span ticket-r" style={{ left: '57.520pt', top: '112.937pt', fontSize: '7.50pt', color: '#333333' }}>
+                Your request to book e-ticket for your journey in Bangladesh Railway was successful. You can travel on the train mentioned in
+              </span>
+              <span className="ticket-span ticket-r" style={{ left: '57.520pt', top: '121.937pt', fontSize: '7.50pt', color: '#333333' }}>
+                the ticket subject to showing your NID or Photo ID card. The details of your e-ticket are as below:
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '57.520pt', top: '139.141pt', fontSize: '7.50pt', color: '#333333' }}>
+                বাংলাদেশ রেলওয়েতে ভ্রমণের জন্য আপনার চাহিত ই-টিকিট সফলভাবে প্রদান করা হয়েছে। আপনার এনআইডি কিংবা ছবি সম্বলিত আইডি দেখানো সাপেক্ষে
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '57.270pt', top: '148.141pt', fontSize: '7.50pt', color: '#333333' }}>
+                আপনি টিকিটে বর্ণিত ট্রেনে যাত্রা করতে পারবেন। ই-টিকিটের বিস্তারিত নিম্নে দেয়া হল:-
+              </span>
 
-                  <div style={{ textAlign: 'right', fontFamily: "'Hind Siliguri', 'Noto Sans Bengali', sans-serif" }}>
-                    আপনার ভ্রমণ সুখকর ও নিরাপদ হোক, এই কামনায়-<br />
-                    <strong style={{ fontSize: 11, fontWeight: 700, color: '#000000' }}>বাংলাদেশ রেলওয়ে</strong>
-                  </div>
-                </div>
-              </div>
+              {/* Table 1: Journey Information Banner */}
+              <span className="ticket-span ticket-r" style={{ left: '62.020pt', top: '170.998pt', fontSize: '12.00pt', color: '#ffffff', WebkitTextStroke: '0.400pt #ffffff' }}>
+                Journey Information{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '173.056pt', top: '171.086pt', fontSize: '12.00pt', color: '#ffffff', WebkitTextStroke: '0.400pt #ffffff' }}>
+                (যাত্রার তথ্য)
+              </span>
+
+              {/* Row 1: Issue Date */}
+              <span className="ticket-span ticket-r" style={{ left: '61.770pt', top: '189.287pt', fontSize: '7.50pt', color: '#333333' }}>
+                Issue Date &amp; Time{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '124.035pt', top: '188.591pt', fontSize: '7.50pt', color: '#333333' }}>
+                (প্রদানের তারিখ ও সময়)
+              </span>
+              <span className="ticket-span ticket-r" style={{ left: '301.765pt', top: '189.287pt', fontSize: '7.50pt', color: '#333333' }}>
+                {formatDateEn(ticket.issueDate, ticket.issueTime)}{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '361.770pt', top: '188.591pt', fontSize: '7.50pt', color: '#333333' }}>
+                ({formatDateBn(ticket.issueDate, ticket.issueTime)})
+              </span>
+
+              {/* Row 2: Journey Date */}
+              <span className="ticket-span ticket-r" style={{ left: '61.770pt', top: '202.087pt', fontSize: '7.50pt', color: '#333333' }}>
+                Journey Date &amp; Time{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '132.892pt', top: '201.391pt', fontSize: '7.50pt', color: '#333333' }}>
+                (যাত্রার তারিখ ও সময়)
+              </span>
+              <span className="ticket-span ticket-r" style={{ left: '301.765pt', top: '202.087pt', fontSize: '7.50pt', color: '#333333' }}>
+                {formatDateEn(ticket.journeyDate, ticket.journeyTime)}{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '361.770pt', top: '201.391pt', fontSize: '7.50pt', color: '#333333' }}>
+                ({formatDateBn(ticket.journeyDate, ticket.journeyTime)})
+              </span>
+
+              {/* Row 3: Train Name & Number */}
+              <span className="ticket-span ticket-r" style={{ left: '61.770pt', top: '214.737pt', fontSize: '7.50pt', color: '#333333' }}>
+                Train Name &amp; Number{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '137.670pt', top: '214.041pt', fontSize: '7.50pt', color: '#333333' }}>
+                (ট্রেন নম্বর ও নাম)
+              </span>
+              <span className="ticket-span ticket-r" style={{ left: '301.515pt', top: '214.737pt', fontSize: '7.50pt', color: '#333333' }}>
+                {ticket.trainName} [{ticket.trainNumber}]{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '381.442pt', top: '214.041pt', fontSize: '7.50pt', color: '#333333' }}>
+                ({ticket.trainNameBn} [{toBanglaDigits(ticket.trainNumber)}])
+              </span>
+
+              {/* Row 4: From Station */}
+              <span className="ticket-span ticket-r" style={{ left: '61.770pt', top: '227.637pt', fontSize: '7.50pt', color: '#333333' }}>
+                From Station{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '106.687pt', top: '226.941pt', fontSize: '7.50pt', color: '#333333' }}>
+                (প্রারম্ভিক স্টেশন)
+              </span>
+              <span className="ticket-span ticket-r" style={{ left: '301.515pt', top: '227.637pt', fontSize: '7.50pt', color: '#333333' }}>
+                {ticket.fromStation}{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '324.390pt', top: '226.941pt', fontSize: '7.50pt', color: '#333333' }}>
+                ({ticket.fromStationBn || getStationBanglaName(ticket.fromStation)})
+              </span>
+
+              {/* Row 5: To Station */}
+              <span className="ticket-span ticket-r" style={{ left: '61.770pt', top: '240.937pt', fontSize: '7.50pt', color: '#333333' }}>
+                To Station{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '97.912pt', top: '240.241pt', fontSize: '7.50pt', color: '#333333' }}>
+                (গন্তব্য স্টেশন)
+              </span>
+              <span className="ticket-span ticket-r" style={{ left: '301.515pt', top: '240.937pt', fontSize: '7.50pt', color: '#333333' }}>
+                {ticket.toStation}{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '340.035pt', top: '240.241pt', fontSize: '7.50pt', color: '#333333' }}>
+                ({ticket.toStationBn || getStationBanglaName(ticket.toStation)})
+              </span>
+
+              {/* Row 6: Class Name */}
+              <span className="ticket-span ticket-r" style={{ left: '61.770pt', top: '253.837pt', fontSize: '7.50pt', color: '#333333' }}>
+                Class Name{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '103.987pt', top: '252.391pt', fontSize: '7.50pt', color: '#333333' }}>
+                (শ্রেণির নাম)
+              </span>
+              <span className="ticket-span ticket-r" style={{ left: '301.515pt', top: '253.837pt', fontSize: '7.50pt', color: '#333333' }}>
+                {ticket.className}{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '332.985pt', top: '252.391pt', fontSize: '7.50pt', color: '#333333' }}>
+                ({ticket.classNameBn})
+              </span>
+
+              {/* Row 7: Coach Name / Seat(s) */}
+              <span className="ticket-span ticket-r" style={{ left: '61.770pt', top: '266.487pt', fontSize: '7.50pt', color: '#333333' }}>
+                Coach Name / Seat(s){' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '137.565pt', top: '265.791pt', fontSize: '7.50pt', color: '#333333' }}>
+                (কোচের নাম / আসন)
+              </span>
+              <span className="ticket-span ticket-r" style={{ left: '301.515pt', top: '266.487pt', fontSize: '7.50pt', color: '#333333' }}>
+                {ticket.coachSeat}{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '323.242pt', top: '265.791pt', fontSize: '7.50pt', color: '#333333' }}>
+                {' '}({ticket.coachSeatBn || toBanglaDigits(ticket.coachSeat)})
+              </span>
+
+              {/* Row 8: No. of Seats */}
+              <span className="ticket-span ticket-r" style={{ left: '61.770pt', top: '279.287pt', fontSize: '7.50pt', color: '#333333' }}>
+                No. of Seats{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '104.647pt', top: '278.591pt', fontSize: '7.50pt', color: '#333333' }}>
+                (আসন সংখ্যা)
+              </span>
+              <span className="ticket-span ticket-r" style={{ left: '301.515pt', top: '279.287pt', fontSize: '7.50pt', color: '#333333' }}>
+                {ticket.numSeats}{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '307.590pt', top: '278.591pt', fontSize: '7.50pt', color: '#333333' }}>
+                ({toBanglaDigits(ticket.numSeats)})
+              </span>
+
+              {/* Row 9: No. of Adult Passenger(s) */}
+              <span className="ticket-span ticket-r" style={{ left: '61.770pt', top: '291.937pt', fontSize: '7.50pt', color: '#333333' }}>
+                No. of Adult Passenger(s){' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '149.640pt', top: '291.241pt', fontSize: '7.50pt', color: '#333333' }}>
+                (প্রাপ্তবয়স্ক যাত্রীর সংখ্যা)
+              </span>
+              <span className="ticket-span ticket-r" style={{ left: '301.515pt', top: '291.937pt', fontSize: '7.50pt', color: '#333333' }}>
+                {ticket.numAdults}{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '307.590pt', top: '291.241pt', fontSize: '7.50pt', color: '#333333' }}>
+                ({toBanglaDigits(ticket.numAdults)})
+              </span>
+
+              {/* Row 10: No. of Senior Citizen Passenger(s) */}
+              <span className="ticket-span ticket-r" style={{ left: '62.020pt', top: '304.837pt', fontSize: '7.50pt', color: '#333333' }}>
+                No. of Senior Citizen Passenger(s){' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '177.982pt', top: '304.141pt', fontSize: '7.50pt', color: '#333333' }}>
+                (প্রবীণ যাত্রীর সংখ্যা)
+              </span>
+              <span className="ticket-span ticket-r" style={{ left: '301.515pt', top: '304.837pt', fontSize: '7.50pt', color: '#333333' }}>
+                {ticket.numSeniors}{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '307.590pt', top: '304.141pt', fontSize: '7.50pt', color: '#333333' }}>
+                ({toBanglaDigits(ticket.numSeniors)})
+              </span>
+
+              {/* Row 11: No. of Child Passenger(s) */}
+              <span className="ticket-span ticket-r" style={{ left: '61.770pt', top: '317.637pt', fontSize: '7.50pt', color: '#333333' }}>
+                No. of Child Passenger(s){' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '149.002pt', top: '316.941pt', fontSize: '7.50pt', color: '#333333' }}>
+                (শিশু যাত্রীর সংখ্যা)
+              </span>
+              <span className="ticket-span ticket-r" style={{ left: '301.515pt', top: '317.637pt', fontSize: '7.50pt', color: '#333333' }}>
+                {ticket.numChildren}{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '307.590pt', top: '316.941pt', fontSize: '7.50pt', color: '#333333' }}>
+                ({toBanglaDigits(ticket.numChildren)})
+              </span>
+
+              {/* Row 12: Fare */}
+              <span className="ticket-span ticket-r" style={{ left: '61.770pt', top: '331.037pt', fontSize: '7.50pt', color: '#333333' }}>
+                Fare{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '78.367pt', top: '330.341pt', fontSize: '7.50pt', color: '#333333' }}>
+                (ভাড়া)
+              </span>
+              <span className="ticket-span ticket-r" style={{ left: '301.515pt', top: '331.037pt', fontSize: '7.50pt', color: '#333333' }}>
+                BDT {ticket.fare.toFixed(2)}{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '342.352pt', top: '330.341pt', fontSize: '7.50pt', color: '#333333' }}>
+                ({toBanglaDigits(ticket.fare.toFixed(2))} টাকা)
+              </span>
+
+              {/* Row 13: VAT */}
+              <span className="ticket-span ticket-r" style={{ left: '61.770pt', top: '343.187pt', fontSize: '7.50pt', color: '#333333' }}>
+                VAT{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '77.767pt', top: '342.491pt', fontSize: '7.50pt', color: '#333333' }}>
+                (ভ্যাট)
+              </span>
+              <span className="ticket-span ticket-r" style={{ left: '301.515pt', top: '343.187pt', fontSize: '7.50pt', color: '#333333' }}>
+                BDT {ticket.vat.toFixed(2)}{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '333.922pt', top: '342.491pt', fontSize: '7.50pt', color: '#333333' }}>
+                ({toBanglaDigits(ticket.vat.toFixed(2))} টাকা)
+              </span>
+
+              {/* Row 14: Service Charge */}
+              <span className="ticket-span ticket-r" style={{ left: '61.770pt', top: '356.487pt', fontSize: '7.50pt', color: '#333333' }}>
+                Service Charge{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '113.610pt', top: '355.791pt', fontSize: '7.50pt', color: '#333333' }}>
+                (সেবা খরচ)
+              </span>
+              <span className="ticket-span ticket-r" style={{ left: '301.515pt', top: '356.487pt', fontSize: '7.50pt', color: '#333333' }}>
+                BDT {ticket.serviceCharge.toFixed(2)}{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '338.137pt', top: '355.791pt', fontSize: '7.50pt', color: '#333333' }}>
+                ({toBanglaDigits(ticket.serviceCharge.toFixed(2))} টাকা)
+              </span>
+
+              {/* Row 15: Total Fare (Bold Stroke) */}
+              <span className="ticket-span ticket-r" style={{ left: '62.020pt', top: '369.137pt', fontSize: '7.50pt', color: '#333333', WebkitTextStroke: '0.250pt #333333' }}>
+                Total Fare{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '97.585pt', top: '368.441pt', fontSize: '7.50pt', color: '#333333', WebkitTextStroke: '0.250pt #333333' }}>
+                (মোট ভাড়া)**
+              </span>
+              <span className="ticket-span ticket-r" style={{ left: '301.765pt', top: '369.837pt', fontSize: '7.50pt', color: '#333333', WebkitTextStroke: '0.250pt #333333' }}>
+                BDT {totalFare.toFixed(2)}{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '342.602pt', top: '369.141pt', fontSize: '7.50pt', color: '#333333', WebkitTextStroke: '0.250pt #333333' }}>
+                ({toBanglaDigits(totalFare.toFixed(2))} টাকা)
+              </span>
+
+              {/* Bedding Charges Footnote */}
+              <span className="ticket-span ticket-r" style={{ left: '62.020pt', top: '380.399pt', fontSize: '6.00pt', color: '#333333' }}>
+                ** Total Fare includes BDT 50 Bedding Charges per seat for AC_B and F_BERTH seat classes.{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '310.488pt', top: '380.443pt', fontSize: '6.00pt', color: '#333333' }}>
+                (এসি_বি এবং এফ_বার্থ সিট ক্লাসের প্রতি সিটে মোট ভাড়ার সাথে ৳৫০ বেডিং চার্জ অন্তর্ভুক্ত)
+              </span>
+
+              {/* Table 2: Passenger Information Banner */}
+              <span className="ticket-span ticket-r" style={{ left: '62.020pt', top: '413.298pt', fontSize: '12.00pt', color: '#ffffff', WebkitTextStroke: '0.400pt #ffffff' }}>
+                Passenger Information{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '186.880pt', top: '413.386pt', fontSize: '12.00pt', color: '#ffffff', WebkitTextStroke: '0.400pt #ffffff' }}>
+                (যাত্রীর তথ্য)
+              </span>
+
+              {/* Table 2 Row 1: Passenger Name */}
+              <span className="ticket-span ticket-r" style={{ left: '61.770pt', top: '431.487pt', fontSize: '7.50pt', color: '#333333' }}>
+                Passenger Name{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '120.847pt', top: '430.791pt', fontSize: '7.50pt', color: '#333333' }}>
+                (যাত্রীর নাম)
+              </span>
+              <span className="ticket-span ticket-r" style={{ left: '301.515pt', top: '431.587pt', fontSize: '7.50pt', color: '#333333' }}>
+                {ticket.passengerName}
+              </span>
+
+              {/* Table 2 Row 2: Identification Type */}
+              <span className="ticket-span ticket-r" style={{ left: '61.770pt', top: '444.387pt', fontSize: '7.50pt', color: '#333333' }}>
+                Identification Type{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '125.475pt', top: '443.691pt', fontSize: '7.50pt', color: '#333333' }}>
+                (পরিচয়পত্র ধরণ)
+              </span>
+              <span className="ticket-span ticket-r" style={{ left: '301.515pt', top: '444.387pt', fontSize: '7.50pt', color: '#333333' }}>
+                {ticket.idType}{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '315.682pt', top: '443.691pt', fontSize: '7.50pt', color: '#333333' }}>
+                ({ticket.idTypeBn})
+              </span>
+
+              {/* Table 2 Row 3: Identification Number */}
+              <span className="ticket-span ticket-r" style={{ left: '61.770pt', top: '457.037pt', fontSize: '7.50pt', color: '#333333' }}>
+                Identification Number{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '136.035pt', top: '456.341pt', fontSize: '7.50pt', color: '#333333' }}>
+                (পরিচয়পত্র নম্বর)
+              </span>
+              <span className="ticket-span ticket-r" style={{ left: '301.515pt', top: '457.037pt', fontSize: '7.50pt', color: '#333333' }}>
+                {ticket.idNumber}{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '341.595pt', top: '456.341pt', fontSize: '7.50pt', color: '#333333' }}>
+                ({ticket.idNumberBn})
+              </span>
+
+              {/* Table 2 Row 4: Mobile Number */}
+              <span className="ticket-span ticket-r" style={{ left: '61.770pt', top: '469.837pt', fontSize: '7.50pt', color: '#333333' }}>
+                Mobile Number{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '114.907pt', top: '469.141pt', fontSize: '7.50pt', color: '#333333' }}>
+                (মোবাইল নম্বর)
+              </span>
+              <span className="ticket-span ticket-r" style={{ left: '301.765pt', top: '470.337pt', fontSize: '7.50pt', color: '#333333', WebkitTextStroke: '0.250pt #333333' }}>
+                {ticket.mobileNumber}{' '}
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '345.077pt', top: '469.641pt', fontSize: '7.50pt', color: '#333333', WebkitTextStroke: '0.250pt #333333' }}>
+                ({ticket.mobileNumberBn})
+              </span>
+
+              {/* Table 2 Row 5: PNR Number */}
+              <span className="ticket-span ticket-r" style={{ left: '61.770pt', top: '483.237pt', fontSize: '7.50pt', color: '#333333' }}>
+                PNR Number
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '105.097pt', top: '482.541pt', fontSize: '7.50pt', color: '#333333' }}>
+                {' '}(পিএনআর নম্বর)
+              </span>
+              <span className="ticket-span ticket-r" style={{ left: '301.765pt', top: '483.337pt', fontSize: '7.50pt', color: '#333333', WebkitTextStroke: '0.250pt #333333' }}>
+                {ticket.pnrNumber}
+              </span>
+
+              {/* ─── Please Note / খেয়াল করুনঃ- Dual Column Section ─── */}
+              <span className="ticket-span ticket-r" style={{ left: '64.770pt', top: '495.524pt', fontSize: '9.00pt', color: '#333333' }}>
+                Please Note:-
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '301.140pt', top: '496.390pt', fontSize: '9.00pt', color: '#333333' }}>
+                খেয়াল করুনঃ-
+              </span>
+
+              <span className="ticket-span ticket-r" style={{ left: '65.020pt', top: '517.374pt', fontSize: '9.00pt', color: '#333333' }}>
+                • Carrying NID or Photo ID while travelling is mandatory
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '301.140pt', top: '517.990pt', fontSize: '9.00pt', color: '#333333' }}>
+                - ভ্রমণের সময় প্রত্যেক যাত্রীর এনআইডি/ ছবি সম্বলিত পরিচয়পত্র সাথে
+              </span>
+
+              <span className="ticket-span ticket-r" style={{ left: '64.770pt', top: '527.924pt', fontSize: '9.00pt', color: '#333333' }}>
+                for each passenger.
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '301.140pt', top: '528.540pt', fontSize: '9.00pt', color: '#333333' }}>
+                রাখা বাধ্যতামূলক।
+              </span>
+
+              <span className="ticket-span ticket-r" style={{ left: '64.770pt', top: '538.974pt', fontSize: '9.00pt', color: '#333333' }}>
+                • You can carry either soft copy or printed copy of your e-
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '301.140pt', top: '539.840pt', fontSize: '9.00pt', color: '#333333' }}>
+                - ট্রেন ভ্রমণে আপনার ই-টিকেটের প্রিন্টেড কপি অথবা অনলাইন কপি
+              </span>
+
+              <span className="ticket-span ticket-r" style={{ left: '64.770pt', top: '549.524pt', fontSize: '9.00pt', color: '#333333' }}>
+                ticket while travelling.
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '301.140pt', top: '550.390pt', fontSize: '9.00pt', color: '#333333' }}>
+                সাথে রাখুন।
+              </span>
+
+              <span className="ticket-span ticket-r" style={{ left: '65.020pt', top: '560.824pt', fontSize: '9.00pt', color: '#333333' }}>
+                • No need to print e-ticket from the counter.
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '301.140pt', top: '560.940pt', fontSize: '9.00pt', color: '#333333' }}>
+                - কাউন্টার থেকে টিকেট প্রিন্ট করার প্রয়োজন নেই।
+              </span>
+
+              <span className="ticket-span ticket-r" style={{ left: '65.020pt', top: '571.374pt', fontSize: '9.00pt', color: '#333333' }}>
+                • It is mandatory for children between 3 to 12 years old to
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '301.140pt', top: '571.990pt', fontSize: '9.00pt', color: '#333333' }}>
+                - তিন থেকে বারো বছরের শিশুদের জন্য অপ্রাপ্ত বয়স্ক টিকিট ক্রয়
+              </span>
+
+              <span className="ticket-span ticket-r" style={{ left: '64.770pt', top: '581.924pt', fontSize: '9.00pt', color: '#333333' }}>
+                purchase minor tickets.
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '301.140pt', top: '582.540pt', fontSize: '9.00pt', color: '#333333' }}>
+                বাধ্যতামূলক।
+              </span>
+
+              {/* ─── Helpline Section (Light Green Fill Box) ─── */}
+              <span className="ticket-span ticket-s" style={{ left: '72.098pt', top: '608.138pt', fontSize: '10.50pt', color: '#e65100', WebkitTextStroke: '0.350pt #e65100' }}>
+                রেলওয়ে সেবার জন্য ১৩১ এবং আইন শৃঙ্খলা বিষয়ক সহায়তার জন্য রেলওয়ে পুলিশ হটলাইন ০১৩২০১৭৭৫৯৮ নম্বরে
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '260.815pt', top: '620.988pt', fontSize: '10.50pt', color: '#e65100', WebkitTextStroke: '0.350pt #e65100' }}>
+                যোগাযোগ করুন।
+              </span>
+
+              {/* ─── Anti-Smoking Notice (Peach Fill Box) ─── */}
+              <span className="ticket-span ticket-s" style={{ left: '143.309pt', top: '653.238pt', fontSize: '10.50pt', color: '#b71c1c', WebkitTextStroke: '0.350pt #b71c1c' }}>
+                "ধূমপান ও তামাকজাত দ্রব্য ব্যবহার হইতে বিরত থাকুন, ইহা শাস্তিযোগ্য অপরাধ"
+              </span>
+
+              {/* ─── Bottom Sign-Off ─── */}
+              <span className="ticket-span ticket-r" style={{ left: '61.270pt', top: '680.724pt', fontSize: '9.00pt', color: '#333333' }}>
+                Wishing you a pleasant and safe journey-
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '301.140pt', top: '681.690pt', fontSize: '9.00pt', color: '#333333' }}>
+                আপনার ভ্রমণ সুখকর ও নিরাপদ হোক, এই কামনায়-
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '61.270pt', top: '692.888pt', fontSize: '10.50pt', color: '#333333', WebkitTextStroke: '0.350pt #333333' }}>
+                Bangladesh Railway
+              </span>
+              <span className="ticket-span ticket-s" style={{ left: '301.390pt', top: '692.888pt', fontSize: '10.50pt', color: '#333333', WebkitTextStroke: '0.350pt #333333' }}>
+                বাংলাদেশ রেলওয়ে
+              </span>
             </div>
           </div>
         )}
       </div>
+
+      <style>{`
+        .ticket-span {
+          position: absolute;
+          white-space: pre;
+          line-height: 20pt;
+          height: 20pt;
+          margin: 0;
+          padding: 0;
+          font-kerning: none;
+          font-synthesis: none;
+          text-rendering: geometricPrecision;
+          -webkit-font-smoothing: antialiased;
+        }
+        .ticket-r {
+          font-family: "Roboto", sans-serif;
+        }
+        .ticket-s {
+          font-family: "SolaimanLipi", "Hind Siliguri", "Noto Sans Bengali", sans-serif;
+        }
+        @media print {
+          @page {
+            size: A4;
+            margin: 0;
+          }
+          body {
+            background: #fff;
+            margin: 0;
+            padding: 0;
+          }
+          #page {
+            box-shadow: none !important;
+            margin: 0 !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
