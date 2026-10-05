@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Sidebar } from './components/layout/Sidebar';
-import { Dashboard } from './pages/Dashboard';
-import { PrescriptionBuilder } from './pages/PrescriptionBuilder';
-import { HistoryPage } from './pages/HistoryPage';
-import { TemplatesPage } from './pages/TemplatesPage';
-import { SettingsPage } from './pages/SettingsPage';
-import { PrescriptionVerificationPage } from './pages/PrescriptionVerificationPage';
+import React, { useState, useEffect, useTransition } from 'react';
 import { ToastProvider } from './components/ui/Toast';
-import { useStore } from './store/useStore';
+import { detectActiveService, ServiceId } from './utils/subdomain';
+import { useAuthStore } from './services/auth/useAuthStore';
+import { LockScreen } from './services/auth/LockScreen';
+import { OmniBar } from './components/layout/OmniBar';
+import { HubDashboard } from './services/hub/HubDashboard';
+import { SERVICES_REGISTRY, getServiceById } from './services/registry';
+import { PrescriptionVerificationPage } from './pages/PrescriptionVerificationPage';
 
 function getVerifyIdFromUrl(): string | null {
   try {
@@ -35,13 +34,17 @@ function getVerifyIdFromUrl(): string | null {
   return null;
 }
 
-function AppContent() {
-  const activePage = useStore(s => s.activePage);
+function MainPlatform() {
+  const { isAuthenticated } = useAuthStore();
+  const [activeService, setActiveService] = useState<ServiceId>(() => detectActiveService());
   const [verifyRxId, setVerifyRxId] = useState<string | null>(getVerifyIdFromUrl);
+  const [, startTransition] = useTransition();
 
+  // Listen to popstate and URL changes
   useEffect(() => {
     const handleUrlChange = () => {
       setVerifyRxId(getVerifyIdFromUrl());
+      setActiveService(detectActiveService());
     };
 
     window.addEventListener('popstate', handleUrlChange);
@@ -53,7 +56,22 @@ function AppContent() {
     };
   }, []);
 
-  // If a verification URL is accessed, render the full-screen official verification page
+  const switchService = (id: ServiceId) => {
+    startTransition(() => {
+      setActiveService(id);
+    });
+    // Update URL query parameter or path cleanly
+    const url = new URL(window.location.href);
+    if (id === 'hub') {
+      url.searchParams.delete('service');
+      window.history.pushState({}, '', url.pathname + (url.search ? url.search : ''));
+    } else {
+      url.searchParams.set('service', id);
+      window.history.pushState({}, '', url.pathname + url.search);
+    }
+  };
+
+  // 1. If someone accesses a verification link (e.g. scanning a QR code), allow public verification without requiring login
   if (verifyRxId) {
     return (
       <PrescriptionVerificationPage
@@ -66,19 +84,37 @@ function AppContent() {
     );
   }
 
-  return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#f1f5f9' }}>
-      {/* Sidebar */}
-      <Sidebar />
+  // 2. Personal Auth Barrier: If not unlocked, display Lock Screen
+  if (!isAuthenticated) {
+    return <LockScreen onUnlocked={() => setActiveService(detectActiveService())} />;
+  }
 
-      {/* Main content */}
-      <main style={{ flex: 1, height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        {activePage === 'dashboard' && <div style={{ flex: 1, height: '100%', overflowY: 'auto' }}><Dashboard /></div>}
-        {activePage === 'builder' && <PrescriptionBuilder />}
-        {activePage === 'history' && <div style={{ flex: 1, height: '100%', overflowY: 'auto' }}><HistoryPage /></div>}
-        {activePage === 'templates' && <div style={{ flex: 1, height: '100%', overflowY: 'auto' }}><TemplatesPage /></div>}
-        {activePage === 'settings' && <div style={{ flex: 1, height: '100%', overflowY: 'auto' }}><SettingsPage /></div>}
-      </main>
+  // 3. Render active service or Hub Dashboard
+  const currentService = getServiceById(activeService);
+  const ServiceComponent = currentService ? currentService.component : null;
+
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100vh',
+      width: '100vw',
+      overflow: 'hidden',
+      background: '#090d16',
+    }}>
+      {/* Universal OmniBar on top */}
+      <OmniBar activeService={activeService} onSwitchService={switchService} />
+
+      {/* Main Content Viewport */}
+      <div style={{ flex: 1, height: 'calc(100vh - 42px)', overflow: 'hidden', position: 'relative' }}>
+        {activeService === 'hub' ? (
+          <HubDashboard onSelectService={switchService} />
+        ) : ServiceComponent ? (
+          <ServiceComponent />
+        ) : (
+          <HubDashboard onSelectService={switchService} />
+        )}
+      </div>
     </div>
   );
 }
@@ -86,8 +122,7 @@ function AppContent() {
 export default function App() {
   return (
     <ToastProvider>
-      <AppContent />
+      <MainPlatform />
     </ToastProvider>
   );
 }
-
