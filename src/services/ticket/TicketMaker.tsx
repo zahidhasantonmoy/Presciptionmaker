@@ -4,7 +4,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import {
   Train, Download, Printer, Plus, CheckCircle2,
-  Trash2, Edit3, ArrowRight, ShieldCheck, Sparkles, Clock, MapPin,
+  Trash2, ArrowRight, ShieldCheck, Sparkles, Clock, MapPin,
   RefreshCw, Check, PenTool
 } from 'lucide-react';
 import { RailwayLogo } from './RailwayLogo';
@@ -71,7 +71,7 @@ const DEFAULT_BR_TICKET: BangladeshRailwayTicket = {
   trainNameBn: 'পদ্মা এক্সপ্রেস',
   trainNumber: '760',
   className: 'S_CHAIR',
-  classNameBn: 'শো.চেয়ার',
+  classNameBn: 'শো.চেয়ার',
   coachSeat: 'THA-92',
   coachSeatBn: 'ঠ-৯২',
   numSeats: 1,
@@ -649,7 +649,7 @@ export function TicketMaker() {
                           type="text"
                           value={ticket.classNameBn}
                           onChange={e => setTicket({ ...ticket, classNameBn: e.target.value })}
-                          placeholder="শো.চেয়ার"
+                          placeholder="শো.চেয়ার"
                           style={{ width: '100%', padding: '6px', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, color: '#fff', fontSize: 11.5, boxSizing: 'border-box' }}
                         />
                       </div>
@@ -664,7 +664,6 @@ export function TicketMaker() {
                       onChange={e => {
                         const val = e.target.value;
                         const formatted = formatCoachSeat(val);
-                        // Extract bangla part inside brackets if any
                         const matchBn = formatted.match(/\((.*?)\)/);
                         setTicket({
                           ...ticket,
@@ -953,7 +952,7 @@ export function TicketMaker() {
             background: '#040711',
             overflowY: 'auto'
           }}>
-            {/* A4 Paper Board */}
+            {/* A4 Paper Sheet (White Paper with Margins) */}
             <div
               ref={ticketRef}
               style={{
@@ -961,410 +960,408 @@ export function TicketMaker() {
                 minHeight: 1123, // Standard A4 height in px
                 background: '#ffffff',
                 color: '#000000',
-                padding: '24px 28px 20px 28px',
+                padding: '28px 30px', // Exact margin around official green box
                 boxSizing: 'border-box',
                 boxShadow: '0 20px 40px rgba(0,0,0,0.85)',
-                border: '2.5px solid #008037', // Exact Bangladesh Railway green outer border from official ticket!
-                borderRadius: 4,
-                position: 'relative',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
                 fontFamily: "'Hind Siliguri', 'Noto Sans Bengali', Arial, sans-serif",
                 WebkitFontSmoothing: 'antialiased',
               }}
             >
-              <div>
-                {/* ─── Official Header: Logo, Title, Powered by & QR (Exact 1:1 match) ─── */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 6 }}>
-                  {/* Bangladesh Railway Logo */}
-                  <RailwayLogo size={74} />
-
-                  {/* Title (BANGLADESH RAILWAY / বাংলাদেশ রেলওয়ে in exact #005d8f deep teal) */}
-                  <div style={{ textAlign: 'center', flex: 1, padding: '0 8px' }}>
-                    <h1 style={{
-                      fontSize: 22,
-                      fontWeight: 800,
-                      color: '#005d8f',
-                      letterSpacing: '0.03em',
-                      margin: 0,
-                      lineHeight: 1.15,
-                      fontFamily: 'Inter, Arial, sans-serif'
-                    }}>
-                      BANGLADESH RAILWAY
-                    </h1>
-                    <h2 style={{
-                      fontSize: 20,
-                      fontWeight: 700,
-                      color: '#005d8f',
-                      margin: '2px 0 0',
-                      lineHeight: 1.2,
-                      fontFamily: "'Hind Siliguri', 'Noto Sans Bengali', sans-serif"
-                    }}>
-                      বাংলাদেশ রেলওয়ে
-                    </h2>
-                  </div>
-
-                  {/* Powered By & Official QR Code */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, textAlign: 'right' }}>
-                    <div>
-                      <div style={{ fontSize: 9.5, color: '#334155', fontWeight: 500 }}>Powered by</div>
-                      <div style={{ fontSize: 12, fontWeight: 800, color: '#005d8f', lineHeight: 1.15 }}>
-                        Shohoz
-                      </div>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: '#475569', lineHeight: 1.15 }}>
-                        Synesis
-                      </div>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: '#008037', lineHeight: 1.15 }}>
-                        Vincen <span style={{ fontSize: 13, fontWeight: 900, color: '#16a34a' }}>JV</span>
-                      </div>
-                    </div>
-
-                    {qrDataUrl && (
-                      <div style={{
-                        border: '1.2px solid #000',
-                        padding: 1.5,
-                        borderRadius: 2,
-                        background: '#fff'
-                      }}>
-                        <img src={qrDataUrl} alt="E-Ticket QR" style={{ width: 82, height: 82, display: 'block' }} />
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* ─── Greeting / Introduction Block (Direct continuation without divider line) ─── */}
-                <div style={{ margin: '14px 0 14px', fontSize: 11, color: '#000000', lineHeight: 1.42 }}>
-                  <div style={{ fontWeight: 600, marginBottom: 2 }}>Dear {ticket.passengerName},</div>
-                  <div>
-                    Your request to book e-ticket for your journey in Bangladesh Railway was successful. You can travel on the train mentioned in the ticket subject to showing your NID or Photo ID card. The details of your e-ticket are as below:
-                  </div>
-                  <div style={{ marginTop: 5, fontFamily: "'Hind Siliguri', 'Noto Sans Bengali', sans-serif" }}>
-                    বাংলাদেশ রেলওয়েতে ভ্রমণের জন্য আপনার চাহিত ই-টিকিট সফলভাবে প্রদান করা হয়েছে। আপনার এনআইডি কিংবা ছবি সম্বলিত আইডি দেখানো সাপেক্ষে আপনি টিকিটে বর্ণিত ট্রেনে যাত্রা করতে পারবেন। ই-টিকিটের বিস্তারিত নিম্নে দেয়া হল:-
-                  </div>
-                </div>
-
-                {/* ─── Table 1: Journey Information (যাত্রার তথ্য) ─── */}
-                <div style={{ marginBottom: 14 }}>
-                  {/* Green Header Banner */}
-                  <div style={{
-                    background: '#008037',
-                    color: '#ffffff',
-                    fontWeight: 700,
-                    fontSize: 12.5,
-                    padding: '4px 12px',
-                    borderRadius: '4px 4px 0 0',
-                    letterSpacing: '0.01em',
-                  }}>
-                    Journey Information (যাত্রার তথ্য)
-                  </div>
-
-                  {/* Table Body - Exact clean white rows matching official ticket */}
-                  <table style={{
-                    width: '100%',
-                    borderCollapse: 'collapse',
-                    fontSize: 11,
-                    border: '1px solid #c8d1dc',
-                    borderTop: 'none',
-                  }}>
-                    <tbody>
-                      <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                        <td style={{ padding: '3.5px 10px', width: '48%', fontWeight: 500, color: '#000000' }}>
-                          Issue Date & Time (প্রদানের তারিখ ও সময়)
-                        </td>
-                        <td style={{ padding: '3.5px 10px', width: '52%', color: '#000000', fontWeight: 500 }}>
-                          {formatRailwayDateTime(ticket.issueDate, ticket.issueTime)}
-                        </td>
-                      </tr>
-
-                      <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                        <td style={{ padding: '3.5px 10px', fontWeight: 500, color: '#000000' }}>
-                          Journey Date & Time (যাত্রার তারিখ ও সময়)
-                        </td>
-                        <td style={{ padding: '3.5px 10px', color: '#000000', fontWeight: 500 }}>
-                          {formatRailwayDateTime(ticket.journeyDate, ticket.journeyTime)}
-                        </td>
-                      </tr>
-
-                      <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                        <td style={{ padding: '3.5px 10px', fontWeight: 500, color: '#000000' }}>
-                          Train Name & Number (ট্রেন নম্বর ও নাম)
-                        </td>
-                        <td style={{ padding: '3.5px 10px', color: '#000000', fontWeight: 500 }}>
-                          {ticket.trainName} [{ticket.trainNumber}] ({ticket.trainNameBn} [{toBanglaDigits(ticket.trainNumber)}])
-                        </td>
-                      </tr>
-
-                      <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                        <td style={{ padding: '3.5px 10px', fontWeight: 500, color: '#000000' }}>
-                          From Station (প্রারম্ভিক স্টেশন)
-                        </td>
-                        <td style={{ padding: '3.5px 10px', color: '#000000', fontWeight: 500 }}>
-                          {ticket.fromStation} ({ticket.fromStationBn || getStationBanglaName(ticket.fromStation)})
-                        </td>
-                      </tr>
-
-                      <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                        <td style={{ padding: '3.5px 10px', fontWeight: 500, color: '#000000' }}>
-                          To Station (গন্তব্য স্টেশন)
-                        </td>
-                        <td style={{ padding: '3.5px 10px', color: '#000000', fontWeight: 500 }}>
-                          {ticket.toStation} ({ticket.toStationBn || getStationBanglaName(ticket.toStation)})
-                        </td>
-                      </tr>
-
-                      <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                        <td style={{ padding: '3.5px 10px', fontWeight: 500, color: '#000000' }}>
-                          Class Name (শ্রেণির নাম)
-                        </td>
-                        <td style={{ padding: '3.5px 10px', color: '#000000', fontWeight: 500 }}>
-                          {ticket.className} ({ticket.classNameBn})
-                        </td>
-                      </tr>
-
-                      <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                        <td style={{ padding: '3.5px 10px', fontWeight: 500, color: '#000000' }}>
-                          Coach Name / Seat(s) (কোচের নাম / আসন)
-                        </td>
-                        <td style={{ padding: '3.5px 10px', color: '#000000', fontWeight: 500 }}>
-                          {formatCoachSeat(ticket.coachSeat, ticket.coachSeatBn)}
-                        </td>
-                      </tr>
-
-                      <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                        <td style={{ padding: '3.5px 10px', fontWeight: 500, color: '#000000' }}>
-                          No. of Seats (আসন সংখ্যা)
-                        </td>
-                        <td style={{ padding: '3.5px 10px', color: '#000000', fontWeight: 500 }}>
-                          {ticket.numSeats} ({toBanglaDigits(ticket.numSeats)})
-                        </td>
-                      </tr>
-
-                      <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                        <td style={{ padding: '3.5px 10px', fontWeight: 500, color: '#000000' }}>
-                          No. of Adult Passenger(s) (প্রাপ্তবয়স্ক যাত্রীর সংখ্যা)
-                        </td>
-                        <td style={{ padding: '3.5px 10px', color: '#000000', fontWeight: 500 }}>
-                          {ticket.numAdults} ({toBanglaDigits(ticket.numAdults)})
-                        </td>
-                      </tr>
-
-                      <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                        <td style={{ padding: '3.5px 10px', fontWeight: 500, color: '#000000' }}>
-                          No. of Senior Citizen Passenger(s) (প্রবীণ যাত্রীর সংখ্যা)
-                        </td>
-                        <td style={{ padding: '3.5px 10px', color: '#000000', fontWeight: 500 }}>
-                          {ticket.numSeniors} ({toBanglaDigits(ticket.numSeniors)})
-                        </td>
-                      </tr>
-
-                      <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                        <td style={{ padding: '3.5px 10px', fontWeight: 500, color: '#000000' }}>
-                          No. of Child Passenger(s) (শিশু যাত্রীর সংখ্যা)
-                        </td>
-                        <td style={{ padding: '3.5px 10px', color: '#000000', fontWeight: 500 }}>
-                          {ticket.numChildren} ({toBanglaDigits(ticket.numChildren)})
-                        </td>
-                      </tr>
-
-                      <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                        <td style={{ padding: '3.5px 10px', fontWeight: 500, color: '#000000' }}>
-                          Fare (ভাড়া)
-                        </td>
-                        <td style={{ padding: '3.5px 10px', color: '#000000', fontWeight: 500 }}>
-                          BDT {ticket.fare.toFixed(2)} ({toBanglaDigits(ticket.fare.toFixed(2))} টাকা)
-                        </td>
-                      </tr>
-
-                      <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                        <td style={{ padding: '3.5px 10px', fontWeight: 500, color: '#000000' }}>
-                          VAT (ভ্যাট)
-                        </td>
-                        <td style={{ padding: '3.5px 10px', color: '#000000', fontWeight: 500 }}>
-                          BDT {ticket.vat.toFixed(2)} ({toBanglaDigits(ticket.vat.toFixed(2))} টাকা)
-                        </td>
-                      </tr>
-
-                      <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                        <td style={{ padding: '3.5px 10px', fontWeight: 500, color: '#000000' }}>
-                          Service Charge (সেবা খরচ)
-                        </td>
-                        <td style={{ padding: '3.5px 10px', color: '#000000', fontWeight: 500 }}>
-                          BDT {ticket.serviceCharge.toFixed(2)} ({toBanglaDigits(ticket.serviceCharge.toFixed(2))} টাকা)
-                        </td>
-                      </tr>
-
-                      <tr>
-                        <td style={{ padding: '4px 10px', fontWeight: 700, color: '#000000' }}>
-                          Total Fare (মোট ভাড়া)**
-                        </td>
-                        <td style={{ padding: '4px 10px', color: '#000000', fontWeight: 700 }}>
-                          BDT {totalFare.toFixed(2)} ({toBanglaDigits(totalFare.toFixed(2))} টাকা)
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-
-                  {/* Bedding Charges Footnote */}
-                  <div style={{ fontSize: 9.2, color: '#222222', marginTop: 3, lineHeight: 1.3 }}>
-                    ** Total Fare includes BDT 50 Bedding Charges per seat for AC_B and F_BERTH seat classes. (এসি_বি এবং এফ_বার্থ সিট ক্লাসের প্রতি সিটে মোট ভাড়ার সাথে ৳৫০ বেডিং চার্জ অন্তর্ভুক্ত)
-                  </div>
-                </div>
-
-                {/* ─── Table 2: Passenger Information (যাত্রীর তথ্য) ─── */}
-                <div style={{ marginBottom: 14 }}>
-                  {/* Green Header Banner */}
-                  <div style={{
-                    background: '#008037',
-                    color: '#ffffff',
-                    fontWeight: 700,
-                    fontSize: 12.5,
-                    padding: '4px 12px',
-                    borderRadius: '4px 4px 0 0',
-                    letterSpacing: '0.01em',
-                  }}>
-                    Passenger Information (যাত্রীর তথ্য)
-                  </div>
-
-                  <table style={{
-                    width: '100%',
-                    borderCollapse: 'collapse',
-                    fontSize: 11,
-                    border: '1px solid #c8d1dc',
-                    borderTop: 'none',
-                  }}>
-                    <tbody>
-                      <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                        <td style={{ padding: '3.5px 10px', width: '48%', fontWeight: 500, color: '#000000' }}>
-                          Passenger Name (যাত্রীর নাম)
-                        </td>
-                        <td style={{ padding: '3.5px 10px', width: '52%', color: '#000000', fontWeight: 500 }}>
-                          {ticket.passengerName}
-                        </td>
-                      </tr>
-
-                      <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                        <td style={{ padding: '3.5px 10px', fontWeight: 500, color: '#000000' }}>
-                          Identification Type (পরিচয়পত্র ধরণ)
-                        </td>
-                        <td style={{ padding: '3.5px 10px', color: '#000000', fontWeight: 500 }}>
-                          {ticket.idType} ({ticket.idTypeBn || (ticket.idType === 'NID' ? 'এন আই ডি' : ticket.idType === 'Birth Certificate' ? 'জন্ম নিবন্ধন সনদ' : 'পাসপোর্ট')})
-                        </td>
-                      </tr>
-
-                      <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                        <td style={{ padding: '3.5px 10px', fontWeight: 500, color: '#000000' }}>
-                          Identification Number (পরিচয়পত্র নম্বর)
-                        </td>
-                        <td style={{ padding: '3.5px 10px', color: '#000000', fontWeight: 500 }}>
-                          {ticket.idNumber} ({ticket.idNumberBn || toBanglaDigits(ticket.idNumber)})
-                        </td>
-                      </tr>
-
-                      <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
-                        <td style={{ padding: '3.5px 10px', fontWeight: 500, color: '#000000' }}>
-                          Mobile Number (মোবাইল নম্বর)
-                        </td>
-                        <td style={{ padding: '3.5px 10px', color: '#000000', fontWeight: 500 }}>
-                          {ticket.mobileNumber} ({ticket.mobileNumberBn || toBanglaDigits(ticket.mobileNumber)})
-                        </td>
-                      </tr>
-
-                      <tr>
-                        <td style={{ padding: '3.5px 10px', fontWeight: 500, color: '#000000' }}>
-                          PNR Number (পিএনআর নম্বর)
-                        </td>
-                        <td style={{ padding: '3.5px 10px', color: '#000000', fontWeight: 700, letterSpacing: '0.02em' }}>
-                          {ticket.pnrNumber}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* ─── Section 3: Please Note / খেয়াল করুনঃ- (Exact bilingual format from official ticket) ─── */}
-                <div style={{
-                  border: '1px solid #c8d1dc',
-                  borderRadius: 4,
-                  padding: '7px 12px',
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  columnGap: 18,
-                  fontSize: 9.8,
-                  lineHeight: 1.45,
-                  color: '#000000',
-                  marginBottom: 12,
-                }}>
-                  {/* English Instructions */}
-                  <div>
-                    <div style={{ fontWeight: 700, marginBottom: 3, color: '#000000' }}>Please Note:-</div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      <div>• Carrying NID or Photo ID while travelling is mandatory for each passenger.</div>
-                      <div>• You can carry either soft copy or printed copy of your e-ticket while travelling.</div>
-                      <div>• No need to print e-ticket from the counter.</div>
-                      <div>• It is mandatory for children between 3 to 12 years old to purchase minor tickets.</div>
-                    </div>
-                  </div>
-
-                  {/* Bangla Instructions */}
-                  <div style={{ fontFamily: "'Hind Siliguri', 'Noto Sans Bengali', sans-serif" }}>
-                    <div style={{ fontWeight: 700, marginBottom: 3, color: '#000000' }}>খেয়াল করুনঃ-</div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      <div>- ভ্রমণের সময় প্রত্যেক যাত্রীর এনআইডি/ ছবি সম্বলিত পরিচয়পত্র সাথে রাখা বাধ্যতামূলক।</div>
-                      <div>- ট্রেন ভ্রমণে আপনার ই-টিকিটের প্রিন্টেড কপি অথবা অনলাইন কপি সাথে রাখুন।</div>
-                      <div>- কাউন্টার থেকে টিকিট প্রিন্ট করার প্রয়োজন নেই।</div>
-                      <div>- তিন থেকে বারো বছরের শিশুদের জন্য অপ্রাপ্ত বয়স্ক টিকিট ক্রয় বাধ্যতামূলক।</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* ─── Helpline & Anti-Smoking Notices (Exact colors & wording) ─── */}
-                <div style={{ textAlign: 'center', marginBottom: 10 }}>
-                  <div style={{
-                    color: '#d01c1c',
-                    fontSize: 11,
-                    fontWeight: 700,
-                    fontFamily: "'Hind Siliguri', 'Noto Sans Bengali', sans-serif",
-                    lineHeight: 1.45,
-                    marginBottom: 7
-                  }}>
-                    রেলওয়ে সেবার জন্য ১৩১ এবং আইন শৃঙ্খলা বিষয়ক সহায়তার জন্য রেলওয়ে পুলিশ হটলাইন ০১৩২০১৭৭৫৯৮ নম্বরে<br />যোগাযোগ করুন।
-                  </div>
-
-                  <div style={{
-                    background: '#fee2e2',
-                    border: '1px solid #fca5a5',
-                    color: '#b91c1c',
-                    fontSize: 11,
-                    fontWeight: 700,
-                    padding: '4px 14px',
-                    borderRadius: 3,
-                    display: 'inline-block',
-                    fontFamily: "'Hind Siliguri', 'Noto Sans Bengali', sans-serif"
-                  }}>
-                    "ধূমপান ও তামাকজাত দ্রব্য ব্যবহার হইতে বিরত থাকুন, ইহা শাস্তিযোগ্য অপরাধ"
-                  </div>
-                </div>
-              </div>
-
-              {/* ─── Bottom Sign-Off (Exact matching text & alignment) ─── */}
+              {/* Official Bangladesh Railway Green Outer Frame */}
               <div style={{
+                border: '2px solid #008037',
+                borderRadius: 4,
+                padding: '20px 22px 16px 22px',
                 display: 'flex',
-                alignItems: 'flex-end',
+                flexDirection: 'column',
                 justifyContent: 'space-between',
-                paddingTop: 6,
-                fontSize: 10.5,
-                lineHeight: 1.35,
-                color: '#000000'
+                minHeight: 1065,
+                boxSizing: 'border-box',
+                background: '#ffffff',
               }}>
                 <div>
-                  Wishing you a pleasant and safe journey-<br />
-                  <strong style={{ fontSize: 11.5, fontWeight: 700, color: '#000000' }}>Bangladesh Railway</strong>
+                  {/* ─── Official Header: Authentic Emblem, Title, Powered by & QR (Exact 1:1 match) ─── */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    {/* Official Bangladesh Railway Crest */}
+                    <RailwayLogo size={74} />
+
+                    {/* Title (BANGLADESH RAILWAY / বাংলাদেশ রেলওয়ে in exact #005d8f deep teal) */}
+                    <div style={{ textAlign: 'center', flex: 1, padding: '0 8px' }}>
+                      <h1 style={{
+                        fontSize: 22,
+                        fontWeight: 800,
+                        color: '#005d8f',
+                        letterSpacing: '0.02em',
+                        margin: 0,
+                        lineHeight: 1.15,
+                        fontFamily: 'Inter, Arial, sans-serif'
+                      }}>
+                        BANGLADESH RAILWAY
+                      </h1>
+                      <h2 style={{
+                        fontSize: 20,
+                        fontWeight: 700,
+                        color: '#005d8f',
+                        margin: '3px 0 0',
+                        lineHeight: 1.2,
+                        fontFamily: "'Hind Siliguri', 'Noto Sans Bengali', sans-serif"
+                      }}>
+                        বাংলাদেশ রেলওয়ে
+                      </h2>
+                    </div>
+
+                    {/* Powered By & Official QR Code */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, textAlign: 'right' }}>
+                      <div style={{ lineHeight: 1.25 }}>
+                        <div style={{ fontSize: 9.5, color: '#334155', fontWeight: 500 }}>Powered by</div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: '#005d8f' }}>Shohoz</div>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: '#475569' }}>Synesis</div>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: '#008037' }}>
+                          Vincen <span style={{ fontSize: 13, fontWeight: 900, color: '#16a34a' }}>JV</span>
+                        </div>
+                      </div>
+
+                      {qrDataUrl && (
+                        <img
+                          src={qrDataUrl}
+                          alt="E-Ticket QR"
+                          style={{ width: 80, height: 80, display: 'block' }}
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* ─── Greeting / Introduction Block (Direct continuation without divider line) ─── */}
+                  <div style={{ margin: '14px 0 12px', fontSize: 10.5, color: '#000000', lineHeight: 1.38 }}>
+                    <div style={{ fontWeight: 600, marginBottom: 2 }}>Dear {ticket.passengerName},</div>
+                    <div>
+                      Your request to book e-ticket for your journey in Bangladesh Railway was successful. You can travel on the train mentioned in the ticket subject to showing your NID or Photo ID card. The details of your e-ticket are as below:
+                    </div>
+                    <div style={{ marginTop: 5, fontFamily: "'Hind Siliguri', 'Noto Sans Bengali', sans-serif" }}>
+                      বাংলাদেশ রেলওয়েতে ভ্রমণের জন্য আপনার চাহিত ই-টিকিট সফলভাবে প্রদান করা হয়েছে। আপনার এনআইডি কিংবা ছবি সম্বলিত আইডি দেখানো সাপেক্ষে আপনি টিকিটে বর্ণিত ট্রেনে যাত্রা করতে পারবেন। ই-টিকিটের বিস্তারিত নিম্নে দেয়া হল:-
+                    </div>
+                  </div>
+
+                  {/* ─── Table 1: Journey Information (যাত্রার তথ্য) ─── */}
+                  <div style={{ marginBottom: 12 }}>
+                    {/* Green Header Banner */}
+                    <div style={{
+                      background: '#008037',
+                      color: '#ffffff',
+                      fontWeight: 700,
+                      fontSize: 12,
+                      padding: '3.5px 8px',
+                      borderRadius: '3px 3px 0 0',
+                    }}>
+                      Journey Information (যাত্রার তথ্য)
+                    </div>
+
+                    {/* Table Body - Exact clean white rows matching official ticket */}
+                    <table style={{
+                      width: '100%',
+                      borderCollapse: 'collapse',
+                      fontSize: 10,
+                      border: '1px solid #c8d1dc',
+                      borderTop: 'none',
+                    }}>
+                      <tbody>
+                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
+                          <td style={{ padding: '2.8px 8px', width: '48%', fontWeight: 500, color: '#000000' }}>
+                            Issue Date & Time (প্রদানের তারিখ ও সময়)
+                          </td>
+                          <td style={{ padding: '2.8px 8px', width: '52%', color: '#000000', fontWeight: 500 }}>
+                            {formatRailwayDateTime(ticket.issueDate, ticket.issueTime)}
+                          </td>
+                        </tr>
+
+                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
+                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
+                            Journey Date & Time (যাত্রার তারিখ ও সময়)
+                          </td>
+                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
+                            {formatRailwayDateTime(ticket.journeyDate, ticket.journeyTime)}
+                          </td>
+                        </tr>
+
+                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
+                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
+                            Train Name & Number (ট্রেন নম্বর ও নাম)
+                          </td>
+                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
+                            {ticket.trainName} [{ticket.trainNumber}] ({ticket.trainNameBn} [{toBanglaDigits(ticket.trainNumber)}])
+                          </td>
+                        </tr>
+
+                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
+                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
+                            From Station (প্রারম্ভিক স্টেশন)
+                          </td>
+                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
+                            {ticket.fromStation} ({ticket.fromStationBn || getStationBanglaName(ticket.fromStation)})
+                          </td>
+                        </tr>
+
+                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
+                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
+                            To Station (গন্তব্য স্টেশন)
+                          </td>
+                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
+                            {ticket.toStation} ({ticket.toStationBn || getStationBanglaName(ticket.toStation)})
+                          </td>
+                        </tr>
+
+                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
+                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
+                            Class Name (শ্রেণির নাম)
+                          </td>
+                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
+                            {ticket.className} ({ticket.classNameBn})
+                          </td>
+                        </tr>
+
+                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
+                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
+                            Coach Name / Seat(s) (কোচের নাম / আসন)
+                          </td>
+                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
+                            {formatCoachSeat(ticket.coachSeat, ticket.coachSeatBn)}
+                          </td>
+                        </tr>
+
+                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
+                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
+                            No. of Seats (আসন সংখ্যা)
+                          </td>
+                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
+                            {ticket.numSeats} ({toBanglaDigits(ticket.numSeats)})
+                          </td>
+                        </tr>
+
+                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
+                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
+                            No. of Adult Passenger(s) (প্রাপ্তবয়স্ক যাত্রীর সংখ্যা)
+                          </td>
+                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
+                            {ticket.numAdults} ({toBanglaDigits(ticket.numAdults)})
+                          </td>
+                        </tr>
+
+                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
+                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
+                            No. of Senior Citizen Passenger(s) (প্রবীণ যাত্রীর সংখ্যা)
+                          </td>
+                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
+                            {ticket.numSeniors} ({toBanglaDigits(ticket.numSeniors)})
+                          </td>
+                        </tr>
+
+                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
+                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
+                            No. of Child Passenger(s) (শিশু যাত্রীর সংখ্যা)
+                          </td>
+                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
+                            {ticket.numChildren} ({toBanglaDigits(ticket.numChildren)})
+                          </td>
+                        </tr>
+
+                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
+                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
+                            Fare (ভাড়া)
+                          </td>
+                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
+                            BDT {ticket.fare.toFixed(2)} ({toBanglaDigits(ticket.fare.toFixed(2))} টাকা)
+                          </td>
+                        </tr>
+
+                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
+                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
+                            VAT (ভ্যাট)
+                          </td>
+                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
+                            BDT {ticket.vat.toFixed(2)} ({toBanglaDigits(ticket.vat.toFixed(2))} টাকা)
+                          </td>
+                        </tr>
+
+                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
+                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
+                            Service Charge (সেবা খরচ)
+                          </td>
+                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
+                            BDT {ticket.serviceCharge.toFixed(2)} ({toBanglaDigits(ticket.serviceCharge.toFixed(2))} টাকা)
+                          </td>
+                        </tr>
+
+                        <tr>
+                          <td style={{ padding: '3.5px 8px', fontWeight: 700, color: '#000000' }}>
+                            Total Fare (মোট ভাড়া)**
+                          </td>
+                          <td style={{ padding: '3.5px 8px', color: '#000000', fontWeight: 700 }}>
+                            BDT {totalFare.toFixed(2)} ({toBanglaDigits(totalFare.toFixed(2))} টাকা)
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+
+                    {/* Bedding Charges Footnote */}
+                    <div style={{ fontSize: 8.5, color: '#222222', marginTop: 2.5, lineHeight: 1.3 }}>
+                      ** Total Fare includes BDT 50 Bedding Charges per seat for AC_B and F_BERTH seat classes. (এসি_বি এবং এফ_বাথ সিট ক্লাসের প্রতি সিটে মোট ভাড়ার সাথে ৳৫০ বেডিং চার্জ অন্তর্ভুক্ত)
+                    </div>
+                  </div>
+
+                  {/* ─── Table 2: Passenger Information (যাত্রীর তথ্য) ─── */}
+                  <div style={{ marginBottom: 12 }}>
+                    {/* Green Header Banner */}
+                    <div style={{
+                      background: '#008037',
+                      color: '#ffffff',
+                      fontWeight: 700,
+                      fontSize: 12,
+                      padding: '3.5px 8px',
+                      borderRadius: '3px 3px 0 0',
+                    }}>
+                      Passenger Information (যাত্রীর তথ্য)
+                    </div>
+
+                    <table style={{
+                      width: '100%',
+                      borderCollapse: 'collapse',
+                      fontSize: 10,
+                      border: '1px solid #c8d1dc',
+                      borderTop: 'none',
+                    }}>
+                      <tbody>
+                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
+                          <td style={{ padding: '2.8px 8px', width: '48%', fontWeight: 500, color: '#000000' }}>
+                            Passenger Name (যাত্রীর নাম)
+                          </td>
+                          <td style={{ padding: '2.8px 8px', width: '52%', color: '#000000', fontWeight: 500 }}>
+                            {ticket.passengerName}
+                          </td>
+                        </tr>
+
+                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
+                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
+                            Identification Type (পরিচয়পত্র ধরণ)
+                          </td>
+                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
+                            {ticket.idType} ({ticket.idTypeBn || (ticket.idType === 'NID' ? 'এন আই ডি' : ticket.idType === 'Birth Certificate' ? 'জন্ম নিবন্ধন সনদ' : 'পাসপোর্ট')})
+                          </td>
+                        </tr>
+
+                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
+                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
+                            Identification Number (পরিচয়পত্র নম্বর)
+                          </td>
+                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
+                            {ticket.idNumber} ({ticket.idNumberBn || toBanglaDigits(ticket.idNumber)})
+                          </td>
+                        </tr>
+
+                        <tr style={{ borderBottom: '1px solid #c8d1dc' }}>
+                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
+                            Mobile Number (মোবাইল নম্বর)
+                          </td>
+                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 500 }}>
+                            {ticket.mobileNumber} ({ticket.mobileNumberBn || toBanglaDigits(ticket.mobileNumber)})
+                          </td>
+                        </tr>
+
+                        <tr>
+                          <td style={{ padding: '2.8px 8px', fontWeight: 500, color: '#000000' }}>
+                            PNR Number (পিএনআর নম্বর)
+                          </td>
+                          <td style={{ padding: '2.8px 8px', color: '#000000', fontWeight: 700, letterSpacing: '0.02em' }}>
+                            {ticket.pnrNumber}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* ─── Section 3: Please Note / খেয়াল করুনঃ- (Exact bilingual format from official ticket) ─── */}
+                  <div style={{
+                    border: '1px solid #c8d1dc',
+                    borderRadius: 3,
+                    padding: '6px 10px',
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    columnGap: 16,
+                    fontSize: 9.2,
+                    lineHeight: 1.4,
+                    color: '#000000',
+                    marginBottom: 10,
+                  }}>
+                    {/* English Instructions */}
+                    <div>
+                      <div style={{ fontWeight: 700, marginBottom: 2, color: '#000000' }}>Please Note:-</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                        <div>• Carrying NID or Photo ID while travelling is mandatory for each passenger.</div>
+                        <div>• You can carry either soft copy or printed copy of your e-ticket while travelling.</div>
+                        <div>• No need to print e-ticket from the counter.</div>
+                        <div>• It is mandatory for children between 3 to 12 years old to purchase minor tickets.</div>
+                      </div>
+                    </div>
+
+                    {/* Bangla Instructions */}
+                    <div style={{ fontFamily: "'Hind Siliguri', 'Noto Sans Bengali', sans-serif" }}>
+                      <div style={{ fontWeight: 700, marginBottom: 2, color: '#000000' }}>খেয়াল করুনঃ-</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                        <div>- ভ্রমণের সময় প্রত্যেক যাত্রীর এনআইডি/ ছবি সম্বলিত পরিচয়পত্র সাথে রাখা বাধ্যতামূলক।</div>
+                        <div>- ট্রেন ভ্রমণে আপনার ই-টিকিটের প্রিন্টেড কপি অথবা অনলাইন কপি সাথে রাখুন।</div>
+                        <div>- কাউন্টার থেকে টিকিট প্রিন্ট করার প্রয়োজন নেই।</div>
+                        <div>- তিন থেকে বারো বছরের শিশুদের জন্য অপ্রাপ্ত বয়স্ক টিকিট ক্রয় বাধ্যতামূলক।</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ─── Helpline & Anti-Smoking Notices (Exact colors & wording) ─── */}
+                  <div style={{ textAlign: 'center', marginBottom: 8 }}>
+                    <div style={{
+                      color: '#d01c1c',
+                      fontSize: 10.5,
+                      fontWeight: 700,
+                      fontFamily: "'Hind Siliguri', 'Noto Sans Bengali', sans-serif",
+                      lineHeight: 1.4,
+                      marginBottom: 6
+                    }}>
+                      রেলওয়ে সেবার জন্য ১৩১ এবং আইন শৃঙ্খলা বিষয়ক সহায়তার জন্য রেলওয়ে পুলিশ হটলাইন ০১৩২০১৭৭৫৯৮ নম্বরে<br />যোগাযোগ করুন।
+                    </div>
+
+                    <div style={{
+                      background: '#fee2e2',
+                      border: '1px solid #fca5a5',
+                      color: '#b91c1c',
+                      fontSize: 10.5,
+                      fontWeight: 700,
+                      padding: '3px 12px',
+                      borderRadius: 3,
+                      display: 'inline-block',
+                      fontFamily: "'Hind Siliguri', 'Noto Sans Bengali', sans-serif"
+                    }}>
+                      "ধূমপান ও তামাকজাত দ্রব্য ব্যবহার হইতে বিরত থাকুন, ইহা শাস্তিযোগ্য অপরাধ"
+                    </div>
+                  </div>
                 </div>
 
-                <div style={{ textAlign: 'right', fontFamily: "'Hind Siliguri', 'Noto Sans Bengali', sans-serif" }}>
-                  আপনার ভ্রমণ সুখকর ও নিরাপদ হোক, এই কামনায়-<br />
-                  <strong style={{ fontSize: 11.5, fontWeight: 700, color: '#000000' }}>বাংলাদেশ রেলওয়ে</strong>
+                {/* ─── Bottom Sign-Off (Exact matching text & alignment) ─── */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'flex-end',
+                  justifyContent: 'space-between',
+                  paddingTop: 4,
+                  fontSize: 10,
+                  lineHeight: 1.35,
+                  color: '#000000'
+                }}>
+                  <div>
+                    Wishing you a pleasant and safe journey-<br />
+                    <strong style={{ fontSize: 11, fontWeight: 700, color: '#000000' }}>Bangladesh Railway</strong>
+                  </div>
+
+                  <div style={{ textAlign: 'right', fontFamily: "'Hind Siliguri', 'Noto Sans Bengali', sans-serif" }}>
+                    আপনার ভ্রমণ সুখকর ও নিরাপদ হোক, এই কামনায়-<br />
+                    <strong style={{ fontSize: 11, fontWeight: 700, color: '#000000' }}>বাংলাদেশ রেলওয়ে</strong>
+                  </div>
                 </div>
               </div>
             </div>
