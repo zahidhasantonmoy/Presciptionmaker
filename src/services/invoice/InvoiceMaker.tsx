@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import {
@@ -64,7 +64,35 @@ export function InvoiceMaker() {
     }
   });
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 1024);
+  const [mobileTab, setMobileTab] = useState<'editor' | 'preview'>('editor');
+  const [previewScale, setPreviewScale] = useState(1);
   const invoiceRef = useRef<HTMLDivElement>(null);
+
+  const calculateFitScale = () => {
+    if (typeof window === 'undefined') return 1;
+    const padding = 20;
+    const availableWidth = window.innerWidth - padding;
+    if (availableWidth < 740) {
+      return Math.min(1, Math.max(0.35, parseFloat((availableWidth / 720).toFixed(3))));
+    }
+    return 1;
+  };
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 1024;
+      setIsMobile(mobile);
+      if (mobile) {
+        setPreviewScale(calculateFitScale());
+      } else {
+        setPreviewScale(1);
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Calculations
   const subtotal = invoice.items.reduce((acc, item) => acc + (item.quantity * item.rate), 0);
@@ -144,85 +172,144 @@ export function InvoiceMaker() {
     }}>
       {/* Top Header */}
       <div style={{
-        padding: '16px 24px',
+        padding: isMobile ? '8px 12px' : '14px 20px',
         borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         background: '#0f172a',
+        flexShrink: 0,
+        boxSizing: 'border-box'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 12 }}>
           <div style={{
-            width: 40, height: 40, borderRadius: 10,
+            width: isMobile ? 32 : 38,
+            height: isMobile ? 32 : 38,
+            borderRadius: isMobile ? 8 : 10,
             background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#fff', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+            color: '#fff', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+            flexShrink: 0
           }}>
-            <Receipt size={22} />
+            <Receipt size={isMobile ? 18 : 22} />
           </div>
           <div>
-            <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Invoice Maker</h1>
-            <p style={{ fontSize: 12, color: '#94a3b8', margin: 0 }}>Create, calculate, and export client invoices</p>
+            <h1 style={{ fontSize: isMobile ? 15 : 18, fontWeight: 700, margin: 0 }}>Invoice Maker</h1>
+            {!isMobile && (
+              <p style={{ fontSize: 12, color: '#94a3b8', margin: 0 }}>Create, calculate, and export client invoices</p>
+            )}
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button
-            onClick={createNewInvoice}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
-              color: '#f1f5f9', padding: '8px 14px', borderRadius: 8, fontSize: 13, cursor: 'pointer'
-            }}
-          >
-            <Plus size={16} /> New Invoice
-          </button>
-          <button
-            onClick={saveCurrentInvoice}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
-              color: '#f1f5f9', padding: '8px 14px', borderRadius: 8, fontSize: 13, cursor: 'pointer'
-            }}
-          >
-            <CheckCircle2 size={16} /> Save
-          </button>
-          <button
-            onClick={() => window.print()}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
-              color: '#f1f5f9', padding: '8px 14px', borderRadius: 8, fontSize: 13, cursor: 'pointer'
-            }}
-          >
-            <Printer size={16} /> Print
-          </button>
-          <button
-            onClick={handleDownloadPdf}
-            disabled={isGeneratingPdf}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 8,
-              fontSize: 13, fontWeight: 600, cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)'
-            }}
-          >
-            <Download size={16} /> {isGeneratingPdf ? 'Generating...' : 'Download PDF'}
-          </button>
-        </div>
+        {isMobile ? (
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <button
+              onClick={createNewInvoice}
+              style={{
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                color: '#f1f5f9', padding: '5px 8px', borderRadius: 6, fontSize: 11, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 4
+              }}
+              title="New Invoice"
+            >
+              <Plus size={13} /> New
+            </button>
+            <div style={{ display: 'flex', background: '#1e293b', borderRadius: 6, padding: 2, gap: 2 }}>
+              <button
+                onClick={() => setMobileTab('editor')}
+                style={{
+                  background: mobileTab === 'editor' ? '#10b981' : 'transparent',
+                  color: '#fff', border: 'none', borderRadius: 5, padding: '4px 8px', fontSize: 11, fontWeight: 600, cursor: 'pointer'
+                }}
+              >
+                Form
+              </button>
+              <button
+                onClick={() => setMobileTab('preview')}
+                style={{
+                  background: mobileTab === 'preview' ? '#10b981' : 'transparent',
+                  color: '#fff', border: 'none', borderRadius: 5, padding: '4px 8px', fontSize: 11, fontWeight: 600, cursor: 'pointer'
+                }}
+              >
+                Preview
+              </button>
+            </div>
+            <button
+              onClick={handleDownloadPdf}
+              disabled={isGeneratingPdf}
+              style={{
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                color: '#fff', border: 'none', padding: '5px 8px', borderRadius: 6,
+                fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 3
+              }}
+            >
+              <Download size={13} /> PDF
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button
+              onClick={createNewInvoice}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                color: '#f1f5f9', padding: '8px 14px', borderRadius: 8, fontSize: 13, cursor: 'pointer'
+              }}
+            >
+              <Plus size={16} /> New Invoice
+            </button>
+            <button
+              onClick={saveCurrentInvoice}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                color: '#f1f5f9', padding: '8px 14px', borderRadius: 8, fontSize: 13, cursor: 'pointer'
+              }}
+            >
+              <CheckCircle2 size={16} /> Save
+            </button>
+            <button
+              onClick={() => window.print()}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                color: '#f1f5f9', padding: '8px 14px', borderRadius: 8, fontSize: 13, cursor: 'pointer'
+              }}
+            >
+              <Printer size={16} /> Print
+            </button>
+            <button
+              onClick={handleDownloadPdf}
+              disabled={isGeneratingPdf}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 8,
+                fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)'
+              }}
+            >
+              <Download size={16} /> {isGeneratingPdf ? 'Generating...' : 'Download PDF'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Main Workspace */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
         {/* Editor Form */}
-        <div style={{
-          width: 400,
-          borderRight: '1px solid rgba(255, 255, 255, 0.08)',
-          background: '#0b1120',
-          padding: 20,
-          overflowY: 'auto'
-        }}>
+        {(!isMobile || mobileTab === 'editor') && (
+          <div style={{
+            width: isMobile ? '100%' : 400,
+            borderRight: isMobile ? 'none' : '1px solid rgba(255, 255, 255, 0.08)',
+            background: '#0b1120',
+            padding: isMobile ? '16px 14px 80px' : 20,
+            overflowY: 'auto',
+            WebkitOverflowScrolling: 'touch',
+            flexShrink: 0,
+            boxSizing: 'border-box'
+          }}>
           <h2 style={{ fontSize: 14, fontWeight: 700, color: '#10b981', textTransform: 'uppercase', marginBottom: 14 }}>
             Invoice Configuration
           </h2>
@@ -397,19 +484,32 @@ export function InvoiceMaker() {
             </div>
           </div>
         </div>
+      )}
 
-        {/* Live Document Preview */}
+      {/* Live Document Preview */}
+      {(!isMobile || mobileTab === 'preview') && (
         <div style={{
           flex: 1,
           display: 'flex',
-          justifyContent: 'center',
-          padding: 40,
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: isMobile ? 'flex-start' : 'center',
+          padding: isMobile ? '16px 8px 80px' : 40,
           background: '#020617',
-          overflowY: 'auto'
+          overflowY: 'auto',
+          overflowX: 'auto',
+          height: '100%',
+          boxSizing: 'border-box'
         }}>
-          {/* Invoice Document Paper */}
-          <div
-            ref={invoiceRef}
+          <div style={{
+            transform: isMobile ? `scale(${previewScale})` : 'none',
+            transformOrigin: 'top center',
+            marginBottom: isMobile ? `${Math.max(0, 850 * (1 - previewScale))}px` : 0,
+            transition: 'transform 0.15s ease'
+          }}>
+            {/* Invoice Document Paper */}
+            <div
+              ref={invoiceRef}
             style={{
               width: 700,
               minHeight: 850,
@@ -528,7 +628,70 @@ export function InvoiceMaker() {
             </div>
           </div>
         </div>
+
+        {/* Mobile bottom bar for quick download/save while on preview tab */}
+        {isMobile && (
+          <div className="no-print" style={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            background: 'rgba(15, 23, 42, 0.95)',
+            backdropFilter: 'blur(10px)',
+            borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+            padding: '10px 16px',
+            display: 'flex',
+            gap: 10,
+            zIndex: 40,
+            boxSizing: 'border-box'
+          }}>
+            <button
+              onClick={saveCurrentInvoice}
+              style={{
+                flex: 1,
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                color: '#fff',
+                padding: '10px',
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6
+              }}
+            >
+              <CheckCircle2 size={16} /> Save
+            </button>
+            <button
+              onClick={handleDownloadPdf}
+              disabled={isGeneratingPdf}
+              style={{
+                flex: 2,
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                border: 'none',
+                color: '#fff',
+                padding: '10px',
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)'
+              }}
+            >
+              <Download size={16} /> {isGeneratingPdf ? 'Generating...' : 'Download PDF'}
+            </button>
+          </div>
+        )}
       </div>
-    </div>
+    )}
+  </div>
+</div>
   );
 }

@@ -32,7 +32,35 @@ export function CertificateMaker() {
   const [cert, setCert] = useState<CertificateData>(DEFAULT_CERTIFICATE);
   const [qrUrl, setQrUrl] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 1024);
+  const [mobileTab, setMobileTab] = useState<'editor' | 'preview'>('editor');
+  const [previewScale, setPreviewScale] = useState(1);
   const certRef = useRef<HTMLDivElement>(null);
+
+  const calculateFitScale = () => {
+    if (typeof window === 'undefined') return 1;
+    const padding = 20;
+    const availableWidth = window.innerWidth - padding;
+    if (availableWidth < 860) {
+      return Math.min(1, Math.max(0.3, parseFloat((availableWidth / 840).toFixed(3))));
+    }
+    return 1;
+  };
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 1024;
+      setIsMobile(mobile);
+      if (mobile) {
+        setPreviewScale(calculateFitScale());
+      } else {
+        setPreviewScale(1);
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     QRCode.toDataURL(JSON.stringify({ id: cert.id, recipient: cert.recipientName, org: cert.organization }), {
@@ -75,80 +103,144 @@ export function CertificateMaker() {
     }}>
       {/* Header */}
       <div style={{
-        padding: '16px 24px',
+        padding: isMobile ? '8px 12px' : '14px 20px',
         borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         background: '#0f172a',
+        flexShrink: 0,
+        boxSizing: 'border-box'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 12 }}>
           <div style={{
-            width: 40, height: 40, borderRadius: 10,
+            width: isMobile ? 32 : 38,
+            height: isMobile ? 32 : 38,
+            borderRadius: isMobile ? 8 : 10,
             background: 'linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#fff', boxShadow: '0 4px 12px rgba(168, 85, 247, 0.3)'
+            color: '#fff', boxShadow: '0 4px 12px rgba(168, 85, 247, 0.3)',
+            flexShrink: 0
           }}>
-            <Award size={22} />
+            <Award size={isMobile ? 18 : 22} />
           </div>
           <div>
-            <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Certificate Maker</h1>
-            <p style={{ fontSize: 12, color: '#94a3b8', margin: 0 }}>Design and issue verified diplomas & certificates</p>
+            <h1 style={{ fontSize: isMobile ? 15 : 18, fontWeight: 700, margin: 0 }}>Certificate Maker</h1>
+            {!isMobile && (
+              <p style={{ fontSize: 12, color: '#94a3b8', margin: 0 }}>Design and issue verified diplomas & certificates</p>
+            )}
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button
-            onClick={() => {
-              setCert({
-                ...DEFAULT_CERTIFICATE,
-                id: 'CRT-2026-' + Math.floor(1000 + Math.random() * 9000),
-              });
-            }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
-              color: '#f1f5f9', padding: '8px 14px', borderRadius: 8, fontSize: 13, cursor: 'pointer'
-            }}
-          >
-            <Plus size={16} /> New
-          </button>
-          <button
-            onClick={() => window.print()}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
-              color: '#f1f5f9', padding: '8px 14px', borderRadius: 8, fontSize: 13, cursor: 'pointer'
-            }}
-          >
-            <Printer size={16} /> Print
-          </button>
-          <button
-            onClick={handleDownloadPdf}
-            disabled={isGenerating}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: 'linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)',
-              color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 8,
-              fontSize: 13, fontWeight: 600, cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(168, 85, 247, 0.4)'
-            }}
-          >
-            <Download size={16} /> {isGenerating ? 'Generating...' : 'Download PDF'}
-          </button>
-        </div>
+        {isMobile ? (
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <button
+              onClick={() => {
+                setCert({
+                  ...DEFAULT_CERTIFICATE,
+                  id: 'CRT-2026-' + Math.floor(1000 + Math.random() * 9000),
+                });
+              }}
+              style={{
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                color: '#f1f5f9', padding: '5px 8px', borderRadius: 6, fontSize: 11, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 4
+              }}
+              title="New Certificate"
+            >
+              <Plus size={13} /> New
+            </button>
+            <div style={{ display: 'flex', background: '#1e293b', borderRadius: 6, padding: 2, gap: 2 }}>
+              <button
+                onClick={() => setMobileTab('editor')}
+                style={{
+                  background: mobileTab === 'editor' ? '#a855f7' : 'transparent',
+                  color: '#fff', border: 'none', borderRadius: 5, padding: '4px 8px', fontSize: 11, fontWeight: 600, cursor: 'pointer'
+                }}
+              >
+                Form
+              </button>
+              <button
+                onClick={() => setMobileTab('preview')}
+                style={{
+                  background: mobileTab === 'preview' ? '#a855f7' : 'transparent',
+                  color: '#fff', border: 'none', borderRadius: 5, padding: '4px 8px', fontSize: 11, fontWeight: 600, cursor: 'pointer'
+                }}
+              >
+                Certificate
+              </button>
+            </div>
+            <button
+              onClick={handleDownloadPdf}
+              disabled={isGenerating}
+              style={{
+                background: 'linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)',
+                color: '#fff', border: 'none', padding: '5px 8px', borderRadius: 6,
+                fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 3
+              }}
+            >
+              <Download size={13} /> PDF
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button
+              onClick={() => {
+                setCert({
+                  ...DEFAULT_CERTIFICATE,
+                  id: 'CRT-2026-' + Math.floor(1000 + Math.random() * 9000),
+                });
+              }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                color: '#f1f5f9', padding: '8px 14px', borderRadius: 8, fontSize: 13, cursor: 'pointer'
+              }}
+            >
+              <Plus size={16} /> New
+            </button>
+            <button
+              onClick={() => window.print()}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                color: '#f1f5f9', padding: '8px 14px', borderRadius: 8, fontSize: 13, cursor: 'pointer'
+              }}
+            >
+              <Printer size={16} /> Print
+            </button>
+            <button
+              onClick={handleDownloadPdf}
+              disabled={isGenerating}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: 'linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)',
+                color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 8,
+                fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(168, 85, 247, 0.4)'
+              }}
+            >
+              <Download size={16} /> {isGenerating ? 'Generating...' : 'Download PDF'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Main Workspace */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
         {/* Editor */}
-        <div style={{
-          width: 380,
-          borderRight: '1px solid rgba(255, 255, 255, 0.08)',
-          background: '#0b1120',
-          padding: 20,
-          overflowY: 'auto'
-        }}>
+        {(!isMobile || mobileTab === 'editor') && (
+          <div style={{
+            width: isMobile ? '100%' : 380,
+            borderRight: isMobile ? 'none' : '1px solid rgba(255, 255, 255, 0.08)',
+            background: '#0b1120',
+            padding: isMobile ? '16px 14px 80px' : 20,
+            overflowY: 'auto',
+            WebkitOverflowScrolling: 'touch',
+            flexShrink: 0,
+            boxSizing: 'border-box'
+          }}>
           <h2 style={{ fontSize: 14, fontWeight: 700, color: '#a855f7', textTransform: 'uppercase', marginBottom: 14 }}>
             Certificate Form
           </h2>
@@ -237,23 +329,35 @@ export function CertificateMaker() {
             </div>
           </div>
         </div>
+      )}
 
-        {/* Live Preview */}
+      {/* Live Preview */}
+      {(!isMobile || mobileTab === 'preview') && (
         <div style={{
           flex: 1,
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'center',
-          padding: 30,
+          justifyContent: isMobile ? 'flex-start' : 'center',
+          padding: isMobile ? '16px 8px 80px' : 30,
           background: '#020617',
-          overflowY: 'auto'
+          overflowY: 'auto',
+          overflowX: 'auto',
+          height: '100%',
+          boxSizing: 'border-box'
         }}>
-          {/* Certificate Board */}
-          <div
-            ref={certRef}
-            style={{
-              width: 820,
-              height: 580,
+          <div style={{
+            transform: isMobile ? `scale(${previewScale})` : 'none',
+            transformOrigin: 'top center',
+            marginBottom: isMobile ? `${Math.max(0, 580 * (1 - previewScale))}px` : 0,
+            transition: 'transform 0.15s ease'
+          }}>
+            {/* Certificate Board */}
+            <div
+              ref={certRef}
+              style={{
+                width: 820,
+                height: 580,
               background: '#ffffff',
               color: '#0f172a',
               borderRadius: 8,
@@ -368,7 +472,70 @@ export function CertificateMaker() {
             </div>
           </div>
         </div>
+
+        {/* Mobile bottom bar for quick PDF download while in preview tab */}
+        {isMobile && (
+          <div className="no-print" style={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            background: 'rgba(15, 23, 42, 0.95)',
+            backdropFilter: 'blur(10px)',
+            borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+            padding: '10px 16px',
+            display: 'flex',
+            gap: 10,
+            zIndex: 40,
+            boxSizing: 'border-box'
+          }}>
+            <button
+              onClick={() => window.print()}
+              style={{
+                flex: 1,
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                color: '#fff',
+                padding: '10px',
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6
+              }}
+            >
+              <Printer size={16} /> Print
+            </button>
+            <button
+              onClick={handleDownloadPdf}
+              disabled={isGenerating}
+              style={{
+                flex: 2,
+                background: 'linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)',
+                border: 'none',
+                color: '#fff',
+                padding: '10px',
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                boxShadow: '0 4px 12px rgba(168, 85, 247, 0.4)'
+              }}
+            >
+              <Download size={16} /> {isGenerating ? 'Generating...' : 'Download Certificate PDF'}
+            </button>
+          </div>
+        )}
       </div>
-    </div>
+    )}
+  </div>
+</div>
   );
 }

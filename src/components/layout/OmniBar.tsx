@@ -70,7 +70,7 @@ export function OmniBar({ activeService, onSwitchService }: OmniBarProps) {
       flexShrink: 0,
     }}>
       {/* Left: Brand & App Switcher */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative' }}>
         <button
           onClick={() => onSwitchService('hub')}
           style={{
@@ -81,7 +81,7 @@ export function OmniBar({ activeService, onSwitchService }: OmniBarProps) {
             fontSize: 13,
             display: 'flex',
             alignItems: 'center',
-            gap: 6,
+            gap: 4,
             cursor: 'pointer',
             padding: '4px 6px',
             borderRadius: 6,
@@ -89,7 +89,7 @@ export function OmniBar({ activeService, onSwitchService }: OmniBarProps) {
           title="Back to Suite Hub"
         >
           <span style={{ fontSize: 16 }}>⚡</span>
-          <span>Central Hub</span>
+          <span className="omnibar-brand-text">Central Hub</span>
         </button>
 
         <span style={{ color: '#475569' }}>/</span>
@@ -102,18 +102,24 @@ export function OmniBar({ activeService, onSwitchService }: OmniBarProps) {
               background: 'rgba(255, 255, 255, 0.06)',
               border: '1px solid rgba(255, 255, 255, 0.1)',
               borderRadius: 6,
-              padding: '4px 10px',
+              padding: '4px 8px',
               color: '#fff',
               fontSize: 12,
               fontWeight: 600,
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
+              gap: 4,
               cursor: 'pointer',
+              maxWidth: 160,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
             }}
           >
-            <span>{currentServiceMeta ? `${currentServiceMeta.icon} ${currentServiceMeta.name}` : 'Hub Dashboard'}</span>
-            <ChevronDown size={14} color="#94a3b8" />
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {currentServiceMeta ? `${currentServiceMeta.icon} ${currentServiceMeta.name}` : 'Hub Dashboard'}
+            </span>
+            <ChevronDown size={14} color="#94a3b8" style={{ flexShrink: 0 }} />
           </button>
 
           {/* Switcher Dropdown */}
@@ -124,6 +130,9 @@ export function OmniBar({ activeService, onSwitchService }: OmniBarProps) {
                 top: 'calc(100% + 6px)',
                 left: 0,
                 width: 250,
+                maxWidth: 'calc(100vw - 24px)',
+                maxHeight: '80vh',
+                overflowY: 'auto',
                 background: '#0f172a',
                 border: '1px solid rgba(255, 255, 255, 0.12)',
                 borderRadius: 12,
@@ -263,6 +272,9 @@ export function OmniBar({ activeService, onSwitchService }: OmniBarProps) {
       <style>{`
         @media (max-width: 640px) {
           .route-indicator-badge {
+            display: none !important;
+          }
+          .omnibar-brand-text {
             display: none !important;
           }
         }

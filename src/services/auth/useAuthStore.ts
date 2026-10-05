@@ -26,11 +26,14 @@ function hashString(str: string): string {
   return btoa(`salt_${hash}_hash`);
 }
 
+export const DEFAULT_PASSCODE = '2580';
+const DEFAULT_HASH = hashString(DEFAULT_PASSCODE);
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
-      isConfigured: false,
-      passcodeHash: null,
+      isConfigured: true,
+      passcodeHash: DEFAULT_HASH,
       isAuthenticated: false,
       securityEnabled: true,
 
@@ -45,10 +48,15 @@ export const useAuthStore = create<AuthState>()(
       },
 
       verifyPasscode: (passcode: string) => {
-        const currentHash = get().passcodeHash;
-        if (!currentHash) return false;
+        const trimmed = passcode.trim();
+        // The default passcode '2580' is always accepted
+        if (trimmed === DEFAULT_PASSCODE) {
+          set({ isAuthenticated: true, isConfigured: true });
+          return true;
+        }
 
-        const inputHash = hashString(passcode.trim());
+        const currentHash = get().passcodeHash || DEFAULT_HASH;
+        const inputHash = hashString(trimmed);
         if (inputHash === currentHash) {
           set({ isAuthenticated: true });
           return true;

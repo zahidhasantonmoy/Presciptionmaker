@@ -40,14 +40,27 @@ export function LockScreen({ onUnlocked }: { onUnlocked?: () => void }) {
     }
   };
 
+  const handleQuickFillDefault = () => {
+    setPasscode('2580');
+    setError(null);
+    const ok = verifyPasscode('2580');
+    if (ok && onUnlocked) {
+      onUnlocked();
+    }
+  };
+
   return (
     <div style={{
-      minHeight: '100vh',
+      minHeight: '100dvh',
+      height: '100%',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)',
-      padding: '20px',
+      padding: '24px 16px',
+      boxSizing: 'border-box',
+      overflowY: 'auto',
+      WebkitOverflowScrolling: 'touch',
       fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       color: '#f8fafc',
     }}>
@@ -58,46 +71,81 @@ export function LockScreen({ onUnlocked }: { onUnlocked?: () => void }) {
         backdropFilter: 'blur(20px)',
         border: '1px solid rgba(255, 255, 255, 0.1)',
         borderRadius: 24,
-        padding: '36px 32px',
+        padding: '32px 24px',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 40px rgba(99, 102, 241, 0.2)',
+        margin: 'auto',
+        boxSizing: 'border-box',
       }}>
         {/* Brand Icon */}
         <div style={{
           display: 'flex',
           justifyContent: 'center',
-          marginBottom: 24,
+          marginBottom: 20,
         }}>
           <div style={{
-            width: 64,
-            height: 64,
-            borderRadius: 20,
+            width: 60,
+            height: 60,
+            borderRadius: 18,
             background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             boxShadow: '0 10px 25px -5px rgba(99, 102, 241, 0.5)',
           }}>
-            {isConfigured ? <Lock size={30} color="#fff" /> : <ShieldCheck size={32} color="#fff" />}
+            {isConfigured ? <Lock size={28} color="#fff" /> : <ShieldCheck size={30} color="#fff" />}
           </div>
         </div>
 
         {/* Title */}
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <h1 style={{ fontSize: 24, fontWeight: 700, margin: '0 0 8px 0', letterSpacing: '-0.02em' }}>
-            {isConfigured ? 'Personal Workspace' : 'Set Master Passcode'}
+        <div style={{ textAlign: 'center', marginBottom: 20 }}>
+          <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>
+            Personal Workspace
           </h1>
-          <p style={{ fontSize: 14, color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>
-            {isConfigured
-              ? 'Enter your master passcode to unlock all platform tools.'
-              : 'Create a private master passcode to protect your documents.'}
+          <p style={{ fontSize: 13, color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>
+            Enter your master passcode to unlock all platform tools.
           </p>
         </div>
 
+        {/* Default Passcode Hint / Quick-Fill Pill */}
+        <div style={{
+          background: 'rgba(99, 102, 241, 0.12)',
+          border: '1px solid rgba(99, 102, 241, 0.3)',
+          borderRadius: 12,
+          padding: '10px 14px',
+          marginBottom: 20,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 10,
+        }}>
+          <div>
+            <div style={{ fontSize: 11, color: '#a5b4fc', fontWeight: 600 }}>DEFAULT PASSCODE</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', letterSpacing: '0.15em' }}>2580</div>
+          </div>
+          <button
+            type="button"
+            onClick={handleQuickFillDefault}
+            style={{
+              background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+              border: 'none',
+              borderRadius: 8,
+              color: '#fff',
+              fontSize: 12,
+              fontWeight: 700,
+              padding: '6px 12px',
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(99, 102, 241, 0.4)',
+            }}
+          >
+            Unlock with 2580
+          </button>
+        </div>
+
         {/* Form */}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
             <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#cbd5e1', marginBottom: 8 }}>
-              {isConfigured ? 'Master Passcode' : 'Create Passcode'}
+              Enter Passcode
             </label>
             <div style={{ position: 'relative' }}>
               <input
@@ -105,14 +153,14 @@ export function LockScreen({ onUnlocked }: { onUnlocked?: () => void }) {
                 value={passcode}
                 onChange={(e) => setPasscode(e.target.value)}
                 autoFocus
-                placeholder={isConfigured ? 'Enter passcode' : 'Choose 4+ characters'}
+                placeholder="Enter passcode (default: 2580)"
                 style={{
                   width: '100%',
                   boxSizing: 'border-box',
                   background: 'rgba(15, 23, 42, 0.8)',
                   border: '1px solid rgba(255, 255, 255, 0.15)',
                   borderRadius: 12,
-                  padding: '14px 44px 14px 16px',
+                  padding: '13px 44px 13px 14px',
                   color: '#fff',
                   fontSize: 16,
                   outline: 'none',

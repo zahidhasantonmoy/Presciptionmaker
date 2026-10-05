@@ -93,16 +93,27 @@ function MainPlatform() {
     <div style={{
       display: 'flex',
       flexDirection: 'column',
-      height: '100vh',
-      width: '100vw',
-      overflow: 'hidden',
+      minHeight: '100dvh',
+      height: '100dvh',
+      width: '100%',
+      maxWidth: '100vw',
+      overflowX: 'hidden',
+      overflowY: 'hidden',
       background: '#090d16',
     }}>
       {/* Universal OmniBar on top */}
       <OmniBar activeService={activeService} onSwitchService={switchService} />
 
       {/* Main Content Viewport */}
-      <div style={{ flex: 1, height: 'calc(100vh - 42px)', overflow: 'hidden', position: 'relative' }}>
+      <div style={{
+        flex: 1,
+        minHeight: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch',
+        position: 'relative',
+      }}>
         {activeService === 'hub' ? (
           <HubDashboard onSelectService={switchService} />
         ) : ServiceComponent ? (

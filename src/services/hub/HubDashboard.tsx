@@ -76,23 +76,26 @@ export function HubDashboard({ onSelectService }: { onSelectService: (id: Servic
       minHeight: '100%',
       background: 'linear-gradient(135deg, #090d16 0%, #0f172a 100%)',
       color: '#f8fafc',
-      padding: '32px 40px',
+      padding: '24px 16px',
       boxSizing: 'border-box',
       overflowY: 'auto',
+      WebkitOverflowScrolling: 'touch',
       fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
     }}>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         {/* Top Header & Greeting */}
         <div style={{
           display: 'flex',
+          flexWrap: 'wrap',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: 36,
-          paddingBottom: 24,
+          gap: 16,
+          marginBottom: 28,
+          paddingBottom: 20,
           borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
         }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
               <span style={{
                 background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
                 color: '#fff', fontSize: 11, fontWeight: 800, padding: '4px 10px',
@@ -105,46 +108,46 @@ export function HubDashboard({ onSelectService }: { onSelectService: (id: Servic
                 All Services Ready
               </span>
             </div>
-            <h1 style={{ fontSize: 32, fontWeight: 900, margin: '8px 0 4px', letterSpacing: '-0.02em' }}>
+            <h1 style={{ fontSize: 26, fontWeight: 900, margin: '8px 0 4px', letterSpacing: '-0.02em' }}>
               Service Suite Hub
             </h1>
-            <p style={{ fontSize: 14, color: '#94a3b8', margin: 0 }}>
+            <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>
               All your document tools in one place. No external servers or subdomains needed.
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button
               onClick={handleExportBackup}
               style={{
-                display: 'flex', alignItems: 'center', gap: 8,
+                display: 'flex', alignItems: 'center', gap: 6,
                 background: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(255, 255, 255, 0.12)',
-                color: '#e2e8f0', padding: '10px 16px', borderRadius: 10, fontSize: 13, fontWeight: 600,
+                color: '#e2e8f0', padding: '8px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600,
                 cursor: 'pointer', transition: 'all 0.15s'
               }}
               title="Download full JSON backup of all your data"
             >
-              <Download size={16} /> Backup All Data
+              <Download size={14} /> Backup
             </button>
             <label style={{
-              display: 'flex', alignItems: 'center', gap: 8,
+              display: 'flex', alignItems: 'center', gap: 6,
               background: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(255, 255, 255, 0.12)',
-              color: '#e2e8f0', padding: '10px 16px', borderRadius: 10, fontSize: 13, fontWeight: 600,
+              color: '#e2e8f0', padding: '8px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600,
               cursor: 'pointer'
             }}>
-              <Upload size={16} /> Restore
+              <Upload size={14} /> Restore
               <input type="file" accept=".json" onChange={handleRestoreBackup} style={{ display: 'none' }} />
             </label>
             <button
               onClick={lock}
               style={{
-                display: 'flex', alignItems: 'center', gap: 8,
+                display: 'flex', alignItems: 'center', gap: 6,
                 background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)',
-                color: '#fca5a5', padding: '10px 16px', borderRadius: 10, fontSize: 13, fontWeight: 600,
+                color: '#fca5a5', padding: '8px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600,
                 cursor: 'pointer'
               }}
             >
-              <Lock size={16} /> Lock
+              <Lock size={14} /> Lock
             </button>
           </div>
         </div>
@@ -152,7 +155,7 @@ export function HubDashboard({ onSelectService }: { onSelectService: (id: Servic
         {/* Quick Stats Banner */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))',
           gap: 16,
           marginBottom: 36
         }}>
@@ -258,8 +261,8 @@ export function HubDashboard({ onSelectService }: { onSelectService: (id: Servic
         {/* Services Grid */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
-          gap: 20,
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
+          gap: 16,
           marginBottom: 44
         }}>
           {SERVICES_REGISTRY.map(service => (
