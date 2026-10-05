@@ -319,19 +319,48 @@ export function TicketMaker() {
             clonedPage.style.margin = '0';
           }
 
-          // 2. Fix html2canvas line-height / vertical baseline bug:
-          // In browsers, line-height: 20pt adds (20 - fontSize)/2 half-leading to center text vertically.
-          // html2canvas ignores this and renders text directly from top, causing table lines to cut through text.
-          // By applying the exact half-leading in the clone, html2canvas renders the text perfectly centered in cells!
-          const spans = clonedDoc.querySelectorAll<HTMLElement>('.ticket-span');
+          // 2. Ensure ticket CSS rules are present in cloned document
+          const styleEl = clonedDoc.createElement('style');
+          styleEl.innerHTML = `
+            .ticket-span {
+              position: absolute;
+              white-space: pre;
+              line-height: 20pt;
+              height: 20pt;
+              margin: 0;
+              padding: 0;
+              font-kerning: none;
+              font-synthesis: none;
+              text-rendering: geometricPrecision;
+              -webkit-font-smoothing: antialiased;
+            }
+            .ticket-r { font-family: "Roboto", sans-serif; }
+            .ticket-s { font-family: "SolaimanLipi", "Kalpurush", sans-serif; }
+          `;
+          clonedDoc.head.appendChild(styleEl);
+
+          // 3. Perfect vertical alignment shift for html2canvas rendering:
+          // Shifts table row spans by +4.2pt and banners by +2.0pt so they sit
+          // exactly in the vertical center of their table cells with zero line collisions.
+          const spans = clonedDoc.querySelectorAll<HTMLElement>('#page span');
           spans.forEach(span => {
             const fs = parseFloat(span.style.fontSize) || 7.5;
             const currentTop = parseFloat(span.style.top);
             if (!isNaN(currentTop)) {
-              const halfLeading = (20 - fs) / 2;
-              span.style.top = `${currentTop + halfLeading}pt`;
-              span.style.lineHeight = 'normal';
-              span.style.height = 'auto';
+              let shift = 0;
+              if (fs >= 14) {
+                shift = 0;
+              } else if (fs >= 11) {
+                shift = 2.0;
+              } else if (currentTop >= 600) {
+                shift = 1.0;
+              } else if (currentTop >= 180 && currentTop <= 500) {
+                // Table 1 (Journey Information) and Table 2 (Passenger Information) rows
+                shift = 4.2;
+              } else {
+                shift = 0;
+              }
+              span.style.top = `${currentTop + shift}pt`;
             }
           });
         }
