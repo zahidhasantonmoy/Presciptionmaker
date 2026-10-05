@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import './ticketFonts.css';
 import QRCode from 'qrcode';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -268,6 +269,9 @@ export function TicketMaker() {
     if (!ticketRef.current) return;
     setIsGeneratingPdf(true);
     try {
+      if (document.fonts) {
+        await document.fonts.ready;
+      }
       const canvas = await html2canvas(ticketRef.current, {
         scale: 2.5,
         useCORS: true,
@@ -1626,7 +1630,7 @@ export function TicketMaker() {
           font-family: "Roboto", sans-serif;
         }
         .ticket-s {
-          font-family: "SolaimanLipi", "Hind Siliguri", "Noto Sans Bengali", sans-serif;
+          font-family: "SolaimanLipi", "Kalpurush", sans-serif;
         }
         @media print {
           @page {
