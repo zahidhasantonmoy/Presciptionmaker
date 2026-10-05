@@ -1,0 +1,122 @@
+{
+  "prescriptionNumber": "RX-2026-0089",
+  "date": "2026-10-05",
+  "language": "en",
+  "theme": "classic",
+  "printMode": "full",
+  "patient": {
+    "name": "Md. Rafiqul Islam",
+    "nameBn": "মোঃ রফিকুল ইসলাম",
+    "age": "48Y",
+    "gender": "male",
+    "phone": "01712345678",
+    "weight": "68 kg",
+    "height": "5 ft 7 in",
+    "bloodPressure": "130/85 mmHg",
+    "address": "Dhanmondi, Dhaka",
+    "allergies": "No known drug allergies"
+  },
+  "complaints": "1. Severe low back pain radiating to left leg for 3 months.\n2. Tingling sensation and numbness along L5 dermatome.\n3. Symptoms aggregate on prolonged standing or walking.",
+  "complaintsBn": "১. ৩ মাস ধরে তীব্র কোমর ব্যথা যা বাম পায়ে নেমে যায়।\n২. পায়ে ঝিঁঝিঁ ধরা ও অবশ ভাব।\n৩. দীর্ঘক্ষণ হাঁটাহাঁটি বা দাঁড়িয়ে থাকলে ব্যথা বৃদ্ধি পায়।",
+  "history": "Known hypertensive for 2 years (taking Amlodipine 5mg).\nNo history of major trauma or spine surgery.",
+  "onExamination": "1. Lumbar spine tenderness at L4-L5 level.\n2. Straight Leg Raise (SLR): Left 40°, Right 80°.\n3. Deep tendon reflexes: Knee jerk normal, Ankle jerk slightly diminished on left.\n4. Plantar: Flexor bilaterally.",
+  "diagnoses": [
+    {
+      "text": "Lumbar PLID with L5 Radiculopathy",
+      "note": "L4-L5 disc protrusion suspected"
+    },
+    {
+      "text": "Primary Hypertension",
+      "note": "Well controlled"
+    }
+  ],
+  "medicines": [
+    {
+      "name": "Tab. Naprosyn",
+      "genericName": "Naproxen",
+      "form": "tablet",
+      "strength": "500 mg",
+      "morning": "1",
+      "afternoon": "0",
+      "evening": "1",
+      "timing": "খাবারের পরে (After meal)",
+      "duration": "7 days",
+      "instruction": "Do not take on an empty stomach"
+    },
+    {
+      "name": "Cap. Maxpro",
+      "genericName": "Esomeprazole",
+      "form": "capsule",
+      "strength": "20 mg",
+      "morning": "1",
+      "afternoon": "0",
+      "evening": "1",
+      "timing": "খাবারের ২০ মিনিট পূর্বে (Before meal)",
+      "duration": "14 days",
+      "instruction": "Take with water"
+    },
+    {
+      "name": "Tab. Myolax",
+      "genericName": "Tolperisone Hydrochloride",
+      "form": "tablet",
+      "strength": "50 mg",
+      "morning": "1",
+      "afternoon": "0",
+      "evening": "1",
+      "timing": "খাবারের পরে (After meal)",
+      "duration": "10 days",
+      "instruction": "For muscle spasm relief"
+    },
+    {
+      "name": "Tab. Neuro-B",
+      "genericName": "Vitamin B1 + B6 + B12",
+      "form": "tablet",
+      "strength": "",
+      "morning": "1",
+      "afternoon": "0",
+      "evening": "1",
+      "timing": "খাবারের পরে (After meal)",
+      "duration": "1 month",
+      "instruction": "Nerve nourishment supplement"
+    },
+    {
+      "name": "Tab. Pregalin",
+      "genericName": "Pregabalin",
+      "form": "tablet",
+      "strength": "50 mg",
+      "morning": "0",
+      "afternoon": "0",
+      "evening": "1",
+      "timing": "রাতে শোবার আগে (At bedtime)",
+      "duration": "14 days",
+      "instruction": "For neuropathic radiating pain"
+    }
+  ],
+  "investigations": [
+    {
+      "name": "MRI of Lumbar Spine (Plain & Contrast)",
+      "category": "imaging",
+      "instruction": "High-field 1.5T/3.0T machine"
+    },
+    {
+      "name": "X-Ray Lumbo-Sacral Spine (B/V: AP & Lateral)",
+      "category": "imaging",
+      "instruction": "Standing position"
+    },
+    {
+      "name": "CBC with ESR",
+      "category": "lab",
+      "instruction": "Screening for inflammatory markers"
+    },
+    {
+      "name": "Serum Creatinine",
+      "category": "lab",
+      "instruction": "Kidney profile before continuing NSAIDs"
+    }
+  ],
+  "advice": "1. Strict flat firm bed rest during acute pain episodes.\n2. Avoid lifting heavy weights, twisting movements, and forward bending.\n3. Wear a Lumbo-sacral corset belt during travel or physical movement.\n4. Apply local heat/cold pack for 15 minutes twice daily.\n5. Perform guided core & back extensor isometric exercises once acute pain subsides.",
+  "adviceBn": "১. শক্ত সমান বিছানায় বিশ্রাম নিন।\n২. ঝুঁকে বা ভারী জিনিস তোলা সম্পূর্ণ নিষেধ।\n৩. ভ্রমণের সময় লাম্বার করসেট বেল্ট ব্যবহার করুন।\n৪. দিনে দুবার হালকা গরম সেঁক দিন।\n৫. ব্যথা কমলে ডাক্তারের পরামর্শ অনুযায়ী হালকা পিঠের ব্যায়াম করুন।",
+  "followUpDate": "2026-10-20",
+  "followUpText": "Review with MRI Lumbar Spine & investigation reports after 2 weeks",
+  "followUpTextBn": "২ সপ্তাহ পর এমআরআই ও রক্ত পরীক্ষার রিপোর্ট নিয়ে দেখা করবেন"
+}

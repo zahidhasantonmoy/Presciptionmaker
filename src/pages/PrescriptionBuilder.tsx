@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Save, Printer, Eye, ChevronDown, ChevronUp,
   User, Stethoscope, FlaskConical, BookOpen, Calendar, FileText, Keyboard, Clock, RotateCcw,
-  Layers, ShieldCheck, MessageSquare
+  Layers, ShieldCheck, MessageSquare, FileCode
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useStore } from '../store/useStore';
@@ -14,6 +14,7 @@ import { AdviceEntry } from '../components/prescription/AdviceEntry';
 import { PrintPreviewModal } from '../components/prescription/PrintPreviewModal';
 import { LabRequisitionSlipModal } from '../components/modals/LabRequisitionSlipModal';
 import { KeyboardShortcutsModal } from '../components/modals/KeyboardShortcutsModal';
+import { JsonPrescriptionModal } from '../components/modals/JsonPrescriptionModal';
 import { VoiceDictationButton } from '../components/ui/VoiceDictationButton';
 import { DoctorSwitcher } from '../components/layout/DoctorSwitcher';
 import { useToast } from '../components/ui/Toast';
@@ -67,7 +68,7 @@ function SectionHeader({ title, icon, isOpen, onToggle, count }: SectionHeaderPr
 export function PrescriptionBuilder() {
   const {
     currentPrescription, doctorProfile, doctorProfiles, activeDoctorId, setActiveDoctorId, prescriptionTemplates, updateCurrentPrescription,
-    createPrescription, savePrescription, settings, prescriptions
+    createPrescription, savePrescription, setCurrentPrescription, settings, prescriptions
   } = useStore();
   const { showToast } = useToast();
 
@@ -75,6 +76,7 @@ export function PrescriptionBuilder() {
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [showLabSlipModal, setShowLabSlipModal] = useState(false);
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
+  const [showJsonModal, setShowJsonModal] = useState(false);
   const [sections, setSections] = useState<SectionToggle>({
     complaints: true, examination: false, history: false, diagnosis: true,
     medicines: true, investigations: true, advice: true, followup: true, notes: false,
@@ -82,6 +84,11 @@ export function PrescriptionBuilder() {
   const [previewScale, setPreviewScale] = useState(0.48);
   const [showTemplatePanel, setShowTemplatePanel] = useState(false);
   const [mobileTab, setMobileTab] = useState<'editor' | 'preview'>('editor');
+
+  const handleJsonImport = (importedRx: Prescription) => {
+    setCurrentPrescription(importedRx);
+    showToast('Prescription imported from JSON successfully! (প্রেসক্রিপশন সফলভাবে ইমপোর্ট হয়েছে)', 'success');
+  };
   const [isMobileScreen, setIsMobileScreen] = useState(() => typeof window !== 'undefined' && window.innerWidth < 1024);
 
   useEffect(() => {
@@ -320,6 +327,14 @@ export function PrescriptionBuilder() {
           <DoctorSwitcher compact />
           <button className="btn-ghost btn-sm" onClick={() => setShowTemplatePanel(!showTemplatePanel)}>
             <BookOpen size={14} /> Templates
+          </button>
+          <button
+            className="btn-ghost btn-sm"
+            onClick={() => setShowJsonModal(true)}
+            title="Import prescription data from JSON or download sample template (JSON ইমপোর্ট ও টেমপ্লেট)"
+            style={{ color: '#4f46e5', fontWeight: 700, background: '#eef2ff', border: '1px solid #c7d2fe', display: 'inline-flex', alignItems: 'center', gap: 5 }}
+          >
+            <FileCode size={14} color="#4f46e5" /> JSON Data
           </button>
 
           {/* Quick Frequent Case Loaders */}
@@ -1007,6 +1022,15 @@ export function PrescriptionBuilder() {
       {/* Keyboard Shortcuts Modal */}
       {showShortcutsModal && (
         <KeyboardShortcutsModal onClose={() => setShowShortcutsModal(false)} />
+      )}
+
+      {/* JSON Prescription Modal */}
+      {showJsonModal && (
+        <JsonPrescriptionModal
+          currentPrescription={rx}
+          onImport={handleJsonImport}
+          onClose={() => setShowJsonModal(false)}
+        />
       )}
     </div>
   );
