@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Lock, KeyRound, ShieldCheck, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import React, { useState } from 'react';
+import { Lock, ShieldCheck, ArrowRight, Eye, EyeOff, Shield } from 'lucide-react';
 import { useAuthStore } from './useAuthStore';
 
 export function LockScreen({ onUnlocked }: { onUnlocked?: () => void }) {
@@ -7,21 +7,12 @@ export function LockScreen({ onUnlocked }: { onUnlocked?: () => void }) {
     isConfigured,
     setupMasterPasscode,
     verifyPasscode,
-    unlockWithSession,
   } = useAuthStore();
 
   const [passcode, setPasscode] = useState('');
   const [confirmPasscode, setConfirmPasscode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [showPasscode, setShowPasscode] = useState(false);
-
-  // Try auto-unlocking from cross-subdomain cookie on mount
-  useEffect(() => {
-    const unlocked = unlockWithSession();
-    if (unlocked && onUnlocked) {
-      onUnlocked();
-    }
-  }, [unlockWithSession, onUnlocked]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,8 +88,8 @@ export function LockScreen({ onUnlocked }: { onUnlocked?: () => void }) {
           </h1>
           <p style={{ fontSize: 14, color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>
             {isConfigured
-              ? 'Enter your private master passcode to unlock all platform services.'
-              : 'Create a private master passcode to protect your documents and tools.'}
+              ? 'Enter your master passcode to unlock all platform tools.'
+              : 'Create a private master passcode to protect your documents.'}
           </p>
         </div>
 
@@ -218,7 +209,6 @@ export function LockScreen({ onUnlocked }: { onUnlocked?: () => void }) {
           </button>
         </form>
 
-        {/* Security Notice */}
         <div style={{
           marginTop: 24,
           paddingTop: 18,
@@ -231,8 +221,8 @@ export function LockScreen({ onUnlocked }: { onUnlocked?: () => void }) {
           justifyContent: 'center',
           gap: 6,
         }}>
-          <KeyRound size={14} />
-          <span>Cross-subdomain session enabled</span>
+          <Shield size={14} />
+          <span>Local-first private encryption</span>
         </div>
       </div>
     </div>

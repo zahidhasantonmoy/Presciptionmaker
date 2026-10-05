@@ -1,12 +1,12 @@
 import React from 'react';
-import { ServiceId } from '../utils/subdomain';
+import { ServiceId } from '../utils/navigation';
 
 export interface ServiceItem {
   id: ServiceId;
   name: string;
   tagline: string;
   description: string;
-  subdomain: string;
+  path: string;
   icon: string; // Emoji or Lucide icon key
   category: 'Healthcare' | 'Events' | 'Finance' | 'Identity' | 'Documents';
   accentColor: string;

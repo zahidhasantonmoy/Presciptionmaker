@@ -11,7 +11,7 @@ export const SERVICES_REGISTRY: ServiceItem[] = [
     name: 'Prescription Maker',
     tagline: 'EasyPad Clinical Rx & Rx Verification',
     description: 'Create multi-page medical prescriptions with drug catalogs, ICD diagnoses, doctor profiles, and QR verification.',
-    subdomain: 'prescription',
+    path: '/prescription',
     icon: '🏥',
     category: 'Healthcare',
     accentColor: '#3b82f6',
@@ -25,7 +25,7 @@ export const SERVICES_REGISTRY: ServiceItem[] = [
     name: 'Ticket Maker',
     tagline: 'Event, Concert & Transit Pass Generator',
     description: 'Design custom tickets with perforated tear notches, attendee seating, pricing tiers, and scannable QR verification.',
-    subdomain: 'ticket',
+    path: '/ticket',
     icon: '🎟️',
     category: 'Events',
     accentColor: '#f59e0b',
@@ -39,7 +39,7 @@ export const SERVICES_REGISTRY: ServiceItem[] = [
     name: 'Invoice Maker',
     tagline: 'Client Invoicing & Payment Computation',
     description: 'Generate professional multi-currency invoices with dynamic line items, automated taxes, discounts, and wire instructions.',
-    subdomain: 'invoice',
+    path: '/invoice',
     icon: '🧾',
     category: 'Finance',
     accentColor: '#10b981',
@@ -53,7 +53,7 @@ export const SERVICES_REGISTRY: ServiceItem[] = [
     name: 'Certificate Maker',
     tagline: 'Diplomas, Awards & Achievements',
     description: 'Craft elegant framed completion awards and appreciation diplomas with custom citations, signatures, and tamper seals.',
-    subdomain: 'certificate',
+    path: '/certificate',
     icon: '🏆',
     category: 'Documents',
     accentColor: '#a855f7',
@@ -67,7 +67,7 @@ export const SERVICES_REGISTRY: ServiceItem[] = [
     name: 'ID & Badge Maker',
     tagline: 'Employee & Access Identity Passes',
     description: 'Produce standard CR80 identification badges with photo upload, security barcodes, designations, and blood group specs.',
-    subdomain: 'card',
+    path: '/card',
     icon: '🪪',
     category: 'Identity',
     accentColor: '#06b6d4',
@@ -82,6 +82,7 @@ export function getServiceById(id: string): ServiceItem | undefined {
   return SERVICES_REGISTRY.find(s => s.id === id);
 }
 
-export function getServiceBySubdomain(subdomain: string): ServiceItem | undefined {
-  return SERVICES_REGISTRY.find(s => s.subdomain === subdomain);
+export function getServiceByPath(path: string): ServiceItem | undefined {
+  const cleanPath = path.toLowerCase().replace(/\/+$/, '') || '/';
+  return SERVICES_REGISTRY.find(s => s.path === cleanPath);
 }

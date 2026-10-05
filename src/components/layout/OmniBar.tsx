@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import {
-  Grid, Lock, ChevronDown, Check, Globe, Shield, Minimize2, Maximize2
+  Grid, Lock, ChevronDown, Check, Maximize2, Sparkles
 } from 'lucide-react';
-import { ServiceId } from '../../utils/subdomain';
+import { ServiceId, SERVICE_PATHS } from '../../utils/navigation';
 import { SERVICES_REGISTRY, getServiceById } from '../../services/registry';
 import { useAuthStore } from '../../services/auth/useAuthStore';
 
@@ -43,10 +43,10 @@ export function OmniBar({ activeService, onSwitchService }: OmniBarProps) {
             gap: 6,
             boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
           }}
-          title="Expand Omni-Bar"
+          title="Expand Services Bar"
         >
           <Grid size={14} />
-          <span>Apps</span>
+          <span>Services</span>
           <Maximize2 size={12} />
         </button>
       </div>
@@ -89,7 +89,7 @@ export function OmniBar({ activeService, onSwitchService }: OmniBarProps) {
           title="Back to Suite Hub"
         >
           <span style={{ fontSize: 16 }}>⚡</span>
-          <span>Workspace</span>
+          <span>Central Hub</span>
         </button>
 
         <span style={{ color: '#475569' }}>/</span>
@@ -112,7 +112,7 @@ export function OmniBar({ activeService, onSwitchService }: OmniBarProps) {
               cursor: 'pointer',
             }}
           >
-            <span>{currentServiceMeta ? `${currentServiceMeta.icon} ${currentServiceMeta.name}` : 'Central Hub'}</span>
+            <span>{currentServiceMeta ? `${currentServiceMeta.icon} ${currentServiceMeta.name}` : 'Hub Dashboard'}</span>
             <ChevronDown size={14} color="#94a3b8" />
           </button>
 
@@ -123,7 +123,7 @@ export function OmniBar({ activeService, onSwitchService }: OmniBarProps) {
                 position: 'absolute',
                 top: 'calc(100% + 6px)',
                 left: 0,
-                width: 260,
+                width: 250,
                 background: '#0f172a',
                 border: '1px solid rgba(255, 255, 255, 0.12)',
                 borderRadius: 12,
@@ -155,7 +155,7 @@ export function OmniBar({ activeService, onSwitchService }: OmniBarProps) {
                   <span>⚡</span>
                   <div>
                     <div style={{ fontWeight: 600 }}>Central Hub</div>
-                    <div style={{ fontSize: 10, color: '#64748b' }}>Overview & Launcher</div>
+                    <div style={{ fontSize: 10, color: '#64748b' }}>/ (Overview)</div>
                   </div>
                 </div>
                 {activeService === 'hub' && <Check size={14} />}
@@ -193,7 +193,7 @@ export function OmniBar({ activeService, onSwitchService }: OmniBarProps) {
                     <span style={{ fontSize: 16 }}>{s.icon}</span>
                     <div>
                       <div style={{ fontWeight: 600, fontSize: 12 }}>{s.name}</div>
-                      <div style={{ fontSize: 10, color: '#64748b' }}>{s.subdomain}.example.com</div>
+                      <div style={{ fontSize: 10, color: '#64748b' }}>{s.path}</div>
                     </div>
                   </div>
                   {activeService === s.id && <Check size={14} />}
@@ -204,22 +204,22 @@ export function OmniBar({ activeService, onSwitchService }: OmniBarProps) {
         </div>
       </div>
 
-      {/* Right Controls: Subdomain indicator, Collapse, Lock */}
+      {/* Right Controls: Route Path indicator, Lock, Collapse */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        {/* Active Subdomain Pill */}
+        {/* Route Path Indicator */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 5,
+          gap: 6,
           color: '#94a3b8',
           background: 'rgba(255, 255, 255, 0.04)',
           padding: '3px 8px',
           borderRadius: 6,
+          fontFamily: 'monospace',
+          fontSize: 11,
         }}>
-          <Globe size={12} color="#60a5fa" />
-          <span>
-            {currentServiceMeta ? `${currentServiceMeta.subdomain}.example.com` : 'example.com'}
-          </span>
+          <span style={{ color: '#818cf8' }}>route:</span>
+          <span>{currentServiceMeta ? currentServiceMeta.path : '/'}</span>
         </div>
 
         {/* Lock Session */}
@@ -236,7 +236,7 @@ export function OmniBar({ activeService, onSwitchService }: OmniBarProps) {
             alignItems: 'center',
             gap: 4,
           }}
-          title="Lock private session"
+          title="Lock session"
         >
           <Lock size={13} />
           <span>Lock</span>
@@ -256,7 +256,7 @@ export function OmniBar({ activeService, onSwitchService }: OmniBarProps) {
           }}
           title="Minimize bar"
         >
-          <Minimize2 size={13} />
+          <Maximize2 size={13} style={{ transform: 'rotate(180deg)' }} />
         </button>
       </div>
     </header>

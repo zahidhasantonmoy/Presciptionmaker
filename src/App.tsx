@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useTransition } from 'react';
 import { ToastProvider } from './components/ui/Toast';
-import { detectActiveService, ServiceId } from './utils/subdomain';
+import { detectActiveService, SERVICE_PATHS, ServiceId } from './utils/navigation';
 import { useAuthStore } from './services/auth/useAuthStore';
 import { LockScreen } from './services/auth/LockScreen';
 import { OmniBar } from './components/layout/OmniBar';
@@ -40,7 +40,7 @@ function MainPlatform() {
   const [verifyRxId, setVerifyRxId] = useState<string | null>(getVerifyIdFromUrl);
   const [, startTransition] = useTransition();
 
-  // Listen to popstate and URL changes
+  // Listen to popstate and browser navigation
   useEffect(() => {
     const handleUrlChange = () => {
       setVerifyRxId(getVerifyIdFromUrl());
@@ -60,14 +60,10 @@ function MainPlatform() {
     startTransition(() => {
       setActiveService(id);
     });
-    // Update URL query parameter or path cleanly
-    const url = new URL(window.location.href);
-    if (id === 'hub') {
-      url.searchParams.delete('service');
-      window.history.pushState({}, '', url.pathname + (url.search ? url.search : ''));
-    } else {
-      url.searchParams.set('service', id);
-      window.history.pushState({}, '', url.pathname + url.search);
+
+    const targetPath = SERVICE_PATHS[id] || '/';
+    if (window.location.pathname !== targetPath) {
+      window.history.pushState({}, '', targetPath);
     }
   };
 

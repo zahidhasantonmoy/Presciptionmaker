@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { setCrossSubdomainCookie, getCookie, removeCrossSubdomainCookie } from '../../utils/subdomain';
 
 interface AuthState {
   isConfigured: boolean; // Has a master passcode been set?
@@ -11,7 +10,6 @@ interface AuthState {
   // Actions
   setupMasterPasscode: (passcode: string) => void;
   verifyPasscode: (passcode: string) => boolean;
-  unlockWithSession: () => boolean;
   lock: () => void;
   changePasscode: (oldPasscode: string, newPasscode: string) => boolean;
   toggleSecurity: (enabled: boolean) => void;
@@ -23,12 +21,10 @@ function hashString(str: string): string {
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
     hash = (hash << 5) - hash + char;
-    hash = hash & hash; // Convert to 32bit integer
+    hash = hash & hash;
   }
   return btoa(`salt_${hash}_hash`);
 }
-
-const AUTH_COOKIE_NAME = 'hub_auth_session';
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -40,7 +36,6 @@ export const useAuthStore = create<AuthState>()(
 
       setupMasterPasscode: (passcode: string) => {
         const hash = hashString(passcode.trim());
-        setCrossSubdomainCookie(AUTH_COOKIE_NAME, hash, 30);
         set({
           isConfigured: true,
           passcodeHash: hash,
@@ -55,39 +50,13 @@ export const useAuthStore = create<AuthState>()(
 
         const inputHash = hashString(passcode.trim());
         if (inputHash === currentHash) {
-          setCrossSubdomainCookie(AUTH_COOKIE_NAME, currentHash, 30);
           set({ isAuthenticated: true });
           return true;
         }
-        return false;
-      },
-
-      unlockWithSession: () => {
-        // If security is disabled, always authenticated
-        if (!get().securityEnabled) {
-          set({ isAuthenticated: true });
-          return true;
-        }
-
-        // If not configured yet, no need to lock until setup
-        if (!get().isConfigured) {
-          return false;
-        }
-
-        // Check cross-subdomain cookie
-        const cookieVal = getCookie(AUTH_COOKIE_NAME);
-        const storedHash = get().passcodeHash;
-
-        if (cookieVal && storedHash && cookieVal === storedHash) {
-          set({ isAuthenticated: true });
-          return true;
-        }
-
         return false;
       },
 
       lock: () => {
-        removeCrossSubdomainCookie(AUTH_COOKIE_NAME);
         set({ isAuthenticated: false });
       },
 
@@ -97,7 +66,6 @@ export const useAuthStore = create<AuthState>()(
           return false;
         }
         const newHash = hashString(newPasscode.trim());
-        setCrossSubdomainCookie(AUTH_COOKIE_NAME, newHash, 30);
         set({
           passcodeHash: newHash,
           isAuthenticated: true,
