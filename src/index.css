@@ -1322,3 +1322,196 @@ textarea.form-input {
   70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
   100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }
+
+/* ─── Mobile Responsiveness Enhancements ─────────────────────────────────── */
+
+.rx-form-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.rx-form-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.rx-form-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+/* Hide scrollbar for clean touch horizontal scrolling */
+.touch-scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.touch-scroll-x::-webkit-scrollbar {
+  display: none;
+}
+
+/* Mobile View Switcher */
+.mobile-view-tabs {
+  display: none;
+}
+
+/* Mobile Sidebar Drawer Overlay */
+.mobile-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.mobile-drawer-content {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 280px;
+  max-width: 85vw;
+  background: linear-gradient(180deg, #1e3a8a 0%, #1e40af 100%);
+  z-index: 1001;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  animation: slideInLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Mobile Bottom Navigation Bar */
+.mobile-bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 58px;
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+  z-index: 40;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.05);
+}
+
+.mobile-nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justifyContent: center;
+  gap: 3px;
+  border: none;
+  background: none;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0;
+  transition: color 0.15s;
+}
+
+.mobile-nav-btn.active {
+  color: #1e40af;
+}
+
+.mobile-nav-btn.active svg {
+  color: #1e40af;
+}
+
+/* Mobile Media Queries */
+@media (max-width: 1023px) {
+  .mobile-view-tabs {
+    display: flex;
+    align-items: center;
+    background: #e2e8f0;
+    padding: 3px;
+    border-radius: 10px;
+    gap: 4px;
+    margin-bottom: 8px;
+    width: 100%;
+  }
+
+  .mobile-view-tab-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justifyContent: center;
+    gap: 6px;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .mobile-view-tab-btn.active {
+    background: #ffffff;
+    color: #1e40af;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  }
+}
+
+@media (max-width: 767px) {
+  .desktop-sidebar-only {
+    display: none !important;
+  }
+
+  .mobile-bottom-nav {
+    display: flex;
+  }
+
+  .mobile-header-bar {
+    display: flex !important;
+  }
+
+  /* Add bottom padding to scroll containers to prevent bottom nav overlap */
+  .mobile-scroll-container {
+    padding-bottom: 72px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .rx-form-grid-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .rx-form-grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .rx-form-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .medicine-card {
+    padding: 10px 12px !important;
+  }
+
+  .section-panel-header {
+    padding: 10px 12px !important;
+  }
+
+  .section-panel-body {
+    padding: 12px !important;
+  }
+}
+

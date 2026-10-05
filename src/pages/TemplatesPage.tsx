@@ -110,11 +110,11 @@ export function TemplatesPage() {
   ] as const;
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: '16px 14px', maxWidth: 1000, margin: '0 auto' }}>
       <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1e293b', marginBottom: 16 }}>Templates & Catalog</h1>
 
       {/* Tab bar */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 20, borderBottom: '2px solid #e2e8f0', paddingBottom: 0 }}>
+      <div className="touch-scroll-x" style={{ display: 'flex', gap: 4, marginBottom: 20, borderBottom: '2px solid #e2e8f0', paddingBottom: 0, flexWrap: 'nowrap' }}>
         {TABS.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
             style={{

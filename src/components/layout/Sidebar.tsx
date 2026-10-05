@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  LayoutDashboard, FilePlus, History, BookOpen, Settings, Stethoscope, Globe
+  LayoutDashboard, FilePlus, History, BookOpen, Settings, Globe, X
 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { DoctorSwitcher } from './DoctorSwitcher';
@@ -13,8 +13,13 @@ const NAV_ITEMS = [
   { key: 'settings', label: 'Settings', icon: Settings },
 ] as const;
 
-export function Sidebar() {
-  const { activePage, setActivePage, doctorProfile, settings, updateSettings, createPrescription, setCurrentPrescription } = useStore();
+interface SidebarProps {
+  onClose?: () => void;
+  isMobileDrawer?: boolean;
+}
+
+export function Sidebar({ onClose, isMobileDrawer }: SidebarProps) {
+  const { activePage, setActivePage, settings, updateSettings, createPrescription, setCurrentPrescription } = useStore();
 
   const handleNav = (key: string) => {
     if (key === 'builder') {
@@ -22,6 +27,7 @@ export function Sidebar() {
       createPrescription();
     }
     setActivePage(key);
+    if (onClose) onClose();
   };
 
   const toggleLanguage = () => {
@@ -29,9 +35,23 @@ export function Sidebar() {
   };
 
   return (
-    <div className="sidebar no-print" style={{ width: 220, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
-      {/* Brand */}
-      <div style={{ padding: '20px 16px 16px' }}>
+    <div
+      className={`sidebar no-print ${!isMobileDrawer ? 'desktop-sidebar-only' : ''}`}
+      style={{
+        width: isMobileDrawer ? '100%' : 220,
+        height: '100%',
+        flexShrink: 0,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      {/* Brand & Close Button (for drawer) */}
+      <div style={{
+        padding: '20px 16px 16px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{
             width: 36, height: 36, borderRadius: 10,
@@ -46,6 +66,27 @@ export function Sidebar() {
             <div style={{ color: '#93c5fd', fontSize: 10, marginTop: 1 }}>Prescription Software</div>
           </div>
         </div>
+
+        {isMobileDrawer && onClose && (
+          <button
+            onClick={onClose}
+            style={{
+              background: 'rgba(255, 255, 255, 0.15)',
+              border: 'none',
+              borderRadius: 8,
+              width: 32,
+              height: 32,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              cursor: 'pointer',
+            }}
+            title="Close menu"
+          >
+            <X size={18} />
+          </button>
+        )}
       </div>
 
       {/* Doctor Profile Switcher */}
@@ -94,7 +135,7 @@ export function Sidebar() {
             <span className="bn" style={{ fontFamily: 'var(--font-bn)' }}>বাংলা / English</span>
           )}
         </button>
-        <div style={{ color: '#475569', fontSize: 10, marginTop: 10, textAlign: 'center' }}>
+        <div style={{ color: '#93c5fd', opacity: 0.6, fontSize: 10, marginTop: 10, textAlign: 'center' }}>
           EasyPad v1.0 · Data stored locally
         </div>
       </div>

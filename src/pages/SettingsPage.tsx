@@ -193,7 +193,7 @@ export function SettingsPage() {
   );
 
   return (
-    <div style={{ padding: 24, maxWidth: 860, margin: '0 auto' }}>
+    <div style={{ padding: '16px 14px', maxWidth: 860, margin: '0 auto' }}>
       <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1e293b', marginBottom: 6 }}>Settings & Configuration</h1>
       <p style={{ color: '#64748b', fontSize: 14, marginBottom: 20 }}>
         Manage doctor profiles, chamber details, printing margins, and local data storage.

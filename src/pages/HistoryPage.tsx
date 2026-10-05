@@ -56,7 +56,7 @@ export function HistoryPage() {
   const printPrescription = prescriptions.find(p => p.id === printRxId);
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: '16px 14px', maxWidth: 1000, margin: '0 auto' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>

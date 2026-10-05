@@ -81,6 +81,22 @@ export function PrescriptionBuilder() {
   });
   const [previewScale, setPreviewScale] = useState(0.48);
   const [showTemplatePanel, setShowTemplatePanel] = useState(false);
+  const [mobileTab, setMobileTab] = useState<'editor' | 'preview'>('editor');
+  const [isMobileScreen, setIsMobileScreen] = useState(() => typeof window !== 'undefined' && window.innerWidth < 1024);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 1024;
+      setIsMobileScreen(mobile);
+      if (mobile) {
+        const availableWidth = window.innerWidth - 32;
+        setPreviewScale(Math.min(0.48, Math.max(0.28, parseFloat((availableWidth / 794).toFixed(2)))));
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Auto-create prescription if none
   useEffect(() => {
@@ -253,26 +269,51 @@ export function PrescriptionBuilder() {
   };
 
   return (
-    <div style={{ display: 'flex', gap: 0, width: '100%', height: '100%', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: isMobileScreen ? 'column' : 'row', gap: 0, width: '100%', height: '100%', overflow: 'hidden' }}>
+      {/* Mobile Mode Switcher (< 1024px) */}
+      {isMobileScreen && (
+        <div className="mobile-view-tabs no-print" style={{ margin: '8px 12px 0 12px', flexShrink: 0 }}>
+          <button
+            type="button"
+            className={`mobile-view-tab-btn ${mobileTab === 'editor' ? 'active' : ''}`}
+            onClick={() => setMobileTab('editor')}
+          >
+            ✍️ Edit Prescription
+          </button>
+          <button
+            type="button"
+            className={`mobile-view-tab-btn ${mobileTab === 'preview' ? 'active' : ''}`}
+            onClick={() => setMobileTab('preview')}
+          >
+            📄 Live A4 Preview
+          </button>
+        </div>
+      )}
+
       {/* ─── LEFT: BUILDER ─────────────────────────────────────────────────── */}
-      <div style={{
-        flex: 1,
-        height: '100%',
-        overflowY: 'auto',
-        overflowX: 'hidden',
-        padding: '16px 20px 48px 20px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 16,
-        minWidth: 0,
-      }}>
-        {/* Toolbar */}
+      {(!isMobileScreen || mobileTab === 'editor') && (
         <div style={{
-          display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
-          background: 'white', padding: '12px 16px', borderRadius: 12,
-          border: '1px solid #e2e8f0', position: 'sticky', top: 0, zIndex: 10,
-          flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+          flex: 1,
+          height: '100%',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          padding: isMobileScreen ? '12px 12px 80px 12px' : '16px 20px 48px 20px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16,
+          minWidth: 0,
         }}>
+          {/* Toolbar */}
+          <div
+            className="touch-scroll-x"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              flexWrap: isMobileScreen ? 'nowrap' : 'wrap',
+              background: 'white', padding: isMobileScreen ? '8px 12px' : '12px 16px', borderRadius: 12,
+              border: '1px solid #e2e8f0', position: 'sticky', top: 0, zIndex: 10,
+              flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+            }}
+          >
           <span style={{ fontWeight: 700, color: '#1e40af', fontSize: 16, marginRight: 4 }}>
             ✍️ New Prescription
           </span>
@@ -570,7 +611,7 @@ export function PrescriptionBuilder() {
             <div className="section-panel-title"><FileText size={15} /> Prescription Info</div>
           </div>
           <div className="section-panel-body">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+            <div className="rx-form-grid-3">
               <div>
                 <label className="form-label">Rx Number</label>
                 <input className="form-input" value={rx.prescriptionNumber}
@@ -600,7 +641,7 @@ export function PrescriptionBuilder() {
             <div className="section-panel-title"><User size={15} /> Patient Information</div>
           </div>
           <div className="section-panel-body">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div className="rx-form-grid-2">
               <div>
                 <label className="form-label">Patient Name (English) *</label>
                 <input className="form-input" value={rx.patient.name} placeholder="e.g. John Doe"
@@ -845,31 +886,78 @@ export function PrescriptionBuilder() {
           <button className="btn-primary" style={{ flex: 1 }} onClick={handleSave}>
             <Save size={16} /> Save Prescription
           </button>
+          {isMobileScreen && (
+            <button className="btn-secondary" onClick={() => setMobileTab('preview')}>
+              <Eye size={16} /> Preview A4
+            </button>
+          )}
           <button className="btn-secondary" onClick={() => setShowPrintModal(true)}>
             <Printer size={16} /> Print / PDF
           </button>
         </div>
       </div>
+      )}
 
       {/* ─── RIGHT: PREVIEW ────────────────────────────────────────────────── */}
-      {showPreview && (
+      {((!isMobileScreen && showPreview) || (isMobileScreen && mobileTab === 'preview')) && (
         <div style={{
-          width: 440, flexShrink: 0, background: '#f1f5f9',
-          borderLeft: '1px solid #e2e8f0', overflowY: 'auto',
-          display: 'flex', flexDirection: 'column',
+          width: isMobileScreen ? '100%' : 440,
+          flex: isMobileScreen ? 1 : undefined,
+          flexShrink: 0,
+          background: '#f1f5f9',
+          borderLeft: isMobileScreen ? 'none' : '1px solid #e2e8f0',
+          overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
+          paddingBottom: isMobileScreen ? 80 : 0,
         }}>
           <div style={{
             padding: '10px 14px', background: 'white', borderBottom: '1px solid #e2e8f0',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 5,
           }}>
-            <span style={{ fontWeight: 700, fontSize: 13, color: '#1e40af' }}>
-              📄 Live A4 Preview {totalPages > 1 ? '• 2 Pages' : '• 1 Page'}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {isMobileScreen && (
+                <button
+                  className="btn-ghost btn-sm"
+                  style={{ padding: '4px 8px', fontSize: 12, fontWeight: 700, color: '#1e40af' }}
+                  onClick={() => setMobileTab('editor')}
+                >
+                  ← Edit
+                </button>
+              )}
+              <span style={{ fontWeight: 700, fontSize: 13, color: '#1e40af' }}>
+                📄 Live A4 Preview {totalPages > 1 ? '• 2 Pgs' : '• 1 Pg'}
+              </span>
+            </div>
             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-              <button className="btn-icon" onClick={() => setPreviewScale(s => Math.max(0.3, parseFloat((s - 0.05).toFixed(2))))} title="Zoom out">−</button>
-              <span style={{ fontSize: 11, color: '#64748b', minWidth: 36, textAlign: 'center' }}>{Math.round(previewScale * 100)}%</span>
+              <button className="btn-icon" onClick={() => setPreviewScale(s => Math.max(0.25, parseFloat((s - 0.05).toFixed(2))))} title="Zoom out">−</button>
+              <span style={{ fontSize: 11, color: '#64748b', minWidth: 32, textAlign: 'center' }}>{Math.round(previewScale * 100)}%</span>
               <button className="btn-icon" onClick={() => setPreviewScale(s => Math.min(1, parseFloat((s + 0.05).toFixed(2))))} title="Zoom in">+</button>
-              <button className="btn-ghost btn-sm" style={{ padding: '2px 8px', fontSize: 11 }} onClick={() => setPreviewScale(0.48)} title="Fit width">Fit</button>
+              <button
+                className="btn-ghost btn-sm"
+                style={{ padding: '2px 8px', fontSize: 11 }}
+                onClick={() => {
+                  if (isMobileScreen) {
+                    const availableWidth = window.innerWidth - 32;
+                    setPreviewScale(Math.min(0.48, Math.max(0.28, parseFloat((availableWidth / 794).toFixed(2)))));
+                  } else {
+                    setPreviewScale(0.48);
+                  }
+                }}
+                title="Fit width"
+              >
+                Fit
+              </button>
+              {isMobileScreen && (
+                <button
+                  className="btn-primary btn-sm"
+                  style={{ padding: '4px 8px', fontSize: 11 }}
+                  onClick={() => setShowPrintModal(true)}
+                >
+                  <Printer size={13} /> Print
+                </button>
+              )}
             </div>
           </div>
           <div style={{ padding: '16px 8px', display: 'flex', justifyContent: 'center', overflowX: 'auto', flex: 1 }}>

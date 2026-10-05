@@ -27,7 +27,7 @@ export function Dashboard() {
   const today = new Date().toLocaleDateString('en-BD', { timeZone: 'Asia/Dhaka', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
   return (
-    <div style={{ padding: 24, maxWidth: 1100 }}>
+    <div style={{ padding: '16px 14px', maxWidth: 1100, margin: '0 auto' }}>
       {/* Welcome */}
       <div style={{ marginBottom: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
@@ -49,7 +49,7 @@ export function Dashboard() {
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12, marginBottom: 24 }}>
         <div className="stat-card">
           <div className="stat-icon" style={{ background: '#dbeafe' }}>
             <FileText size={22} color="#1d4ed8" />
@@ -97,7 +97,7 @@ export function Dashboard() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+      <div className="rx-form-grid-2">
         {/* Recent prescriptions */}
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{
