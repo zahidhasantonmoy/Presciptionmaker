@@ -291,7 +291,7 @@ export function TicketMaker() {
     localStorage.setItem('personal_railway_tickets_db', JSON.stringify(filtered));
   };
 
-  // Download High-Resolution A4 PDF matching exact points
+  // Download High-Resolution A4 PDF matching exact points with perfect line alignment & small file size
   const handleDownloadPdf = async () => {
     if (!ticketRef.current) return;
     setIsGeneratingPdf(true);
@@ -300,25 +300,54 @@ export function TicketMaker() {
         await document.fonts.ready;
       }
       const el = ticketRef.current;
-      const prevTransform = el.style.transform;
-      const prevTransformOrigin = el.style.transformOrigin;
-      el.style.transform = 'none';
-      el.style.transformOrigin = 'top left';
 
       const canvas = await html2canvas(el, {
-        scale: 2.5,
+        scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
+        logging: false,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: 1200,
+        windowHeight: 1600,
+        onclone: (clonedDoc) => {
+          // 1. Reset scale on cloned page so it captures at crisp 595.28pt without affecting mobile view
+          const clonedPage = clonedDoc.getElementById('page');
+          if (clonedPage) {
+            clonedPage.style.transform = 'none';
+            clonedPage.style.position = 'relative';
+            clonedPage.style.margin = '0';
+          }
+
+          // 2. Fix html2canvas line-height / vertical baseline bug:
+          // In browsers, line-height: 20pt adds (20 - fontSize)/2 half-leading to center text vertically.
+          // html2canvas ignores this and renders text directly from top, causing table lines to cut through text.
+          // By applying the exact half-leading in the clone, html2canvas renders the text perfectly centered in cells!
+          const spans = clonedDoc.querySelectorAll<HTMLElement>('.ticket-span');
+          spans.forEach(span => {
+            const fs = parseFloat(span.style.fontSize) || 7.5;
+            const currentTop = parseFloat(span.style.top);
+            if (!isNaN(currentTop)) {
+              const halfLeading = (20 - fs) / 2;
+              span.style.top = `${currentTop + halfLeading}pt`;
+              span.style.lineHeight = 'normal';
+              span.style.height = 'auto';
+            }
+          });
+        }
       });
 
-      el.style.transform = prevTransform;
-      el.style.transformOrigin = prevTransformOrigin;
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'pt', 'a4');
+      // Compress to high-quality JPEG (0.92) to keep PDF under ~250 KB instead of 6 MB!
+      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+      const pdf = new jsPDF({
+        orientation: 'p',
+        unit: 'pt',
+        format: 'a4',
+        compress: true,
+      });
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
       pdf.save(`BR_ETicket_${ticket.pnrNumber}_${ticket.passengerName.replace(/\s+/g, '_')}.pdf`);
     } catch (err) {
       console.error('Failed to export PDF:', err);
