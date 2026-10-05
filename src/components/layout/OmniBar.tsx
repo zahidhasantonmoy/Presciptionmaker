@@ -68,6 +68,8 @@ export function OmniBar({ activeService, onSwitchService }: OmniBarProps) {
       fontSize: 12,
       zIndex: 999,
       flexShrink: 0,
+      position: 'sticky',
+      top: 0,
     }}>
       {/* Left: Brand & App Switcher */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative' }}>

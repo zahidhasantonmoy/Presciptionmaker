@@ -73,13 +73,12 @@ export function HubDashboard({ onSelectService }: { onSelectService: (id: Servic
 
   return (
     <div style={{
+      width: '100%',
       minHeight: '100%',
       background: 'linear-gradient(135deg, #090d16 0%, #0f172a 100%)',
       color: '#f8fafc',
-      padding: '24px 16px',
+      padding: '28px 20px 80px 20px',
       boxSizing: 'border-box',
-      overflowY: 'auto',
-      WebkitOverflowScrolling: 'touch',
       fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
     }}>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>

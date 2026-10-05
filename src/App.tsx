@@ -88,32 +88,38 @@ function MainPlatform() {
   // 3. Render active service or Hub Dashboard
   const currentService = getServiceById(activeService);
   const ServiceComponent = currentService ? currentService.component : null;
+  const isAppTool = activeService !== 'hub';
 
   return (
     <div style={{
       display: 'flex',
       flexDirection: 'column',
       minHeight: '100dvh',
-      height: '100dvh',
+      height: isAppTool ? '100dvh' : 'auto',
       width: '100%',
       maxWidth: '100vw',
       overflowX: 'hidden',
-      overflowY: 'hidden',
+      overflowY: isAppTool ? 'hidden' : 'visible',
       background: '#090d16',
     }}>
       {/* Universal OmniBar on top */}
       <OmniBar activeService={activeService} onSwitchService={switchService} />
 
       {/* Main Content Viewport */}
-      <div style={{
-        flex: 1,
-        minHeight: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        overflowY: 'auto',
-        WebkitOverflowScrolling: 'touch',
-        position: 'relative',
-      }}>
+      <main
+        id="main-content-viewport"
+        style={{
+          flex: 1,
+          minHeight: isAppTool ? 0 : 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          overflowY: isAppTool ? 'hidden' : 'visible',
+          overflowX: 'hidden',
+          WebkitOverflowScrolling: 'touch',
+          position: 'relative',
+          width: '100%',
+        }}
+      >
         {activeService === 'hub' ? (
           <HubDashboard onSelectService={switchService} />
         ) : ServiceComponent ? (
@@ -121,7 +127,7 @@ function MainPlatform() {
         ) : (
           <HubDashboard onSelectService={switchService} />
         )}
-      </div>
+      </main>
     </div>
   );
 }
