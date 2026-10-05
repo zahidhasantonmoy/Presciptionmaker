@@ -207,7 +207,7 @@ export function OmniBar({ activeService, onSwitchService }: OmniBarProps) {
       {/* Right Controls: Route Path indicator, Lock, Collapse */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         {/* Route Path Indicator */}
-        <div style={{
+        <div className="route-indicator-badge" style={{
           display: 'flex',
           alignItems: 'center',
           gap: 6,
@@ -259,6 +259,14 @@ export function OmniBar({ activeService, onSwitchService }: OmniBarProps) {
           <Maximize2 size={13} style={{ transform: 'rotate(180deg)' }} />
         </button>
       </div>
+
+      <style>{`
+        @media (max-width: 640px) {
+          .route-indicator-badge {
+            display: none !important;
+          }
+        }
+      `}</style>
     </header>
   );
 }

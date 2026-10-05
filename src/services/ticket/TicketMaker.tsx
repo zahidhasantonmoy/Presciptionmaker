@@ -5,7 +5,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import {
   Train, Download, Printer, Plus, CheckCircle2,
-  Trash2, PenTool
+  Trash2, PenTool, Eye, ZoomIn, ZoomOut
 } from 'lucide-react';
 import { ShohozLogo } from './ShohozLogo';
 import {
@@ -106,14 +106,41 @@ export function TicketMaker() {
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 1024);
   const ticketRef = useRef<HTMLDivElement>(null);
 
-  // Resize listener for mobile responsiveness
+  const calculateFitScale = () => {
+    if (typeof window !== 'undefined') {
+      const availableWidth = Math.max(260, window.innerWidth - (window.innerWidth < 640 ? 16 : 32));
+      return Math.min(1, parseFloat((availableWidth / 794).toFixed(3)));
+    }
+    return 1;
+  };
+
+  const [previewScale, setPreviewScale] = useState<number>(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      const availableWidth = Math.max(260, window.innerWidth - (window.innerWidth < 640 ? 16 : 32));
+      return Math.min(1, parseFloat((availableWidth / 794).toFixed(3)));
+    }
+    return 1;
+  });
+
+  // Resize listener for mobile responsiveness and preview scale
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 1024);
+      const mobile = window.innerWidth < 1024;
+      setIsMobile(mobile);
+      if (mobile) {
+        setPreviewScale(calculateFitScale());
+      } else {
+        setPreviewScale(1);
+      }
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  const fitToScreen = () => setPreviewScale(calculateFitScale());
+  const zoomIn = () => setPreviewScale(prev => Math.min(1.5, parseFloat((prev + 0.1).toFixed(2))));
+  const zoomOut = () => setPreviewScale(prev => Math.max(0.25, parseFloat((prev - 0.1).toFixed(2))));
+  const resetZoom = () => setPreviewScale(1);
 
   // Filter trains for selected origin and destination
   const availableTrains = useMemo(() => {
@@ -272,11 +299,21 @@ export function TicketMaker() {
       if (document.fonts) {
         await document.fonts.ready;
       }
-      const canvas = await html2canvas(ticketRef.current, {
+      const el = ticketRef.current;
+      const prevTransform = el.style.transform;
+      const prevTransformOrigin = el.style.transformOrigin;
+      el.style.transform = 'none';
+      el.style.transformOrigin = 'top left';
+
+      const canvas = await html2canvas(el, {
         scale: 2.5,
         useCORS: true,
         backgroundColor: '#ffffff',
       });
+
+      el.style.transform = prevTransform;
+      el.style.transformOrigin = prevTransformOrigin;
+
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'pt', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -303,37 +340,109 @@ export function TicketMaker() {
     }}>
       {/* ─── Top Control Header ────────────────────────────────────────── */}
       <div style={{
-        padding: '12px 20px',
+        padding: isMobile ? '8px 12px' : '12px 20px',
         borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         background: '#0f172a',
         flexShrink: 0,
+        boxSizing: 'border-box'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 12 }}>
           <div style={{
-            width: 38, height: 38, borderRadius: 10,
+            width: isMobile ? 32 : 38,
+            height: isMobile ? 32 : 38,
+            borderRadius: isMobile ? 8 : 10,
             background: 'linear-gradient(135deg, #039d48 0%, #05b454 100%)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#fff', boxShadow: '0 4px 12px rgba(3, 157, 72, 0.35)'
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#fff',
+            boxShadow: '0 4px 12px rgba(3, 157, 72, 0.35)',
+            flexShrink: 0
           }}>
-            <Train size={22} />
+            <Train size={isMobile ? 18 : 22} />
           </div>
           <div>
-            <h1 style={{ fontSize: 17, fontWeight: 700, margin: 0 }}>Bangladesh Railway Ticket Maker</h1>
-            <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>100% Exact Official Template with Pixel-to-Pixel Alignment & Automated Schedule</p>
+            <h1 style={{ fontSize: isMobile ? 14 : 17, fontWeight: 700, margin: 0, whiteSpace: 'nowrap' }}>
+              Railway Ticket Maker
+            </h1>
+            {!isMobile && (
+              <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>
+                100% Exact Official Template with Pixel-to-Pixel Alignment & Automated Schedule
+              </p>
+            )}
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {isMobile && (
-            <div style={{ display: 'flex', background: '#1e293b', borderRadius: 8, padding: 3, gap: 2 }}>
+        {/* Desktop Buttons */}
+        {!isMobile ? (
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button
+              onClick={createNewTicket}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                color: '#f1f5f9', padding: '7px 12px', borderRadius: 8, fontSize: 12, cursor: 'pointer'
+              }}
+            >
+              <Plus size={15} /> New
+            </button>
+            <button
+              onClick={saveCurrentTicket}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                color: '#f1f5f9', padding: '7px 12px', borderRadius: 8, fontSize: 12, cursor: 'pointer'
+              }}
+            >
+              <CheckCircle2 size={15} /> Save
+            </button>
+            <button
+              onClick={() => window.print()}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                color: '#f1f5f9', padding: '7px 12px', borderRadius: 8, fontSize: 12, cursor: 'pointer'
+              }}
+            >
+              <Printer size={15} /> Print
+            </button>
+            <button
+              onClick={handleDownloadPdf}
+              disabled={isGeneratingPdf}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: 'linear-gradient(135deg, #039d48 0%, #05b454 100%)',
+                color: '#fff', border: 'none', padding: '7px 14px', borderRadius: 8,
+                fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(3, 157, 72, 0.4)'
+              }}
+            >
+              <Download size={15} /> {isGeneratingPdf ? 'Generating...' : 'PDF Download'}
+            </button>
+          </div>
+        ) : (
+          /* Mobile Top Bar Segmented Switcher & Quick New */
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <button
+              onClick={createNewTicket}
+              style={{
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                color: '#f1f5f9', padding: '5px 8px', borderRadius: 6, fontSize: 11, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 4
+              }}
+              title="New Ticket"
+            >
+              <Plus size={13} /> New
+            </button>
+            <div style={{ display: 'flex', background: '#1e293b', borderRadius: 6, padding: 2, gap: 2 }}>
               <button
                 onClick={() => setMobileTab('editor')}
                 style={{
                   background: mobileTab === 'editor' ? '#039d48' : 'transparent',
-                  color: '#fff', border: 'none', borderRadius: 6, padding: '5px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer'
+                  color: '#fff', border: 'none', borderRadius: 5, padding: '4px 8px', fontSize: 11, fontWeight: 600, cursor: 'pointer'
                 }}
               >
                 Form
@@ -342,69 +451,25 @@ export function TicketMaker() {
                 onClick={() => setMobileTab('preview')}
                 style={{
                   background: mobileTab === 'preview' ? '#039d48' : 'transparent',
-                  color: '#fff', border: 'none', borderRadius: 6, padding: '5px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer'
+                  color: '#fff', border: 'none', borderRadius: 5, padding: '4px 8px', fontSize: 11, fontWeight: 600, cursor: 'pointer'
                 }}
               >
-                A4 Ticket
+                Ticket
               </button>
             </div>
-          )}
-
-          <button
-            onClick={createNewTicket}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
-              color: '#f1f5f9', padding: '7px 12px', borderRadius: 8, fontSize: 12, cursor: 'pointer'
-            }}
-          >
-            <Plus size={15} /> New
-          </button>
-          <button
-            onClick={saveCurrentTicket}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
-              color: '#f1f5f9', padding: '7px 12px', borderRadius: 8, fontSize: 12, cursor: 'pointer'
-            }}
-          >
-            <CheckCircle2 size={15} /> Save
-          </button>
-          <button
-            onClick={() => window.print()}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
-              color: '#f1f5f9', padding: '7px 12px', borderRadius: 8, fontSize: 12, cursor: 'pointer'
-            }}
-          >
-            <Printer size={15} /> Print
-          </button>
-          <button
-            onClick={handleDownloadPdf}
-            disabled={isGeneratingPdf}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: 'linear-gradient(135deg, #039d48 0%, #05b454 100%)',
-              color: '#fff', border: 'none', padding: '7px 14px', borderRadius: 8,
-              fontSize: 12, fontWeight: 700, cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(3, 157, 72, 0.4)'
-            }}
-          >
-            <Download size={15} /> {isGeneratingPdf ? 'Generating...' : 'PDF Download'}
-          </button>
-        </div>
+          </div>
+        )}
       </div>
 
       {/* ─── Main Content Workspace ────────────────────────────────────── */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
         {/* Left Form: Railway Parameters & Stations */}
         {(!isMobile || mobileTab === 'editor') && (
           <div style={{
             width: isMobile ? '100%' : 440,
-            borderRight: '1px solid rgba(255, 255, 255, 0.08)',
+            borderRight: isMobile ? 'none' : '1px solid rgba(255, 255, 255, 0.08)',
             background: '#0b1120',
-            padding: '18px 20px',
+            padding: isMobile ? '14px 12px 100px' : '18px 20px',
             overflowY: 'auto',
             flexShrink: 0,
             boxSizing: 'border-box'
@@ -836,7 +901,7 @@ export function TicketMaker() {
                 <span style={{ fontSize: 12, fontWeight: 700, color: '#e2e8f0', display: 'block', marginBottom: 8 }}>
                   Fares & Passenger Counts (ভাড়া ও যাত্রী সংখ্যা)
                 </span>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginBottom: 8 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: 6, marginBottom: 8 }}>
                   <div>
                     <label style={{ fontSize: 10, color: '#94a3b8', display: 'block', marginBottom: 2 }}>Seats (মোট)</label>
                     <input
@@ -844,7 +909,7 @@ export function TicketMaker() {
                       min={1}
                       value={ticket.numSeats}
                       onChange={e => setTicket({ ...ticket, numSeats: parseInt(e.target.value) || 1 })}
-                      style={{ width: '100%', padding: '5px', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, color: '#fff', fontSize: 12, boxSizing: 'border-box' }}
+                      style={{ width: '100%', padding: '6px 8px', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, color: '#fff', fontSize: 12, boxSizing: 'border-box' }}
                     />
                   </div>
                   <div>
@@ -854,7 +919,7 @@ export function TicketMaker() {
                       min={0}
                       value={ticket.numAdults}
                       onChange={e => setTicket({ ...ticket, numAdults: parseInt(e.target.value) || 0 })}
-                      style={{ width: '100%', padding: '5px', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, color: '#fff', fontSize: 12, boxSizing: 'border-box' }}
+                      style={{ width: '100%', padding: '6px 8px', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, color: '#fff', fontSize: 12, boxSizing: 'border-box' }}
                     />
                   </div>
                   <div>
@@ -864,7 +929,7 @@ export function TicketMaker() {
                       min={0}
                       value={ticket.numSeniors}
                       onChange={e => setTicket({ ...ticket, numSeniors: parseInt(e.target.value) || 0 })}
-                      style={{ width: '100%', padding: '5px', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, color: '#fff', fontSize: 12, boxSizing: 'border-box' }}
+                      style={{ width: '100%', padding: '6px 8px', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, color: '#fff', fontSize: 12, boxSizing: 'border-box' }}
                     />
                   </div>
                   <div>
@@ -874,19 +939,19 @@ export function TicketMaker() {
                       min={0}
                       value={ticket.numChildren}
                       onChange={e => setTicket({ ...ticket, numChildren: parseInt(e.target.value) || 0 })}
-                      style={{ width: '100%', padding: '5px', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, color: '#fff', fontSize: 12, boxSizing: 'border-box' }}
+                      style={{ width: '100%', padding: '6px 8px', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, color: '#fff', fontSize: 12, boxSizing: 'border-box' }}
                     />
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
                   <div>
                     <label style={{ fontSize: 10, color: '#94a3b8', display: 'block', marginBottom: 2 }}>Fare (ভাড়া)</label>
                     <input
                       type="number"
                       value={ticket.fare}
                       onChange={e => setTicket({ ...ticket, fare: parseFloat(e.target.value) || 0 })}
-                      style={{ width: '100%', padding: '5px', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, color: '#fff', fontSize: 12, boxSizing: 'border-box' }}
+                      style={{ width: '100%', padding: '6px 8px', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, color: '#fff', fontSize: 12, boxSizing: 'border-box' }}
                     />
                   </div>
                   <div>
@@ -895,7 +960,7 @@ export function TicketMaker() {
                       type="number"
                       value={ticket.serviceCharge}
                       onChange={e => setTicket({ ...ticket, serviceCharge: parseFloat(e.target.value) || 0 })}
-                      style={{ width: '100%', padding: '5px', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, color: '#fff', fontSize: 12, boxSizing: 'border-box' }}
+                      style={{ width: '100%', padding: '6px 8px', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, color: '#fff', fontSize: 12, boxSizing: 'border-box' }}
                     />
                   </div>
                   <div>
@@ -904,7 +969,7 @@ export function TicketMaker() {
                       type="number"
                       value={ticket.vat}
                       onChange={e => setTicket({ ...ticket, vat: parseFloat(e.target.value) || 0 })}
-                      style={{ width: '100%', padding: '5px', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, color: '#fff', fontSize: 12, boxSizing: 'border-box' }}
+                      style={{ width: '100%', padding: '6px 8px', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, color: '#fff', fontSize: 12, boxSizing: 'border-box' }}
                     />
                   </div>
                 </div>
@@ -962,27 +1027,142 @@ export function TicketMaker() {
           <div style={{
             flex: 1,
             display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'flex-start',
-            padding: isMobile ? '12px 6px 80px' : '24px',
+            flexDirection: 'column',
+            alignItems: 'center',
             background: '#040711',
-            overflowY: 'auto'
+            overflowY: 'auto',
+            overflowX: 'auto',
+            height: '100%',
+            position: 'relative'
           }}>
-            {/* 1:1 Exact Official Bangladesh Railway Ticket Board */}
-            <div
-              id="page"
-              ref={ticketRef}
-              style={{
+            {/* Zoom & Quick Controls Bar */}
+            <div className="no-print" style={{
+              position: 'sticky',
+              top: 0,
+              zIndex: 30,
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '6px 12px',
+              background: 'rgba(15, 23, 42, 0.94)',
+              backdropFilter: 'blur(10px)',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+              boxSizing: 'border-box'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <button
+                  onClick={zoomOut}
+                  style={{
+                    background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                    color: '#cbd5e1', borderRadius: 6, width: 28, height: 28, display: 'flex',
+                    alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+                  }}
+                  title="Zoom Out"
+                >
+                  <ZoomOut size={14} />
+                </button>
+                <span style={{ fontSize: 11, color: '#94a3b8', minWidth: 36, textAlign: 'center', fontWeight: 600 }}>
+                  {Math.round(previewScale * 100)}%
+                </span>
+                <button
+                  onClick={zoomIn}
+                  style={{
+                    background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                    color: '#cbd5e1', borderRadius: 6, width: 28, height: 28, display: 'flex',
+                    alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+                  }}
+                  title="Zoom In"
+                >
+                  <ZoomIn size={14} />
+                </button>
+                <button
+                  onClick={fitToScreen}
+                  style={{
+                    background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                    color: '#cbd5e1', borderRadius: 6, padding: '4px 8px', fontSize: 11, fontWeight: 600, cursor: 'pointer'
+                  }}
+                  title="Fit to Screen"
+                >
+                  Fit
+                </button>
+                <button
+                  onClick={resetZoom}
+                  style={{
+                    background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                    color: '#cbd5e1', borderRadius: 6, padding: '4px 8px', fontSize: 11, fontWeight: 600, cursor: 'pointer'
+                  }}
+                  title="100% Size"
+                >
+                  100%
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <button
+                  onClick={handleDownloadPdf}
+                  disabled={isGeneratingPdf}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    background: 'linear-gradient(135deg, #039d48 0%, #05b454 100%)',
+                    color: '#fff', border: 'none', padding: '5px 12px', borderRadius: 6,
+                    fontSize: 11.5, fontWeight: 700, cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(3, 157, 72, 0.4)'
+                  }}
+                >
+                  <Download size={13} /> {isGeneratingPdf ? '...' : 'PDF'}
+                </button>
+                <button
+                  onClick={() => window.print()}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
+                    color: '#fff', padding: '5px 9px', borderRadius: 6,
+                    fontSize: 11.5, cursor: 'pointer'
+                  }}
+                  title="Print"
+                >
+                  <Printer size={13} />
+                </button>
+              </div>
+            </div>
+
+            {/* Scaled Preview Wrapper */}
+            <div style={{
+              padding: isMobile ? '16px 8px 110px' : '24px 24px 60px',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'flex-start',
+              width: '100%',
+              boxSizing: 'border-box'
+            }}>
+              <div style={{
+                width: `${Math.round(793.7 * previewScale)}px`,
+                height: `${Math.round(1122.5 * previewScale)}px`,
                 position: 'relative',
-                width: '595.28pt',
-                height: '841.89pt',
-                margin: '0 auto',
-                background: '#ffffff',
-                overflow: 'hidden',
+                flexShrink: 0,
                 boxShadow: '0 20px 50px rgba(0,0,0,0.85)',
-                userSelect: 'none',
-              }}
-            >
+                borderRadius: 4,
+                background: '#ffffff',
+                overflow: 'hidden'
+              }}>
+                {/* 1:1 Exact Official Bangladesh Railway Ticket Board */}
+                <div
+                  id="page"
+                  ref={ticketRef}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '595.28pt',
+                    height: '841.89pt',
+                    background: '#ffffff',
+                    overflow: 'hidden',
+                    userSelect: 'none',
+                    transform: `scale(${previewScale})`,
+                    transformOrigin: 'top left',
+                  }}
+                >
               {/* Green Outer Frame */}
               <div
                 id="frame"
@@ -1608,10 +1788,91 @@ export function TicketMaker() {
               <span className="ticket-span ticket-s" style={{ left: '301.390pt', top: '692.888pt', fontSize: '10.50pt', color: '#333333', WebkitTextStroke: '0.350pt #333333' }}>
                 বাংলাদেশ রেলওয়ে
               </span>
+                </div>
+              </div>
             </div>
           </div>
         )}
       </div>
+
+      {/* ─── Mobile Bottom Navigation Dock ─── */}
+      {isMobile && (
+        <nav className="no-print" style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 56,
+          background: 'rgba(15, 23, 42, 0.96)',
+          backdropFilter: 'blur(16px)',
+          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-around',
+          padding: '0 6px',
+          zIndex: 999,
+          boxShadow: '0 -4px 20px rgba(0,0,0,0.6)',
+        }}>
+          <button
+            onClick={() => setMobileTab('editor')}
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+              background: 'none', border: 'none',
+              color: mobileTab === 'editor' ? '#10b981' : '#94a3b8',
+              fontSize: 10.5, fontWeight: mobileTab === 'editor' ? 700 : 500,
+              cursor: 'pointer', padding: '4px 10px', borderRadius: 8,
+            }}
+          >
+            <PenTool size={17} />
+            <span>Form</span>
+          </button>
+
+          <button
+            onClick={() => setMobileTab('preview')}
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+              background: 'none', border: 'none',
+              color: mobileTab === 'preview' ? '#10b981' : '#94a3b8',
+              fontSize: 10.5, fontWeight: mobileTab === 'preview' ? 700 : 500,
+              cursor: 'pointer', padding: '4px 10px', borderRadius: 8,
+            }}
+          >
+            <Eye size={17} />
+            <span>A4 Ticket</span>
+          </button>
+
+          <button
+            onClick={saveCurrentTicket}
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+              background: 'none', border: 'none',
+              color: '#94a3b8',
+              fontSize: 10.5, fontWeight: 500,
+              cursor: 'pointer', padding: '4px 10px', borderRadius: 8,
+            }}
+          >
+            <CheckCircle2 size={17} />
+            <span>Save</span>
+          </button>
+
+          <button
+            onClick={handleDownloadPdf}
+            disabled={isGeneratingPdf}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              background: 'linear-gradient(135deg, #039d48 0%, #05b454 100%)',
+              color: '#fff', border: 'none',
+              padding: '7px 14px', borderRadius: 18,
+              fontSize: 11.5, fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(3, 157, 72, 0.4)',
+            }}
+          >
+            <Download size={14} />
+            <span>{isGeneratingPdf ? 'Wait...' : 'PDF'}</span>
+          </button>
+        </nav>
+      )}
 
       <style>{`
         .ticket-span {
@@ -1638,11 +1899,18 @@ export function TicketMaker() {
             margin: 0;
           }
           body {
-            background: #fff;
-            margin: 0;
-            padding: 0;
+            background: #fff !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          .no-print {
+            display: none !important;
           }
           #page {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            transform: none !important;
             box-shadow: none !important;
             margin: 0 !important;
           }
