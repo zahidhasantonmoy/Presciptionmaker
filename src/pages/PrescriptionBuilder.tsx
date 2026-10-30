@@ -121,47 +121,15 @@ export function PrescriptionBuilder() {
     return () => clearTimeout(timer);
   }, [currentPrescription, settings.autoSave, savePrescription]);
 
-  if (!currentPrescription) return <div style={{ padding: 32, textAlign: 'center', color: '#94a3b8' }}>Loading...</div>;
-
-  const rx = currentPrescription;
-  const effectiveDoctor = doctorProfiles.find(d => d.id === rx.doctorProfileId) || doctorProfile || doctorProfiles[0];
-  const isMultiPage = rx.pageCount === '2' || (rx.pageCount === 'auto' && rx.medicines.length > 11);
-  const totalPages = isMultiPage ? 2 : 1;
-
-  const update = (updates: Partial<Prescription>) => updateCurrentPrescription(updates);
-
-  const updatePatient = (field: string, value: string) => {
-    update({ patient: { ...rx.patient, [field]: value } });
-  };
-
-  const handleDobChange = (dob: string) => {
-    const age = calculateAge(dob);
-    update({ patient: { ...rx.patient, dateOfBirth: dob, age } });
-  };
-
   const handleSave = useCallback(() => {
-    if (!rx.patient.name.trim()) {
+    if (!currentPrescription) return;
+    if (!currentPrescription.patient.name.trim()) {
       showToast('Patient name is required', 'error');
       return;
     }
-    savePrescription({ ...rx, isDraft: false });
+    savePrescription({ ...currentPrescription, isDraft: false });
     showToast('Prescription saved!', 'success');
-  }, [rx, savePrescription, showToast]);
-
-  // Check if patient has any previous visit recorded in history
-  const pastPrescription = prescriptions.find(p =>
-    p.id !== rx.id && (
-      (rx.patient.phone && rx.patient.phone.trim().length > 6 && p.patient.phone === rx.patient.phone) ||
-      (rx.patient.name && rx.patient.name.trim().length > 2 && p.patient.name.toLowerCase() === rx.patient.name.toLowerCase())
-    )
-  );
-
-  const copyPreviousMedicines = () => {
-    if (!pastPrescription || pastPrescription.medicines.length === 0) return;
-    const copied = pastPrescription.medicines.map(m => ({ ...m, id: uuidv4() }));
-    update({ medicines: [...rx.medicines, ...copied] });
-    showToast(`Copied ${copied.length} medicines from past visit (${formatDateDisplay(pastPrescription.date)})`, 'success');
-  };
+  }, [currentPrescription, savePrescription, showToast]);
 
   // Keyboard Shortcuts Listener
   useEffect(() => {
@@ -189,9 +157,11 @@ export function PrescriptionBuilder() {
         showToast('Tests section (Alt+T)', 'info');
       } else if (e.altKey && e.key.toLowerCase() === 'p') {
         e.preventDefault();
-        const nextMode = rx.printMode === 'pad_only' ? 'full' : 'pad_only';
-        update({ printMode: nextMode });
-        showToast(`Pad mode ${nextMode === 'pad_only' ? 'ON' : 'OFF'} (Alt+P)`, 'info');
+        if (currentPrescription) {
+          const nextMode = currentPrescription.printMode === 'pad_only' ? 'full' : 'pad_only';
+          updateCurrentPrescription({ printMode: nextMode });
+          showToast(`Pad mode ${nextMode === 'pad_only' ? 'ON' : 'OFF'} (Alt+P)`, 'info');
+        }
       } else if (e.altKey && e.key.toLowerCase() === 'n') {
         e.preventDefault();
         createPrescription();
@@ -207,7 +177,40 @@ export function PrescriptionBuilder() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [rx, handleSave, createPrescription, showToast]);
+  }, [currentPrescription, handleSave, createPrescription, updateCurrentPrescription, showToast]);
+
+  if (!currentPrescription) return <div style={{ padding: 32, textAlign: 'center', color: '#94a3b8' }}>Loading...</div>;
+
+  const rx = currentPrescription;
+  const effectiveDoctor = doctorProfiles.find(d => d.id === rx.doctorProfileId) || doctorProfile || doctorProfiles[0];
+  const isMultiPage = rx.pageCount === '2' || (rx.pageCount === 'auto' && rx.medicines.length > 11);
+  const totalPages = isMultiPage ? 2 : 1;
+
+  const update = (updates: Partial<Prescription>) => updateCurrentPrescription(updates);
+
+  const updatePatient = (field: string, value: string) => {
+    update({ patient: { ...rx.patient, [field]: value } });
+  };
+
+  const handleDobChange = (dob: string) => {
+    const age = calculateAge(dob);
+    update({ patient: { ...rx.patient, dateOfBirth: dob, age } });
+  };
+
+  // Check if patient has any previous visit recorded in history
+  const pastPrescription = prescriptions.find(p =>
+    p.id !== rx.id && (
+      (rx.patient.phone && rx.patient.phone.trim().length > 6 && p.patient.phone === rx.patient.phone) ||
+      (rx.patient.name && rx.patient.name.trim().length > 2 && p.patient.name.toLowerCase() === rx.patient.name.toLowerCase())
+    )
+  );
+
+  const copyPreviousMedicines = () => {
+    if (!pastPrescription || pastPrescription.medicines.length === 0) return;
+    const copied = pastPrescription.medicines.map(m => ({ ...m, id: uuidv4() }));
+    update({ medicines: [...rx.medicines, ...copied] });
+    showToast(`Copied ${copied.length} medicines from past visit (${formatDateDisplay(pastPrescription.date)})`, 'success');
+  };
 
   const toggleSection = (key: keyof SectionToggle) =>
     setSections(s => ({ ...s, [key]: !s[key] }));
