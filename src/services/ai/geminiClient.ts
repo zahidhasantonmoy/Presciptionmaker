@@ -83,7 +83,31 @@ export async function callGeminiJson<T = any>(
 ): Promise<GeminiResponse<T>> {
   const apiKey = (providedKey || getGeminiApiKey()).trim();
 
+  // If no client-side key, try the serverless backend API (/api/gemini)
   if (!apiKey) {
+    try {
+      const serverRes = await fetch('/api/gemini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, systemInstruction }),
+      });
+
+      if (serverRes.ok) {
+        const resJson = await serverRes.json();
+        const candidateText = resJson?.text || '';
+        if (candidateText) {
+          let cleaned = candidateText.trim();
+          if (cleaned.startsWith('```')) {
+            cleaned = cleaned.replace(/^```[a-z]*\s*/i, '').replace(/\s*```$/, '');
+          }
+          const parsed = JSON.parse(cleaned) as T;
+          return { success: true, data: parsed, rawText: candidateText };
+        }
+      }
+    } catch {
+      // serverless endpoint not available (e.g. local dev without vercel cli)
+    }
+
     return {
       success: false,
       error: 'NO_API_KEY',
