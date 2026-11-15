@@ -316,9 +316,14 @@ export function AiCommandBar({
             flexWrap: 'wrap',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#e2e8f0', flex: 1 }}>
-            <CheckCircle2 size={16} color="#34d399" />
-            <span>{lastSummary}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, fontSize: 12, color: '#e2e8f0', flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <CheckCircle2 size={16} color="#34d399" style={{ flexShrink: 0 }} />
+              <span style={{ fontWeight: 600 }}>{lastSummary}</span>
+            </div>
+            <div style={{ fontSize: 11, color: '#93c5fd', paddingLeft: 24 }}>
+              ⚡ নিচের সেটিংস ফর্ম ও প্রিভিউ উভয়ই আপডেট হয়েছে — যেকোনো তথ্য সরাসরি ম্যানুয়ালি এডিট করতে পারবেন।
+            </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

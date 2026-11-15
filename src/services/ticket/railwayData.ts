@@ -1333,6 +1333,33 @@ const COACH_BN_MAP: Record<string, string> = {
   B: 'ব', BH: 'ভ', M: 'ম', Y: 'য', R: 'র', L: 'ল', S: 'শ', H: 'হ', K: 'ক', G: 'গ', J: 'জ',
 };
 
+export function getPureBanglaCoachSeat(coachSeat: string, customBn?: string): string {
+  if (customBn && customBn.trim()) {
+    const match = customBn.match(/\(([^)]+)\)/);
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+    if (/[\u0980-\u09FF]/.test(customBn) && !/^[A-Za-z]/.test(customBn.trim())) {
+      return customBn.trim();
+    }
+  }
+
+  if (!coachSeat) return '';
+  const parts = coachSeat.split(',').map(s => {
+    const item = s.trim();
+    const segs = item.split('-');
+    if (segs.length === 2) {
+      const prefix = segs[0].toUpperCase().trim();
+      const num = segs[1].trim();
+      const bnPrefix = COACH_BN_MAP[prefix] || prefix;
+      const bnNum = toBanglaDigits(num);
+      return `${bnPrefix}-${bnNum}`;
+    }
+    return toBanglaDigits(item);
+  });
+  return parts.join(', ');
+}
+
 export function formatCoachSeat(coachSeat: string, customBn?: string): string {
   if (!coachSeat) return '';
   if (customBn && customBn.trim()) {

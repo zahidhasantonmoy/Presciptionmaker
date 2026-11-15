@@ -7,6 +7,7 @@ import {
   toBanglaDigits,
   getStationBanglaName,
   formatCoachSeat,
+  getPureBanglaCoachSeat,
 } from '../ticket/railwayData';
 import { Prescription, PrescriptionMedicine, Diagnosis } from '../../types';
 import { ServiceId } from '../../utils/navigation';
@@ -191,6 +192,8 @@ Given the user prompt (English, Bangla, or Banglish), extract and return valid J
 
         const fromBn = d.fromStationBn || getStationBanglaName(d.fromStation || 'Dhaka');
         const toBn = d.toStationBn || getStationBanglaName(d.toStation || 'Rajshahi');
+        const coachSeat = d.coachSeat || baseTicket.coachSeat;
+        const coachSeatBn = getPureBanglaCoachSeat(coachSeat, d.coachSeatBn);
 
         const merged: BangladeshRailwayTicket = {
           ...baseTicket,
@@ -199,6 +202,8 @@ Given the user prompt (English, Bangla, or Banglish), extract and return valid J
           pnrNumber: pnr,
           fromStationBn: fromBn,
           toStationBn: toBn,
+          coachSeat,
+          coachSeatBn,
           trainNumber: matchedTrain ? matchedTrain.number : (d.trainNumber || '759'),
           trainName: matchedTrain ? matchedTrain.name : (d.trainName || 'PADMA EXPRESS'),
           trainNameBn: matchedTrain ? matchedTrain.nameBn : (d.trainNameBn || 'পদ্মা এক্সপ্রেস'),
@@ -369,7 +374,7 @@ function parseRailwayTicketLocally(
     seatList.push(`${coachLetter}-${startSeat + i}`);
   }
   const coachSeat = seatList.join(', ');
-  const coachSeatBn = formatCoachSeat(coachSeat);
+  const coachSeatBn = getPureBanglaCoachSeat(coachSeat);
 
   // 7. Fare calculation
   const unitFare = matchedTrain.fares[selectedClass.code] || selectedClass.defaultFare || 450;

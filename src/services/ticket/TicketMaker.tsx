@@ -11,7 +11,7 @@ import { ShohozLogo } from './ShohozLogo';
 import {
   RAILWAY_STATIONS, RAILWAY_TRAINS, RAILWAY_CLASSES,
   toBanglaDigits, getStationBanglaName,
-  formatCoachSeat
+  formatCoachSeat, getPureBanglaCoachSeat
 } from './railwayData';
 import { AiCommandBar } from '../../components/ai/AiCommandBar';
 import { generateTicketAi } from '../ai/aiGenerators';
@@ -102,6 +102,7 @@ export function TicketMaker() {
   const [manualStationMode, setManualStationMode] = useState(false);
   const [manualTrainMode, setManualTrainMode] = useState(false);
   const [manualClassMode, setManualClassMode] = useState(false);
+  const [aiUpdatedNotice, setAiUpdatedNotice] = useState<string | null>(null);
 
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [mobileTab, setMobileTab] = useState<'editor' | 'preview'>('editor');
@@ -296,6 +297,7 @@ export function TicketMaker() {
   const handleAiGenerate = async (promptText: string): Promise<string> => {
     const result = await generateTicketAi(promptText, ticket);
     setTicket(result.ticket);
+    setAiUpdatedNotice(`AI আপডেট সম্পন্ন! ট্রেন: ${result.ticket.trainName} [${result.ticket.trainNumber}], রুট: ${result.ticket.fromStation} → ${result.ticket.toStation}, সিট: ${result.ticket.coachSeat}। নিচের ফর্মের সব সেটিংস ও লাইভ টিকিট স্বয়ংক্রিয়ভাবে আপডেট করা হয়েছে।`);
     return result.summary;
   };
 
@@ -372,7 +374,7 @@ export function TicketMaker() {
               if (fs >= 14) {
                 shift = 0;
               } else if (fs >= 11) {
-                shift = 2.0;
+                shift = 0.5;
               } else if (currentTop >= 600) {
                 shift = 1.0;
               } else if (currentTop >= 180 && currentTop <= 500) {
@@ -564,6 +566,40 @@ export function TicketMaker() {
               }}
             />
 
+            {/* AI Update Confirmation & Notice */}
+            {aiUpdatedNotice && (
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.15) 100%)',
+                border: '1px solid rgba(16, 185, 129, 0.4)',
+                borderRadius: 8,
+                padding: '10px 12px',
+                marginBottom: 14,
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 10,
+                fontSize: 12,
+                color: '#a7f3d0'
+              }}>
+                <CheckCircle2 size={16} color="#34d399" style={{ flexShrink: 0, marginTop: 2 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, color: '#34d399', marginBottom: 2 }}>
+                    ✅ নিচের ফর্মের সেটিংস ও লাইভ টিকিট স্বয়ংক্রিয়ভাবে আপডেট হয়েছে
+                  </div>
+                  <div style={{ fontSize: 11.5, color: '#e2e8f0' }}>
+                    {aiUpdatedNotice}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAiUpdatedNotice(null)}
+                  style={{ background: 'transparent', border: 'none', color: '#6ee7b7', cursor: 'pointer', fontSize: 16, lineHeight: 1 }}
+                  title="Close"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
               <span style={{ fontSize: 13, fontWeight: 800, color: '#10b981', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                 🚂 Journey & Train Setup
@@ -611,6 +647,11 @@ export function TicketMaker() {
                             {st.name} ({st.nameBn})
                           </option>
                         ))}
+                        {!RAILWAY_STATIONS.some(st => st.name.toLowerCase() === ticket.fromStation.toLowerCase()) && ticket.fromStation && (
+                          <option value={ticket.fromStation}>
+                            {ticket.fromStation} ({ticket.fromStationBn || ticket.fromStation})
+                          </option>
+                        )}
                         <option value="MANUAL_MODE">✏️ Custom / অন্য স্টেশন লিখুন...</option>
                       </select>
                     </div>
@@ -629,6 +670,11 @@ export function TicketMaker() {
                             {st.name} ({st.nameBn})
                           </option>
                         ))}
+                        {!RAILWAY_STATIONS.some(st => st.name.toLowerCase() === ticket.toStation.toLowerCase()) && ticket.toStation && (
+                          <option value={ticket.toStation}>
+                            {ticket.toStation} ({ticket.toStationBn || ticket.toStation})
+                          </option>
+                        )}
                         <option value="MANUAL_MODE">✏️ Custom / অন্য স্টেশন লিখুন...</option>
                       </select>
                     </div>
@@ -799,6 +845,11 @@ export function TicketMaker() {
                             {cls.label} ({cls.labelBn})
                           </option>
                         ))}
+                        {!RAILWAY_CLASSES.some(cls => cls.code.toUpperCase() === ticket.className.toUpperCase()) && ticket.className && (
+                          <option value={ticket.className}>
+                            {ticket.className} ({ticket.classNameBn || ticket.className})
+                          </option>
+                        )}
                         <option value="MANUAL_MODE">✏️ Custom Class Name...</option>
                       </select>
                     </div>
@@ -1512,11 +1563,9 @@ export function TicketMaker() {
               <span className="ticket-span ticket-s" style={{ left: '124.035pt', top: '188.591pt', fontSize: '7.50pt', color: '#333333' }}>
                 (প্রদানের তারিখ ও সময়)
               </span>
-              <span className="ticket-span ticket-r" style={{ left: '301.765pt', top: '189.287pt', fontSize: '7.50pt', color: '#333333' }}>
-                {formatDateEn(ticket.issueDate, ticket.issueTime)}{' '}
-              </span>
-              <span className="ticket-span ticket-s" style={{ left: '361.770pt', top: '188.591pt', fontSize: '7.50pt', color: '#333333' }}>
-                ({formatDateBn(ticket.issueDate, ticket.issueTime)})
+              <span className="ticket-span" style={{ left: '301.765pt', top: '189.287pt', fontSize: '7.50pt', color: '#333333', whiteSpace: 'nowrap' }}>
+                <span className="ticket-r">{formatDateEn(ticket.issueDate, ticket.issueTime)} </span>
+                <span className="ticket-s">({formatDateBn(ticket.issueDate, ticket.issueTime)})</span>
               </span>
 
               {/* Row 2: Journey Date */}
@@ -1526,11 +1575,9 @@ export function TicketMaker() {
               <span className="ticket-span ticket-s" style={{ left: '132.892pt', top: '201.391pt', fontSize: '7.50pt', color: '#333333' }}>
                 (যাত্রার তারিখ ও সময়)
               </span>
-              <span className="ticket-span ticket-r" style={{ left: '301.765pt', top: '202.087pt', fontSize: '7.50pt', color: '#333333' }}>
-                {formatDateEn(ticket.journeyDate, ticket.journeyTime)}{' '}
-              </span>
-              <span className="ticket-span ticket-s" style={{ left: '361.770pt', top: '201.391pt', fontSize: '7.50pt', color: '#333333' }}>
-                ({formatDateBn(ticket.journeyDate, ticket.journeyTime)})
+              <span className="ticket-span" style={{ left: '301.765pt', top: '202.087pt', fontSize: '7.50pt', color: '#333333', whiteSpace: 'nowrap' }}>
+                <span className="ticket-r">{formatDateEn(ticket.journeyDate, ticket.journeyTime)} </span>
+                <span className="ticket-s">({formatDateBn(ticket.journeyDate, ticket.journeyTime)})</span>
               </span>
 
               {/* Row 3: Train Name & Number */}
@@ -1540,11 +1587,9 @@ export function TicketMaker() {
               <span className="ticket-span ticket-s" style={{ left: '137.670pt', top: '214.041pt', fontSize: '7.50pt', color: '#333333' }}>
                 (ট্রেন নম্বর ও নাম)
               </span>
-              <span className="ticket-span ticket-r" style={{ left: '301.515pt', top: '214.737pt', fontSize: '7.50pt', color: '#333333' }}>
-                {ticket.trainName} [{ticket.trainNumber}]{' '}
-              </span>
-              <span className="ticket-span ticket-s" style={{ left: '381.442pt', top: '214.041pt', fontSize: '7.50pt', color: '#333333' }}>
-                ({ticket.trainNameBn} [{toBanglaDigits(ticket.trainNumber)}])
+              <span className="ticket-span" style={{ left: '301.515pt', top: '214.737pt', fontSize: '7.50pt', color: '#333333', whiteSpace: 'nowrap' }}>
+                <span className="ticket-r">{ticket.trainName} [{ticket.trainNumber}] </span>
+                <span className="ticket-s">({ticket.trainNameBn} [{toBanglaDigits(ticket.trainNumber)}])</span>
               </span>
 
               {/* Row 4: From Station */}
@@ -1554,11 +1599,9 @@ export function TicketMaker() {
               <span className="ticket-span ticket-s" style={{ left: '106.687pt', top: '226.941pt', fontSize: '7.50pt', color: '#333333' }}>
                 (প্রারম্ভিক স্টেশন)
               </span>
-              <span className="ticket-span ticket-r" style={{ left: '301.515pt', top: '227.637pt', fontSize: '7.50pt', color: '#333333' }}>
-                {ticket.fromStation}{' '}
-              </span>
-              <span className="ticket-span ticket-s" style={{ left: '324.390pt', top: '226.941pt', fontSize: '7.50pt', color: '#333333' }}>
-                ({ticket.fromStationBn || getStationBanglaName(ticket.fromStation)})
+              <span className="ticket-span" style={{ left: '301.515pt', top: '227.637pt', fontSize: '7.50pt', color: '#333333', whiteSpace: 'nowrap' }}>
+                <span className="ticket-r">{ticket.fromStation} </span>
+                <span className="ticket-s">({ticket.fromStationBn || getStationBanglaName(ticket.fromStation)})</span>
               </span>
 
               {/* Row 5: To Station */}
@@ -1568,11 +1611,9 @@ export function TicketMaker() {
               <span className="ticket-span ticket-s" style={{ left: '97.912pt', top: '240.241pt', fontSize: '7.50pt', color: '#333333' }}>
                 (গন্তব্য স্টেশন)
               </span>
-              <span className="ticket-span ticket-r" style={{ left: '301.515pt', top: '240.937pt', fontSize: '7.50pt', color: '#333333' }}>
-                {ticket.toStation}{' '}
-              </span>
-              <span className="ticket-span ticket-s" style={{ left: '340.035pt', top: '240.241pt', fontSize: '7.50pt', color: '#333333' }}>
-                ({ticket.toStationBn || getStationBanglaName(ticket.toStation)})
+              <span className="ticket-span" style={{ left: '301.515pt', top: '240.937pt', fontSize: '7.50pt', color: '#333333', whiteSpace: 'nowrap' }}>
+                <span className="ticket-r">{ticket.toStation} </span>
+                <span className="ticket-s">({ticket.toStationBn || getStationBanglaName(ticket.toStation)})</span>
               </span>
 
               {/* Row 6: Class Name */}
@@ -1582,11 +1623,9 @@ export function TicketMaker() {
               <span className="ticket-span ticket-s" style={{ left: '103.987pt', top: '252.391pt', fontSize: '7.50pt', color: '#333333' }}>
                 (শ্রেণির নাম)
               </span>
-              <span className="ticket-span ticket-r" style={{ left: '301.515pt', top: '253.837pt', fontSize: '7.50pt', color: '#333333' }}>
-                {ticket.className}{' '}
-              </span>
-              <span className="ticket-span ticket-s" style={{ left: '332.985pt', top: '252.391pt', fontSize: '7.50pt', color: '#333333' }}>
-                ({ticket.classNameBn})
+              <span className="ticket-span" style={{ left: '301.515pt', top: '253.837pt', fontSize: '7.50pt', color: '#333333', whiteSpace: 'nowrap' }}>
+                <span className="ticket-r">{ticket.className} </span>
+                <span className="ticket-s">({ticket.classNameBn})</span>
               </span>
 
               {/* Row 7: Coach Name / Seat(s) */}
@@ -1596,11 +1635,9 @@ export function TicketMaker() {
               <span className="ticket-span ticket-s" style={{ left: '137.565pt', top: '265.791pt', fontSize: '7.50pt', color: '#333333' }}>
                 (কোচের নাম / আসন)
               </span>
-              <span className="ticket-span ticket-r" style={{ left: '301.515pt', top: '266.487pt', fontSize: '7.50pt', color: '#333333' }}>
-                {ticket.coachSeat}{' '}
-              </span>
-              <span className="ticket-span ticket-s" style={{ left: '323.242pt', top: '265.791pt', fontSize: '7.50pt', color: '#333333' }}>
-                {' '}({ticket.coachSeatBn || toBanglaDigits(ticket.coachSeat)})
+              <span className="ticket-span" style={{ left: '301.515pt', top: '266.487pt', fontSize: '7.50pt', color: '#333333', whiteSpace: 'nowrap' }}>
+                <span className="ticket-r">{ticket.coachSeat} </span>
+                <span className="ticket-s">({getPureBanglaCoachSeat(ticket.coachSeat, ticket.coachSeatBn)})</span>
               </span>
 
               {/* Row 8: No. of Seats */}
@@ -1610,11 +1647,9 @@ export function TicketMaker() {
               <span className="ticket-span ticket-s" style={{ left: '104.647pt', top: '278.591pt', fontSize: '7.50pt', color: '#333333' }}>
                 (আসন সংখ্যা)
               </span>
-              <span className="ticket-span ticket-r" style={{ left: '301.515pt', top: '279.287pt', fontSize: '7.50pt', color: '#333333' }}>
-                {ticket.numSeats}{' '}
-              </span>
-              <span className="ticket-span ticket-s" style={{ left: '307.590pt', top: '278.591pt', fontSize: '7.50pt', color: '#333333' }}>
-                ({toBanglaDigits(ticket.numSeats)})
+              <span className="ticket-span" style={{ left: '301.515pt', top: '279.287pt', fontSize: '7.50pt', color: '#333333', whiteSpace: 'nowrap' }}>
+                <span className="ticket-r">{ticket.numSeats} </span>
+                <span className="ticket-s">({toBanglaDigits(ticket.numSeats)})</span>
               </span>
 
               {/* Row 9: No. of Adult Passenger(s) */}
@@ -1624,11 +1659,9 @@ export function TicketMaker() {
               <span className="ticket-span ticket-s" style={{ left: '149.640pt', top: '291.241pt', fontSize: '7.50pt', color: '#333333' }}>
                 (প্রাপ্তবয়স্ক যাত্রীর সংখ্যা)
               </span>
-              <span className="ticket-span ticket-r" style={{ left: '301.515pt', top: '291.937pt', fontSize: '7.50pt', color: '#333333' }}>
-                {ticket.numAdults}{' '}
-              </span>
-              <span className="ticket-span ticket-s" style={{ left: '307.590pt', top: '291.241pt', fontSize: '7.50pt', color: '#333333' }}>
-                ({toBanglaDigits(ticket.numAdults)})
+              <span className="ticket-span" style={{ left: '301.515pt', top: '291.937pt', fontSize: '7.50pt', color: '#333333', whiteSpace: 'nowrap' }}>
+                <span className="ticket-r">{ticket.numAdults} </span>
+                <span className="ticket-s">({toBanglaDigits(ticket.numAdults)})</span>
               </span>
 
               {/* Row 10: No. of Senior Citizen Passenger(s) */}
@@ -1638,11 +1671,9 @@ export function TicketMaker() {
               <span className="ticket-span ticket-s" style={{ left: '177.982pt', top: '304.141pt', fontSize: '7.50pt', color: '#333333' }}>
                 (প্রবীণ যাত্রীর সংখ্যা)
               </span>
-              <span className="ticket-span ticket-r" style={{ left: '301.515pt', top: '304.837pt', fontSize: '7.50pt', color: '#333333' }}>
-                {ticket.numSeniors}{' '}
-              </span>
-              <span className="ticket-span ticket-s" style={{ left: '307.590pt', top: '304.141pt', fontSize: '7.50pt', color: '#333333' }}>
-                ({toBanglaDigits(ticket.numSeniors)})
+              <span className="ticket-span" style={{ left: '301.515pt', top: '304.837pt', fontSize: '7.50pt', color: '#333333', whiteSpace: 'nowrap' }}>
+                <span className="ticket-r">{ticket.numSeniors} </span>
+                <span className="ticket-s">({toBanglaDigits(ticket.numSeniors)})</span>
               </span>
 
               {/* Row 11: No. of Child Passenger(s) */}
@@ -1652,11 +1683,9 @@ export function TicketMaker() {
               <span className="ticket-span ticket-s" style={{ left: '149.002pt', top: '316.941pt', fontSize: '7.50pt', color: '#333333' }}>
                 (শিশু যাত্রীর সংখ্যা)
               </span>
-              <span className="ticket-span ticket-r" style={{ left: '301.515pt', top: '317.637pt', fontSize: '7.50pt', color: '#333333' }}>
-                {ticket.numChildren}{' '}
-              </span>
-              <span className="ticket-span ticket-s" style={{ left: '307.590pt', top: '316.941pt', fontSize: '7.50pt', color: '#333333' }}>
-                ({toBanglaDigits(ticket.numChildren)})
+              <span className="ticket-span" style={{ left: '301.515pt', top: '317.637pt', fontSize: '7.50pt', color: '#333333', whiteSpace: 'nowrap' }}>
+                <span className="ticket-r">{ticket.numChildren} </span>
+                <span className="ticket-s">({toBanglaDigits(ticket.numChildren)})</span>
               </span>
 
               {/* Row 12: Fare */}
@@ -1666,11 +1695,9 @@ export function TicketMaker() {
               <span className="ticket-span ticket-s" style={{ left: '78.367pt', top: '330.341pt', fontSize: '7.50pt', color: '#333333' }}>
                 (ভাড়া)
               </span>
-              <span className="ticket-span ticket-r" style={{ left: '301.515pt', top: '331.037pt', fontSize: '7.50pt', color: '#333333' }}>
-                BDT {ticket.fare.toFixed(2)}{' '}
-              </span>
-              <span className="ticket-span ticket-s" style={{ left: '342.352pt', top: '330.341pt', fontSize: '7.50pt', color: '#333333' }}>
-                ({toBanglaDigits(ticket.fare.toFixed(2))} টাকা)
+              <span className="ticket-span" style={{ left: '301.515pt', top: '331.037pt', fontSize: '7.50pt', color: '#333333', whiteSpace: 'nowrap' }}>
+                <span className="ticket-r">BDT {ticket.fare.toFixed(2)} </span>
+                <span className="ticket-s">({toBanglaDigits(ticket.fare.toFixed(2))} টাকা)</span>
               </span>
 
               {/* Row 13: VAT */}
@@ -1680,11 +1707,9 @@ export function TicketMaker() {
               <span className="ticket-span ticket-s" style={{ left: '77.767pt', top: '342.491pt', fontSize: '7.50pt', color: '#333333' }}>
                 (ভ্যাট)
               </span>
-              <span className="ticket-span ticket-r" style={{ left: '301.515pt', top: '343.187pt', fontSize: '7.50pt', color: '#333333' }}>
-                BDT {ticket.vat.toFixed(2)}{' '}
-              </span>
-              <span className="ticket-span ticket-s" style={{ left: '333.922pt', top: '342.491pt', fontSize: '7.50pt', color: '#333333' }}>
-                ({toBanglaDigits(ticket.vat.toFixed(2))} টাকা)
+              <span className="ticket-span" style={{ left: '301.515pt', top: '343.187pt', fontSize: '7.50pt', color: '#333333', whiteSpace: 'nowrap' }}>
+                <span className="ticket-r">BDT {ticket.vat.toFixed(2)} </span>
+                <span className="ticket-s">({toBanglaDigits(ticket.vat.toFixed(2))} টাকা)</span>
               </span>
 
               {/* Row 14: Service Charge */}
@@ -1694,11 +1719,9 @@ export function TicketMaker() {
               <span className="ticket-span ticket-s" style={{ left: '113.610pt', top: '355.791pt', fontSize: '7.50pt', color: '#333333' }}>
                 (সেবা খরচ)
               </span>
-              <span className="ticket-span ticket-r" style={{ left: '301.515pt', top: '356.487pt', fontSize: '7.50pt', color: '#333333' }}>
-                BDT {ticket.serviceCharge.toFixed(2)}{' '}
-              </span>
-              <span className="ticket-span ticket-s" style={{ left: '338.137pt', top: '355.791pt', fontSize: '7.50pt', color: '#333333' }}>
-                ({toBanglaDigits(ticket.serviceCharge.toFixed(2))} টাকা)
+              <span className="ticket-span" style={{ left: '301.515pt', top: '356.487pt', fontSize: '7.50pt', color: '#333333', whiteSpace: 'nowrap' }}>
+                <span className="ticket-r">BDT {ticket.serviceCharge.toFixed(2)} </span>
+                <span className="ticket-s">({toBanglaDigits(ticket.serviceCharge.toFixed(2))} টাকা)</span>
               </span>
 
               {/* Row 15: Total Fare (Bold Stroke) */}
@@ -1708,11 +1731,9 @@ export function TicketMaker() {
               <span className="ticket-span ticket-s" style={{ left: '97.585pt', top: '368.441pt', fontSize: '7.50pt', color: '#333333', WebkitTextStroke: '0.250pt #333333' }}>
                 (মোট ভাড়া)**
               </span>
-              <span className="ticket-span ticket-r" style={{ left: '301.765pt', top: '369.837pt', fontSize: '7.50pt', color: '#333333', WebkitTextStroke: '0.250pt #333333' }}>
-                BDT {totalFare.toFixed(2)}{' '}
-              </span>
-              <span className="ticket-span ticket-s" style={{ left: '342.602pt', top: '369.141pt', fontSize: '7.50pt', color: '#333333', WebkitTextStroke: '0.250pt #333333' }}>
-                ({toBanglaDigits(totalFare.toFixed(2))} টাকা)
+              <span className="ticket-span" style={{ left: '301.765pt', top: '369.837pt', fontSize: '7.50pt', color: '#333333', WebkitTextStroke: '0.250pt #333333', whiteSpace: 'nowrap' }}>
+                <span className="ticket-r">BDT {totalFare.toFixed(2)} </span>
+                <span className="ticket-s">({toBanglaDigits(totalFare.toFixed(2))} টাকা)</span>
               </span>
 
               {/* Bedding Charges Footnote */}
@@ -1738,7 +1759,7 @@ export function TicketMaker() {
               <span className="ticket-span ticket-s" style={{ left: '120.847pt', top: '430.791pt', fontSize: '7.50pt', color: '#333333' }}>
                 (যাত্রীর নাম)
               </span>
-              <span className="ticket-span ticket-r" style={{ left: '301.515pt', top: '431.587pt', fontSize: '7.50pt', color: '#333333' }}>
+              <span className="ticket-span ticket-r" style={{ left: '301.515pt', top: '431.587pt', fontSize: '7.50pt', color: '#333333', whiteSpace: 'nowrap' }}>
                 {ticket.passengerName}
               </span>
 
@@ -1749,11 +1770,9 @@ export function TicketMaker() {
               <span className="ticket-span ticket-s" style={{ left: '125.475pt', top: '443.691pt', fontSize: '7.50pt', color: '#333333' }}>
                 (পরিচয়পত্র ধরণ)
               </span>
-              <span className="ticket-span ticket-r" style={{ left: '301.515pt', top: '444.387pt', fontSize: '7.50pt', color: '#333333' }}>
-                {ticket.idType}{' '}
-              </span>
-              <span className="ticket-span ticket-s" style={{ left: '315.682pt', top: '443.691pt', fontSize: '7.50pt', color: '#333333' }}>
-                ({ticket.idTypeBn})
+              <span className="ticket-span" style={{ left: '301.515pt', top: '444.387pt', fontSize: '7.50pt', color: '#333333', whiteSpace: 'nowrap' }}>
+                <span className="ticket-r">{ticket.idType} </span>
+                <span className="ticket-s">({ticket.idTypeBn})</span>
               </span>
 
               {/* Table 2 Row 3: Identification Number */}
@@ -1763,11 +1782,9 @@ export function TicketMaker() {
               <span className="ticket-span ticket-s" style={{ left: '136.035pt', top: '456.341pt', fontSize: '7.50pt', color: '#333333' }}>
                 (পরিচয়পত্র নম্বর)
               </span>
-              <span className="ticket-span ticket-r" style={{ left: '301.515pt', top: '457.037pt', fontSize: '7.50pt', color: '#333333' }}>
-                {ticket.idNumber}{' '}
-              </span>
-              <span className="ticket-span ticket-s" style={{ left: '341.595pt', top: '456.341pt', fontSize: '7.50pt', color: '#333333' }}>
-                ({ticket.idNumberBn})
+              <span className="ticket-span" style={{ left: '301.515pt', top: '457.037pt', fontSize: '7.50pt', color: '#333333', whiteSpace: 'nowrap' }}>
+                <span className="ticket-r">{ticket.idNumber} </span>
+                <span className="ticket-s">({ticket.idNumberBn})</span>
               </span>
 
               {/* Table 2 Row 4: Mobile Number */}
@@ -1777,11 +1794,9 @@ export function TicketMaker() {
               <span className="ticket-span ticket-s" style={{ left: '114.907pt', top: '469.141pt', fontSize: '7.50pt', color: '#333333' }}>
                 (মোবাইল নম্বর)
               </span>
-              <span className="ticket-span ticket-r" style={{ left: '301.765pt', top: '470.337pt', fontSize: '7.50pt', color: '#333333', WebkitTextStroke: '0.250pt #333333' }}>
-                {ticket.mobileNumber}{' '}
-              </span>
-              <span className="ticket-span ticket-s" style={{ left: '345.077pt', top: '469.641pt', fontSize: '7.50pt', color: '#333333', WebkitTextStroke: '0.250pt #333333' }}>
-                ({ticket.mobileNumberBn})
+              <span className="ticket-span" style={{ left: '301.765pt', top: '470.337pt', fontSize: '7.50pt', color: '#333333', WebkitTextStroke: '0.250pt #333333', whiteSpace: 'nowrap' }}>
+                <span className="ticket-r">{ticket.mobileNumber} </span>
+                <span className="ticket-s">({ticket.mobileNumberBn})</span>
               </span>
 
               {/* Table 2 Row 5: PNR Number */}
