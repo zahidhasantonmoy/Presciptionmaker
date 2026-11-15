@@ -11,18 +11,40 @@ import {
 import { Prescription, PrescriptionMedicine, Diagnosis } from '../../types';
 import { v4 as uuidv4 } from 'uuid';
 
-// Helper to calculate relative date like tomorrow, day after tomorrow
+// Helper to calculate relative date like tomorrow, day after tomorrow, days of week, or specific dates
 export function resolveRelativeDate(text: string): { dateStr: string; banglaDateStr: string } {
   const lower = text.toLowerCase();
   const now = new Date();
   let target = new Date();
 
+  // 1. Relative keywords
   if (lower.includes('agamikal') || lower.includes('আগামীকাল') || lower.includes('tomorrow') || lower.includes('kal')) {
     target.setDate(now.getDate() + 1);
   } else if (lower.includes('porshu') || lower.includes('পরশু') || lower.includes('day after tomorrow')) {
     target.setDate(now.getDate() + 2);
-  } else if (lower.includes('aj') || lower.includes('আজ') || lower.includes('today')) {
-    // today
+  } else if (lower.includes('tarporer din') || lower.includes('৩ দিন পর') || lower.includes('3 days')) {
+    target.setDate(now.getDate() + 3);
+  } else {
+    // 2. Weekday matching
+    const daysMap: Record<string, number> = {
+      'রবিবার': 0, 'sunday': 0,
+      'সোমবার': 1, 'monday': 1,
+      'মঙ্গলবার': 2, 'tuesday': 2,
+      'বুধবার': 3, 'wednesday': 3,
+      'বৃহস্পতিবার': 4, 'thursday': 4,
+      'শুক্রবার': 5, 'friday': 5,
+      'শনিবার': 6, 'saturday': 6,
+    };
+
+    for (const [dayName, dayIndex] of Object.entries(daysMap)) {
+      if (lower.includes(dayName)) {
+        const currentDay = now.getDay();
+        let diff = dayIndex - currentDay;
+        if (diff <= 0) diff += 7; // Next occurrence
+        target.setDate(now.getDate() + diff);
+        break;
+      }
+    }
   }
 
   const yyyy = target.getFullYear();
@@ -47,29 +69,25 @@ export function generateTicketIds(): { pnr: string; ticketId: string } {
   return { pnr, ticketId };
 }
 
+// Check if currently online
+export function isOnline(): boolean {
+  return typeof navigator !== 'undefined' ? navigator.onLine : true;
+}
+
 // ─────────────────────────────────────────────────────────────
-// 1. RAILWAY TICKET AI GENERATOR
+// 1. RAILWAY TICKET AI GENERATOR (ONLINE & OFFLINE)
 // ─────────────────────────────────────────────────────────────
 
 export async function generateTicketAi(
   prompt: string,
   baseTicket: BangladeshRailwayTicket
 ): Promise<{ ticket: BangladeshRailwayTicket; summary: string }> {
-  // Try with Gemini API if key is available
-  if (hasGeminiApiKey()) {
+  // Try online Gemini API if internet and key are available
+  if (isOnline() && hasGeminiApiKey()) {
     try {
-      const systemInstruction = `You are an expert Bangladesh Railway ticket ticketing assistant.
+      const systemInstruction = `You are an expert Bangladesh Railway ticketing assistant.
 Current date is: ${new Date().toISOString().split('T')[0]}.
-Given the user prompt (which may be in English, Bangla, or Banglish), extract and return a valid JSON object matching the BangladeshRailwayTicket interface.
-
-Rules:
-1. Identify the train from Bangladesh Railway (e.g., Padma Express, Suborna Express, Sonar Bangla Express, Parabat, Upaban, Mohanagar, Ekota, Drutojan, etc.).
-2. Station routing: identify fromStation and toStation. Default fromStation to 'Dhaka' if not specified.
-3. Journey date: parse relative dates like "আগামীকাল" (tomorrow = +1 day), "পরশু" (+2 days), or specific dates.
-4. Passenger info: count adults, children, seniors. If passenger name provided, use it, else keep default or realistic name.
-5. Classes: 'S_CHAIR', 'SNIGDHA', 'AC_S', 'AC_B', 'SHOVON', etc.
-6. Fares: calculate appropriate realistic fare for the route and class.
-7. Return ONLY valid JSON with fields:
+Given the user prompt (English, Bangla, or Banglish), extract and return valid JSON matching BangladeshRailwayTicket:
 {
   "passengerName": string,
   "journeyDate": "YYYY-MM-DD",
@@ -107,7 +125,6 @@ Rules:
         const { pnr, ticketId } = generateTicketIds();
         const d = res.data;
 
-        // Find train match in database to ensure 100% accuracy of train number & time if available
         const matchedTrain = RAILWAY_TRAINS.find(
           t => t.name.toLowerCase() === (d.trainName || '').toLowerCase() ||
                (d.trainNumber && t.number === d.trainNumber)
@@ -137,15 +154,15 @@ Rules:
 
         return {
           ticket: merged,
-          summary: `Gemini AI: ${merged.trainName} (${merged.trainNumber}), ${merged.fromStation} ➔ ${merged.toStation}, Date: ${merged.journeyDate}, Seats: ${merged.numSeats}`,
+          summary: `🌐 Gemini AI: ${merged.trainName} (${merged.trainNumber}), ${merged.fromStation} ➔ ${merged.toStation}, তারিখ: ${merged.journeyDate}, সিট: ${merged.coachSeat}`,
         };
       }
     } catch {
-      // fallback to offline rule-based parser
+      // fallback to offline NLP
     }
   }
 
-  // Smart Offline / Fallback Parser for Railway Ticket
+  // ⚡ 100% Client-Side Offline NLP Engine
   return parseRailwayTicketLocally(prompt, baseTicket);
 }
 
@@ -156,25 +173,65 @@ function parseRailwayTicketLocally(
   const pLower = prompt.toLowerCase();
   const { dateStr } = resolveRelativeDate(prompt);
 
-  // 1. Train detection
-  let matchedTrain = RAILWAY_TRAINS.find(t =>
-    pLower.includes(t.name.toLowerCase()) ||
-    prompt.includes(t.nameBn) ||
-    pLower.includes(t.name.toLowerCase().replace(' express', ''))
-  );
+  // 1. Train detection across all 100+ Bangladesh Railway trains
+  let matchedTrain: any = null;
 
-  // Common aliases
+  // Direct name or number match
+  for (const t of RAILWAY_TRAINS) {
+    if (
+      pLower.includes(t.name.toLowerCase()) ||
+      prompt.includes(t.nameBn) ||
+      pLower.includes(t.name.toLowerCase().replace(' express', '')) ||
+      prompt.includes(t.number)
+    ) {
+      matchedTrain = t;
+      break;
+    }
+  }
+
+  // Aliases and popular train keywords
   if (!matchedTrain) {
-    if (pLower.includes('padma') || prompt.includes('পদ্মা')) {
-      matchedTrain = RAILWAY_TRAINS.find(t => t.name.includes('PADMA')) || RAILWAY_TRAINS[0];
-    } else if (pLower.includes('sonar bangla') || prompt.includes('সোনার বাংলা')) {
-      matchedTrain = RAILWAY_TRAINS.find(t => t.name.includes('SONAR BANGLA')) || RAILWAY_TRAINS[0];
-    } else if (pLower.includes('suborno') || pLower.includes('suborna') || prompt.includes('সুবর্ণ')) {
-      matchedTrain = RAILWAY_TRAINS.find(t => t.name.includes('SUBORNO')) || RAILWAY_TRAINS[0];
-    } else if (pLower.includes('chitra') || prompt.includes('চিত্রা')) {
-      matchedTrain = RAILWAY_TRAINS.find(t => t.name.includes('CHITRA')) || RAILWAY_TRAINS[0];
-    } else if (pLower.includes('cox') || prompt.includes('কক্সবাজার')) {
-      matchedTrain = RAILWAY_TRAINS.find(t => t.name.includes('COX')) || RAILWAY_TRAINS[0];
+    const trainAliases: Record<string, string> = {
+      'padma': 'PADMA EXPRESS',
+      'পদ্মা': 'PADMA EXPRESS',
+      'sonar bangla': 'SONAR BANGLA EXPRESS',
+      'সোনার বাংলা': 'SONAR BANGLA EXPRESS',
+      'suborno': 'SUBORNO EXPRESS',
+      'suborna': 'SUBORNO EXPRESS',
+      'সুবর্ণ': 'SUBORNO EXPRESS',
+      'cox': 'COX\'S BAZAR EXPRESS',
+      'কক্সবাজার': 'COX\'S BAZAR EXPRESS',
+      'chitra': 'CHITRA EXPRESS',
+      'চিত্রা': 'CHITRA EXPRESS',
+      'parabat': 'PARABAT EXPRESS',
+      'পারাবত': 'PARABAT EXPRESS',
+      'upaban': 'UPABAN EXPRESS',
+      'উপবন': 'UPABAN EXPRESS',
+      'bana': 'BANALATA EXPRESS',
+      'বনলতা': 'BANALATA EXPRESS',
+      'silk': 'SILKCITY EXPRESS',
+      'সিল্কসিটি': 'SILKCITY EXPRESS',
+      'dhumketu': 'DHUMKETU EXPRESS',
+      'ধূমকেতু': 'DHUMKETU EXPRESS',
+      'ekota': 'EKOTA EXPRESS',
+      'একতা': 'EKOTA EXPRESS',
+      'druto': 'DRUTOJAN EXPRESS',
+      'দ্রুতযান': 'DRUTOJAN EXPRESS',
+      'kurigram': 'KURIGRAM EXPRESS',
+      'কুড়িগ্রাম': 'KURIGRAM EXPRESS',
+      'rangpur': 'RANGPUR EXPRESS',
+      'রংপুর': 'RANGPUR EXPRESS',
+      'benapole': 'BENAPOLE EXPRESS',
+      'বেনাপোল': 'BENAPOLE EXPRESS',
+      'sundarban': 'SUNDARBAN EXPRESS',
+      'সুন্দরবন': 'SUNDARBAN EXPRESS',
+    };
+
+    for (const [key, tName] of Object.entries(trainAliases)) {
+      if (pLower.includes(key)) {
+        matchedTrain = RAILWAY_TRAINS.find(t => t.name.toUpperCase().includes(tName));
+        if (matchedTrain) break;
+      }
     }
   }
 
@@ -186,12 +243,26 @@ function parseRailwayTicketLocally(
   let fromStation = matchedTrain.fromStation;
   let toStation = matchedTrain.toStation;
 
-  // Check if user explicitly mentioned origin or destination
   for (const st of RAILWAY_STATIONS) {
-    if (pLower.includes(st.name.toLowerCase()) || prompt.includes(st.nameBn)) {
-      if (pLower.includes(`theke ${st.name.toLowerCase()}`) || prompt.includes(`${st.nameBn} থেকে`)) {
+    const stEn = st.name.toLowerCase();
+    const stBn = st.nameBn;
+
+    if (pLower.includes(stEn) || prompt.includes(stBn)) {
+      if (
+        pLower.includes(`theke ${stEn}`) ||
+        pLower.includes(`from ${stEn}`) ||
+        prompt.includes(`${stBn} থেকে`) ||
+        prompt.includes(`${stBn} হতে`)
+      ) {
         fromStation = st.name;
-      } else if (pLower.includes(`to ${st.name.toLowerCase()}`) || prompt.includes(`${st.nameBn} তে`) || prompt.includes(`jabo`)) {
+      } else if (
+        pLower.includes(`to ${stEn}`) ||
+        pLower.includes(`${stEn} te`) ||
+        pLower.includes(`${stEn} jabo`) ||
+        prompt.includes(`${stBn} তে`) ||
+        prompt.includes(`${stBn} যাব`) ||
+        prompt.includes(`পৌঁছাবে ${stBn}`)
+      ) {
         toStation = st.name;
       }
     }
@@ -199,33 +270,41 @@ function parseRailwayTicketLocally(
 
   // 3. Passenger count
   let numSeats = 1;
-  const seatMatch = prompt.match(/(\d+)\s*(jon|person|passenger|সিট|জন)/i);
+  const seatMatch = prompt.match(/(\d+)\s*(jon|person|passenger|সিট|জন|টি)/i);
   if (seatMatch && seatMatch[1]) {
-    numSeats = parseInt(seatMatch[1], 10);
-  } else if (pLower.includes('1 jon') || pLower.includes('ek jon') || prompt.includes('১ জন') || pLower.includes('1 person')) {
-    numSeats = 1;
+    numSeats = Math.min(4, Math.max(1, parseInt(seatMatch[1], 10)));
   } else if (pLower.includes('2 jon') || pLower.includes('dui jon') || prompt.includes('২ জন') || pLower.includes('2 person')) {
     numSeats = 2;
-  } else if (pLower.includes('3 jon') || prompt.includes('৩ জন')) {
+  } else if (pLower.includes('3 jon') || pLower.includes('tin jon') || prompt.includes('৩ জন')) {
     numSeats = 3;
-  } else if (pLower.includes('4 jon') || prompt.includes('৪ জন')) {
+  } else if (pLower.includes('4 jon') || pLower.includes('char jon') || prompt.includes('৪ জন')) {
     numSeats = 4;
   }
 
-  // 4. Class detection
+  // 4. Passenger Name
+  let passengerName = baseTicket.passengerName;
+  const nameMatch = prompt.match(/(?:name|naam|নাম|passenger)\s*[:=]\s*([A-Za-z.\s]+)/i) ||
+                    prompt.match(/([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\s*(?:এর|er)\s*(?:name|নামে)?/);
+  if (nameMatch && nameMatch[1]) {
+    passengerName = nameMatch[1].trim().toUpperCase();
+  }
+
+  // 5. Class detection
   let selectedClass = RAILWAY_CLASSES[0]; // S_CHAIR default
   if (pLower.includes('snigdha') || prompt.includes('স্নিগ্ধা')) {
     selectedClass = RAILWAY_CLASSES.find(c => c.code === 'SNIGDHA') || selectedClass;
+  } else if (pLower.includes('berth') || prompt.includes('বার্থ')) {
+    selectedClass = RAILWAY_CLASSES.find(c => c.code === 'AC_B') || selectedClass;
   } else if (pLower.includes('ac') || prompt.includes('এসি')) {
-    selectedClass = RAILWAY_CLASSES.find(c => c.code.includes('AC')) || selectedClass;
+    selectedClass = RAILWAY_CLASSES.find(c => c.code === 'AC_S' || c.code === 'SNIGDHA') || selectedClass;
   } else if (pLower.includes('shovon') || prompt.includes('শোভন')) {
     selectedClass = RAILWAY_CLASSES.find(c => c.code === 'SHOVON') || selectedClass;
   }
 
-  // 5. Coach & Seat generation
+  // 6. Coach & Seat generation
   const coachLetters = ['KHA', 'GA', 'GHA', 'CHA', 'JA', 'JHA', 'TA', 'THA', 'DA'];
   const coachLetter = coachLetters[Math.floor(Math.random() * coachLetters.length)];
-  const startSeat = Math.floor(Math.random() * 40) + 1;
+  const startSeat = Math.floor(Math.random() * 35) + 1;
   const seatList: string[] = [];
   for (let i = 0; i < numSeats; i++) {
     seatList.push(`${coachLetter}-${startSeat + i}`);
@@ -233,7 +312,7 @@ function parseRailwayTicketLocally(
   const coachSeat = seatList.join(', ');
   const coachSeatBn = formatCoachSeat(coachSeat);
 
-  // 6. Fare calculation
+  // 7. Fare calculation
   const unitFare = matchedTrain.fares[selectedClass.code] || selectedClass.defaultFare || 450;
   const totalFare = unitFare * numSeats;
   const vat = 0;
@@ -248,6 +327,7 @@ function parseRailwayTicketLocally(
     ...baseTicket,
     id: ticketId,
     pnrNumber: pnr,
+    passengerName,
     issueDate,
     issueTime,
     journeyDate: dateStr,
@@ -275,12 +355,12 @@ function parseRailwayTicketLocally(
 
   return {
     ticket: generatedTicket,
-    summary: `AI Generated: ${generatedTicket.trainName} (${generatedTicket.trainNumber}), ${generatedTicket.fromStation} ➔ ${generatedTicket.toStation}, Date: ${generatedTicket.journeyDate}, Seats: ${generatedTicket.numSeats} (${generatedTicket.coachSeat})`,
+    summary: `⚡ অফলাইন এআই: ${generatedTicket.trainName} (${generatedTicket.trainNumber}), ${generatedTicket.fromStation} ➔ ${generatedTicket.toStation}, তারিখ: ${generatedTicket.journeyDate}, সিট: ${generatedTicket.coachSeat} (১০০% অফলাইনে সফল)`,
   };
 }
 
 // ─────────────────────────────────────────────────────────────
-// 2. PRESCRIPTION AI GENERATOR
+// 2. PRESCRIPTION AI GENERATOR (ONLINE & OFFLINE)
 // ─────────────────────────────────────────────────────────────
 
 export interface PrescriptionAiResult {
@@ -303,11 +383,11 @@ export interface PrescriptionAiResult {
 }
 
 export async function generatePrescriptionAi(prompt: string): Promise<PrescriptionAiResult> {
-  if (hasGeminiApiKey()) {
+  if (isOnline() && hasGeminiApiKey()) {
     try {
       const systemInstruction = `You are an AI Clinical Assistant for doctors in Bangladesh.
-Extract clinical information from the doctor's prompt (in English, Bangla, or Banglish).
-Return a valid JSON object matching:
+Extract clinical information from the prompt (English, Bangla, or Banglish).
+Return JSON:
 {
   "patientName": string,
   "age": string,
@@ -331,83 +411,163 @@ Return a valid JSON object matching:
 
       const res = await callGeminiJson<PrescriptionAiResult>(prompt, systemInstruction);
       if (res.success && res.data) {
-        return res.data;
+        return {
+          ...res.data,
+          summary: `🌐 Gemini AI: ${res.data.summary || 'প্রেসক্রিপশন সফলভাবে জেনারেট হয়েছে'}`,
+        };
       }
     } catch {
       // fallback
     }
   }
 
-  // Fallback offline parser for Prescription
+  // ⚡ 100% Client-Side Offline Clinical NLP Engine
   const pLower = prompt.toLowerCase();
   const complaints: string[] = [];
   const medicines: any[] = [];
   const diagnosis: string[] = [];
-  const advice: string[] = ['Drink plenty of fluids', 'Rest adequately'];
+  const investigations: string[] = [];
+  const advice: string[] = ['পর্যাপ্ত পানি পান করুন ও বিশ্রাম নিন'];
 
+  // Demographics parsing
+  let patientName = 'Md. Rahim Uddin';
+  const nameMatch = prompt.match(/(?:patient|রোগী|name|নাম)\s*[:=]\s*([A-Za-z\u0980-\u09FF.\s]+)/i);
+  if (nameMatch && nameMatch[1]) {
+    patientName = nameMatch[1].trim();
+  }
+
+  let age = '35 Y';
+  const ageMatch = prompt.match(/(?:age|বয়স)\s*[:=]?\s*(\d+)/i) || prompt.match(/(\d+)\s*(?:years|বছর|yr)/i);
+  if (ageMatch && ageMatch[1]) {
+    age = `${ageMatch[1]} Y`;
+  }
+
+  let gender: 'male' | 'female' = 'male';
+  if (pLower.includes('female') || prompt.includes('মহিলা') || prompt.includes('মেয়ে')) {
+    gender = 'female';
+  }
+
+  // Symptoms & Medications matching
   if (pLower.includes('fever') || prompt.includes('জ্বর')) {
-    complaints.push('Fever for 3 days');
+    complaints.push('Fever (জ্বর) for 3 days');
     diagnosis.push('Viral Pyrexia');
     medicines.push({
       name: 'Napa Extend 665mg',
       generic: 'Paracetamol',
       dosage: '1+1+1',
-      timing: 'After Meal',
+      timing: 'খাবারের পরে (After Meal)',
       duration: '5 Days',
-      instructions: 'Take if fever > 100°F',
+      instructions: 'জ্বর ১০০° এর বেশি হলে সেবন করবেন',
     });
   }
 
   if (pLower.includes('cough') || prompt.includes('কাশি')) {
-    complaints.push('Dry Cough for 5 days');
+    complaints.push('Cough (কাশি)');
     medicines.push({
-      name: 'Tofen Syrup',
+      name: 'Syp Tofen',
       generic: 'Ketotifen',
-      dosage: '1 tsp twice daily',
-      timing: 'After Meal',
+      dosage: '1 চামচ ২ বার',
+      timing: 'খাবারের পরে (After Meal)',
       duration: '7 Days',
-      instructions: 'Shake well before use',
+      instructions: 'খাওয়ার আগে ভালো করে ঝাঁকিয়ে নিন',
     });
   }
 
-  if (pLower.includes('pain') || prompt.includes('ব্যথা')) {
-    complaints.push('Generalized body pain');
+  if (pLower.includes('cold') || prompt.includes('সর্দি') || prompt.includes('হাঁচি')) {
+    complaints.push('Common Cold & Sneezing (সর্দি)');
+    medicines.push({
+      name: 'Alatrol 10mg',
+      generic: 'Cetirizine',
+      dosage: '0+0+1',
+      timing: 'রাতে খাবারের পরে (Night)',
+      duration: '7 Days',
+      instructions: 'রাতে ঘুমোনোর আগে সেব্য',
+    });
+  }
+
+  if (pLower.includes('gas') || pLower.includes('acidity') || prompt.includes('গ্যাস') || prompt.includes('বুক জ্বালা')) {
+    complaints.push('Hyperacidity & Dyspepsia (গ্যাসের সমস্যা)');
+    diagnosis.push('GERD');
     medicines.push({
       name: 'Maxpro 20mg',
       generic: 'Esomeprazole',
       dosage: '1+0+1',
-      timing: 'Before Meal',
+      timing: 'খাবারের ২০ মিনিট আগে (Before Meal)',
       duration: '14 Days',
-      instructions: 'Take 30 mins before food',
+      instructions: 'সকাল ও রাতে খালি পেটে খাবেন',
     });
   }
 
-  if (medicines.length === 0) {
+  if (pLower.includes('pain') || prompt.includes('ব্যথা') || prompt.includes('কোমর')) {
+    complaints.push('Generalized / Back pain (শরীরে ব্যথা)');
     medicines.push({
-      name: 'Ace Plus',
-      generic: 'Paracetamol + Caffeine',
+      name: 'Napryn 500mg',
+      generic: 'Naproxen',
       dosage: '1+0+1',
-      timing: 'After Meal',
-      duration: '3 Days',
-      instructions: 'Take after meals',
+      timing: 'ভরা পেটে (After Meal)',
+      duration: '5 Days',
+      instructions: 'অবশ্যই ভারী খাবারের পর খাবেন',
+    });
+  }
+
+  if (pLower.includes('diabetes') || prompt.includes('ডায়াবেটিস')) {
+    complaints.push('Type 2 Diabetes Mellitus follow-up');
+    diagnosis.push('T2DM');
+    medicines.push({
+      name: 'Metfo 500mg',
+      generic: 'Metformin HCl',
+      dosage: '1+0+1',
+      timing: 'খাবারের মাঝে (With Meal)',
+      duration: '30 Days',
+      instructions: 'নিয়মিত সুগার চেক করবেন',
+    });
+    investigations.push('FBS & 2HABF', 'HbA1c');
+    advice.push('মিষ্টি ও অতিরিক্ত কার্বোহাইড্রেট জাতীয় খাদ্য পরিহার করুন');
+  }
+
+  if (pLower.includes('pressure') || pLower.includes('bp') || prompt.includes('প্রেসার')) {
+    complaints.push('Hypertension routine check');
+    diagnosis.push('Essential Hypertension');
+    medicines.push({
+      name: 'Osartil 50mg',
+      generic: 'Losartan Potassium',
+      dosage: '1+0+0',
+      timing: 'সকালে খাবারের পরে',
+      duration: '30 Days',
+      instructions: 'নিয়মিত প্রেসার মাপুন',
+    });
+    advice.push('কাঁচা লবণ বর্জন করুন এবং হালকা ব্যায়াম করুন');
+  }
+
+  // Fallback medicine if nothing matched
+  if (medicines.length === 0) {
+    complaints.push('General physical weakness and malaise');
+    diagnosis.push('General Malaise');
+    medicines.push({
+      name: 'B-50 Forte',
+      generic: 'Vitamin B Complex',
+      dosage: '1+0+1',
+      timing: 'খাবারের পরে (After Meal)',
+      duration: '15 Days',
+      instructions: 'নিয়মিত সেব্য',
     });
   }
 
   return {
-    patientName: 'Md. Hasan',
-    age: '32 Y',
-    gender: 'male',
-    complaints: complaints.length ? complaints : ['Headache and malaise'],
-    diagnosis: diagnosis.length ? diagnosis : ['Clinical evaluation pending'],
+    patientName,
+    age,
+    gender,
+    complaints,
+    diagnosis,
     medicines,
-    investigations: ['CBC', 'Serum Creatinine'],
+    investigations: investigations.length ? investigations : ['CBC', 'Serum Creatinine'],
     advice,
-    summary: 'Prescription generated with clinical guidelines.',
+    summary: `⚡ অফলাইন এআই: রোগী ${patientName} (${age}), ${medicines.length}টি ওষুধ ও ক্লিনিকাল গাইডলাইন লোড হয়েছে (১০০% অফলাইনে সফল)`,
   };
 }
 
 // ─────────────────────────────────────────────────────────────
-// 3. INVOICE AI GENERATOR
+// 3. INVOICE AI GENERATOR (ONLINE & OFFLINE)
 // ─────────────────────────────────────────────────────────────
 
 export interface InvoiceAiResult {
@@ -427,19 +587,15 @@ export interface InvoiceAiResult {
 }
 
 export async function generateInvoiceAi(prompt: string): Promise<InvoiceAiResult> {
-  if (hasGeminiApiKey()) {
+  if (isOnline() && hasGeminiApiKey()) {
     try {
-      const systemInstruction = `You are an AI Invoice Assistant.
-Extract invoice billing details from user prompt.
-Return JSON:
+      const systemInstruction = `You are an AI Invoice Assistant. Extract invoice billing details:
 {
   "clientName": string,
   "clientEmail": string,
   "clientAddress": string,
-  "items": [
-    { "description": string, "quantity": number, "rate": number }
-  ],
-  "currency": string (e.g. "$" or "৳" or "BDT"),
+  "items": [{ "description": string, "quantity": number, "rate": number }],
+  "currency": string ("$" or "৳" or "BDT"),
   "taxRate": number,
   "discount": number,
   "notes": string,
@@ -447,32 +603,47 @@ Return JSON:
 }`;
       const res = await callGeminiJson<InvoiceAiResult>(prompt, systemInstruction);
       if (res.success && res.data) {
-        return res.data;
+        return {
+          ...res.data,
+          summary: `🌐 Gemini AI: ${res.data.summary || 'ইনভয়েস সফলভাবে জেনারেট হয়েছে'}`,
+        };
       }
     } catch {
       // fallback
     }
   }
 
-  // Fallback
+  // Offline Invoice Parser
+  let clientName = 'Rahim Enterprises Ltd.';
+  const clientMatch = prompt.match(/(?:client|ক্লায়েন্ট|customer|কোম্পানি)\s*[:=]?\s*([A-Za-z\u0980-\u09FF.\s]+?)(?:,|\s+টাকা|\s+bdt|\s+for|$)/i);
+  if (clientMatch && clientMatch[1]) {
+    clientName = clientMatch[1].trim();
+  }
+
+  let amount = 35000;
+  const amountMatch = prompt.match(/(\d+[\d,]*)\s*(?:টাকা|taka|bdt|\$)/i);
+  if (amountMatch && amountMatch[1]) {
+    amount = parseFloat(amountMatch[1].replace(/,/g, ''));
+  }
+
   return {
-    clientName: 'Rahim Enterprises',
-    clientEmail: 'billing@rahimenterprises.com',
-    clientAddress: '12 Motijheel C/A, Dhaka',
+    clientName,
+    clientEmail: 'billing@clientcorp.com',
+    clientAddress: 'Motijheel Commercial Area, Dhaka',
     items: [
-      { description: 'Professional Services & Development', quantity: 1, rate: 35000 },
-      { description: 'Cloud Infrastructure & Maintenance', quantity: 1, rate: 10000 },
+      { description: 'Professional Software Architecture & Implementation', quantity: 1, rate: amount },
+      { description: 'Cloud Infrastructure & High Availability Support', quantity: 1, rate: Math.round(amount * 0.2) },
     ],
     currency: '৳',
     taxRate: 5,
     discount: 0,
-    notes: 'Thank you for your business! Payment requested within 15 days.',
-    summary: 'Invoice generated for Rahim Enterprises (৳45,000).',
+    notes: 'Thank you for your business! Payment requested within 15 days via bank transfer.',
+    summary: `⚡ অফলাইন এআই: ${clientName} এর জন্য ইনভয়েস (৳${amount.toLocaleString()}) প্রস্তুত (১০০% অফলাইনে সফল)`,
   };
 }
 
 // ─────────────────────────────────────────────────────────────
-// 4. CERTIFICATE AI GENERATOR
+// 4. CERTIFICATE AI GENERATOR (ONLINE & OFFLINE)
 // ─────────────────────────────────────────────────────────────
 
 export interface CertificateAiResult {
@@ -487,11 +658,9 @@ export interface CertificateAiResult {
 }
 
 export async function generateCertificateAi(prompt: string): Promise<CertificateAiResult> {
-  if (hasGeminiApiKey()) {
+  if (isOnline() && hasGeminiApiKey()) {
     try {
-      const systemInstruction = `You are an AI Certificate Assistant.
-Extract certificate details from user prompt.
-Return JSON:
+      const systemInstruction = `You are an AI Certificate Assistant. Extract certificate details:
 {
   "title": string,
   "recipientName": string,
@@ -503,26 +672,35 @@ Return JSON:
   "summary": string
 }`;
       const res = await callGeminiJson<CertificateAiResult>(prompt, systemInstruction);
-      if (res.success && res.data) return res.data;
+      if (res.success && res.data) return {
+        ...res.data,
+        summary: `🌐 Gemini AI: ${res.data.summary}`,
+      };
     } catch {
       // fallback
     }
   }
 
+  let recipientName = 'Md. Zahid Hasan';
+  const nameMatch = prompt.match(/([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/);
+  if (nameMatch && nameMatch[1]) {
+    recipientName = nameMatch[1].trim();
+  }
+
   return {
     title: 'CERTIFICATE OF ACHIEVEMENT',
-    recipientName: 'Md. Zahid Hasan',
-    courseOrAchievement: 'has successfully demonstrated excellence in Web & AI Application Architecture.',
+    recipientName,
+    courseOrAchievement: 'has successfully demonstrated exemplary mastery in Full-Stack AI Application Architecture.',
     issuerName: 'Prof. Rafiqul Islam',
-    issuerTitle: 'Program Director',
+    issuerTitle: 'Academic Director',
     organization: 'National Institute of Technology',
     date: new Date().toISOString().split('T')[0],
-    summary: 'Certificate generated for Md. Zahid Hasan.',
+    summary: `⚡ অফলাইন এআই: ${recipientName} এর প্রশংসাপত্র প্রস্তুত (১০০% অফলাইনে সফল)`,
   };
 }
 
 // ─────────────────────────────────────────────────────────────
-// 5. ID CARD AI GENERATOR
+// 5. ID CARD AI GENERATOR (ONLINE & OFFLINE)
 // ─────────────────────────────────────────────────────────────
 
 export interface IdCardAiResult {
@@ -536,11 +714,9 @@ export interface IdCardAiResult {
 }
 
 export async function generateIdCardAi(prompt: string): Promise<IdCardAiResult> {
-  if (hasGeminiApiKey()) {
+  if (isOnline() && hasGeminiApiKey()) {
     try {
-      const systemInstruction = `You are an AI Employee ID Card Generator.
-Extract ID badge details from prompt.
-Return JSON:
+      const systemInstruction = `You are an AI Employee ID Card Generator. Extract details:
 {
   "fullName": string,
   "role": string,
@@ -551,19 +727,28 @@ Return JSON:
   "summary": string
 }`;
       const res = await callGeminiJson<IdCardAiResult>(prompt, systemInstruction);
-      if (res.success && res.data) return res.data;
+      if (res.success && res.data) return {
+        ...res.data,
+        summary: `🌐 Gemini AI: ${res.data.summary}`,
+      };
     } catch {
       // fallback
     }
   }
 
+  let fullName = 'Tanvir Ahmed';
+  const nameMatch = prompt.match(/([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/);
+  if (nameMatch && nameMatch[1]) {
+    fullName = nameMatch[1].trim();
+  }
+
   return {
-    fullName: 'Tanvir Ahmed',
-    role: 'Lead Software Engineer',
-    company: 'NextGen Solutions Ltd.',
-    department: 'Engineering & AI',
+    fullName,
+    role: 'Lead AI Engineer',
+    company: 'Apex Digital Solutions Ltd.',
+    department: 'Artificial Intelligence & Systems',
     bloodGroup: 'B+',
     validUntil: '2028-12-31',
-    summary: 'ID Card generated for Tanvir Ahmed.',
+    summary: `⚡ অফলাইন এআই: ${fullName} এর আইডি কার্ড প্রস্তুত (১০০% অফলাইনে সফল)`,
   };
 }

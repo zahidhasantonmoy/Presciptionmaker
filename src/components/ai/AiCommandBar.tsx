@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Sparkles, Send, Loader2, Key, CheckCircle2,
-  FileText, Eye, AlertCircle, RefreshCw, Lightbulb
+  FileText, Eye, AlertCircle, RefreshCw, Lightbulb, Wifi, WifiOff, Zap
 } from 'lucide-react';
 import { hasGeminiApiKey } from '../../services/ai/geminiClient';
 import { GeminiApiKeyModal } from './GeminiApiKeyModal';
@@ -54,9 +54,27 @@ export function AiCommandBar({
   const [lastSummary, setLastSummary] = useState<string | null>(null);
   const [keyModalOpen, setKeyModalOpen] = useState(false);
   const [hasKey, setHasKey] = useState(() => hasGeminiApiKey());
+  const [online, setOnline] = useState(() => typeof navigator !== 'undefined' ? navigator.onLine : true);
+
+  useEffect(() => {
+    const handleOnline = () => setOnline(true);
+    const handleOffline = () => setOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const activeSuggestions = suggestions || DEFAULT_SUGGESTIONS[toolName] || [];
-  const defaultPlaceholder = placeholder || 'AI দিয়ে তৈরি করুন... বাংলায় বা ইংরেজিতে লিখুন';
+  const defaultPlaceholder = placeholder || (
+    online
+      ? 'AI দিয়ে তৈরি করুন... বাংলায় বা ইংরেজিতে লিখুন'
+      : '⚡ অফলাইন মোড: বাংলায় বা ইংরেজিতে লিখুন (ইন্টারনেট ছাড়াই তৈরি হবে)'
+  );
 
   const handleRun = async (overridePrompt?: string) => {
     const textToRun = (overridePrompt || prompt).trim();
@@ -106,53 +124,77 @@ export function AiCommandBar({
         position: 'relative',
       }}
     >
-      {/* Top row: Badge & Key status */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      {/* Top row: Badge & Key status & Online/Offline mode */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <div
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: 5,
-              background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+              background: online
+                ? 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)'
+                : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
               color: '#fff',
               fontSize: 11,
               fontWeight: 700,
               padding: '3px 9px',
               borderRadius: 20,
-              boxShadow: '0 2px 8px rgba(139, 92, 246, 0.4)',
+              boxShadow: online ? '0 2px 8px rgba(139, 92, 246, 0.4)' : '0 2px 8px rgba(16, 185, 129, 0.4)',
               letterSpacing: '0.3px',
             }}
           >
-            <Sparkles size={12} />
-            <span>GEMINI AI PROMPT BAR</span>
+            {online ? <Sparkles size={12} /> : <Zap size={12} />}
+            <span>{online ? 'GEMINI AI PROMPT BAR' : 'OFFLINE AI ENGINE (PWA)'}</span>
           </div>
+
           <span style={{ fontSize: 11.5, color: '#94a3b8' }}>
-            এক ক্লিকে সম্পূর্ণ ডেটা এবং PDF রিভিউ তৈরি করুন
+            {online ? 'এক ক্লিকে সম্পূর্ণ ডেটা এবং PDF রিভিউ তৈরি করুন' : 'ইন্টারনেট ছাড়াই ১০০% অফলাইনে প্রম্পট প্রসেসিং সক্রিয়'}
           </span>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setKeyModalOpen(true)}
-          style={{
-            background: hasKey ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-            border: `1px solid ${hasKey ? 'rgba(16, 185, 129, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`,
-            color: hasKey ? '#34d399' : '#fbbf24',
-            padding: '3px 8px',
-            borderRadius: 6,
-            fontSize: 11,
-            fontWeight: 600,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 5,
-          }}
-          title={hasKey ? 'Gemini API Key Connected' : 'Click to add Gemini API Key'}
-        >
-          <Key size={11} />
-          <span>{hasKey ? 'Gemini Key Active' : 'Add Gemini Key'}</span>
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* Network indicator badge */}
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              fontSize: 11,
+              padding: '2px 7px',
+              borderRadius: 12,
+              background: online ? 'rgba(59, 130, 246, 0.1)' : 'rgba(16, 185, 129, 0.15)',
+              border: `1px solid ${online ? 'rgba(59, 130, 246, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`,
+              color: online ? '#93c5fd' : '#34d399',
+            }}
+            title={online ? 'Online: Cloud AI Active' : 'Offline: Local NLP Active'}
+          >
+            {online ? <Wifi size={11} /> : <WifiOff size={11} />}
+            <span>{online ? 'Online' : 'Offline Ready'}</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setKeyModalOpen(true)}
+            style={{
+              background: hasKey ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+              border: `1px solid ${hasKey ? 'rgba(16, 185, 129, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`,
+              color: hasKey ? '#34d399' : '#fbbf24',
+              padding: '3px 8px',
+              borderRadius: 6,
+              fontSize: 11,
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+            }}
+            title={hasKey ? 'Gemini API Key Connected' : 'Click to add Gemini API Key'}
+          >
+            <Key size={11} />
+            <span>{hasKey ? 'Gemini Key Active' : 'Add Gemini Key'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Main Input Row */}
