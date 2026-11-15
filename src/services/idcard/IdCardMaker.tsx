@@ -101,6 +101,19 @@ export function IdCardMaker() {
     return res.summary;
   };
 
+  // Auto-run if redirected from Home Central AI Hub
+  useEffect(() => {
+    try {
+      const pending = sessionStorage.getItem('pending_ai_prompt');
+      if (pending) {
+        sessionStorage.removeItem('pending_ai_prompt');
+        handleAiIdCard(pending);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
   return (
     <div style={{
       display: 'flex',

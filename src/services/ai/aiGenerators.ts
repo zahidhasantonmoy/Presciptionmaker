@@ -9,7 +9,66 @@ import {
   formatCoachSeat,
 } from '../ticket/railwayData';
 import { Prescription, PrescriptionMedicine, Diagnosis } from '../../types';
+import { ServiceId } from '../../utils/navigation';
 import { v4 as uuidv4 } from 'uuid';
+
+// Detects which service a user prompt is intended for (Ticket, Prescription, Invoice, Certificate, ID Card)
+export function detectServiceFromPrompt(prompt: string): ServiceId {
+  const pLower = prompt.toLowerCase();
+
+  // 1. Ticket signals
+  const ticketKeywords = [
+    'টিকিট', 'ticket', 'train', 'ট্রেন', 'রেল', 'railway', 'express',
+    'পদ্মা', 'সুবর্ণ', 'সোনার বাংলা', 'চিত্রা', 'কক্সবাজার', 'পারাবত', 'উপবন',
+    'বনলতা', 'ধূমকেতু', 'সিল্কসিটি', 'একতা', 'দ্রুতযান', 'রংপুর', 'কুড়িগ্রাম',
+    'বেনাপোল', 'স্টেশন', 'সিট', 'বগি', 'কোচ', 'শোভন', 'স্নিগ্ধা', 'বার্থ',
+    'জংশন', 'যাত্রী', 'station', 'shovon', 'snigdha', 'berth', 'seat', 'coach'
+  ];
+  if (ticketKeywords.some(k => pLower.includes(k) || prompt.includes(k))) {
+    return 'ticket';
+  }
+
+  // 2. Prescription signals
+  const rxKeywords = [
+    'রোগী', 'প্রেসক্রিপশন', 'prescription', 'doctor', 'patient', 'dr.',
+    'ডাক্তার', 'rx', 'জ্বর', 'কাশি', 'সর্দি', 'ওষুধ', 'মেডিসিন', 'medicine',
+    'ট্যাবলেট', 'tab', 'cap', 'capsule', 'syrup', 'ব্যথা', 'ডায়াবেটিস',
+    'প্রেসার', 'গ্যাস্ট্রিক', 'ইনভেস্টিগেশন', 'টেস্ট', 'fever', 'cough', 'cold'
+  ];
+  if (rxKeywords.some(k => pLower.includes(k) || prompt.includes(k))) {
+    return 'prescription';
+  }
+
+  // 3. Invoice signals
+  const invoiceKeywords = [
+    'ইনভয়েস', 'invoice', 'টাকা', 'বিল', 'bill', 'billing', 'ক্লায়েন্ট',
+    'client', 'payment', 'বকেয়া', 'পরিশোধ', 'subtotal', 'discount',
+    'ভ্যাট', 'tax', 'rate', 'ফি', 'bdt'
+  ];
+  if (invoiceKeywords.some(k => pLower.includes(k) || prompt.includes(k))) {
+    return 'invoice';
+  }
+
+  // 4. Certificate signals
+  const certKeywords = [
+    'সার্টিফিকেট', 'certificate', 'অ্যাওয়ার্ড', 'award', 'প্রশংসাপত্র',
+    'সনদপত্র', 'diploma', 'completion', 'achievement', 'কোর্স শেষ', 'সম্মাননা'
+  ];
+  if (certKeywords.some(k => pLower.includes(k) || prompt.includes(k))) {
+    return 'certificate';
+  }
+
+  // 5. ID Card signals
+  const idKeywords = [
+    'আইডি কার্ড', 'id card', 'idcard', 'কার্ড', 'পরিচয়পত্র', 'badge',
+    'employee', 'কর্মকর্তা', 'ব্লাড গ্রুপ', 'blood group', 'designation', 'পদবি'
+  ];
+  if (idKeywords.some(k => pLower.includes(k) || prompt.includes(k))) {
+    return 'idcard';
+  }
+
+  return 'ticket';
+}
 
 // Helper to calculate relative date like tomorrow, day after tomorrow, days of week, or specific dates
 export function resolveRelativeDate(text: string): { dateStr: string; banglaDateStr: string } {

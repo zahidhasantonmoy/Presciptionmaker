@@ -7,6 +7,7 @@ import { SERVICES_REGISTRY } from '../registry';
 import { ServiceId } from '../../utils/navigation';
 import { useAuthStore } from '../auth/useAuthStore';
 import { useStore } from '../../store/useStore';
+import { HomeAiCommandHub } from '../../components/ai/HomeAiCommandHub';
 
 export function HubDashboard({ onSelectService }: { onSelectService: (id: ServiceId) => void }) {
   const { lock } = useAuthStore();
@@ -150,6 +151,9 @@ export function HubDashboard({ onSelectService }: { onSelectService: (id: Servic
             </button>
           </div>
         </div>
+
+        {/* Central Universal AI Command Hub */}
+        <HomeAiCommandHub onSelectService={onSelectService} />
 
         {/* Quick Stats Banner */}
         <div style={{

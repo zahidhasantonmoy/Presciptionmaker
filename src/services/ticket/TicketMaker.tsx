@@ -299,6 +299,19 @@ export function TicketMaker() {
     return result.summary;
   };
 
+  // Auto-run if redirected from Home Central AI Hub
+  useEffect(() => {
+    try {
+      const pending = sessionStorage.getItem('pending_ai_prompt');
+      if (pending) {
+        sessionStorage.removeItem('pending_ai_prompt');
+        handleAiGenerate(pending);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
   // Download High-Resolution A4 PDF matching exact points with perfect line alignment & small file size
   const handleDownloadPdf = async () => {
     if (!ticketRef.current) return;
