@@ -16,7 +16,7 @@ interface GeminiApiKeyModalProps {
 
 export function GeminiApiKeyModal({ isOpen, onClose, onSaved }: GeminiApiKeyModalProps) {
   const [key, setKey] = useState('');
-  const [selectedModel, setSelectedModel] = useState('gemini-2.0-flash-lite');
+  const [selectedModel, setSelectedModel] = useState('gemini-2.5-flash-lite');
   const [showKey, setShowKey] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);

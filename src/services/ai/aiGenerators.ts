@@ -332,6 +332,27 @@ function parseRailwayTicketLocally(
     }
   }
 
+  // Prevent same fromStation and toStation
+  if (fromStation.toLowerCase() === toStation.toLowerCase()) {
+    if (matchedTrain.fromStation.toLowerCase() !== fromStation.toLowerCase()) {
+      toStation = matchedTrain.fromStation;
+    } else if (matchedTrain.toStation.toLowerCase() !== fromStation.toLowerCase()) {
+      toStation = matchedTrain.toStation;
+    }
+  }
+
+  // Look for exact directional train variant (e.g. Dhaka -> Khulna vs Khulna -> Dhaka)
+  const directionalTrain = RAILWAY_TRAINS.find(
+    t => t.name.toLowerCase() === matchedTrain.name.toLowerCase() &&
+         t.fromStation.toLowerCase() === fromStation.toLowerCase()
+  );
+  if (directionalTrain) {
+    matchedTrain = directionalTrain;
+    if (fromStation.toLowerCase() === toStation.toLowerCase() || !toStation) {
+      toStation = directionalTrain.toStation;
+    }
+  }
+
   // 3. Passenger count
   let numSeats = 1;
   const seatMatch = prompt.match(/(\d+)\s*(jon|person|passenger|সিট|জন|টি)/i);

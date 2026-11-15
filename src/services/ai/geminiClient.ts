@@ -4,21 +4,19 @@ const STORAGE_KEY = 'gemini_api_key';
 const MODEL_STORAGE_KEY = 'gemini_preferred_model';
 
 export const AVAILABLE_MODELS = [
-  { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash Lite', limit: '500 RPD', desc: '🔥 বেস্ট ভলিউম ও সুপার ফাস্ট (৫০০ রিকোয়েস্ট/দিন)' },
-  { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite', limit: '500 RPD', desc: '🔥 হাই স্পিড ও কোয়ালিটি (৫০০ রিকোয়েস্ট/দিন)' },
+  { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite', limit: '500 RPD', desc: '🔥 বেস্ট ভলিউম ও সুপার ফাস্ট (৫০০ রিকোয়েস্ট/দিন)' },
+  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', limit: '20 RPD', desc: 'ম্যাক্সিমাম কোয়ালিটি ও রিজনিং (২০ রিকোয়েস্ট/দিন)' },
   { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', limit: 'High Quota', desc: 'স্ট্যাবল ও নির্ভরযোগ্য' },
-  { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', limit: '20 RPD', desc: 'হাই কোয়ালিটি (২০ রিকোয়েস্ট/দিন)' },
-  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', limit: '20 RPD', desc: 'ম্যাক্সিমাম রিজনিং (২০ রিকোয়েস্ট/দিন)' },
 ];
 
 export function getPreferredModel(): string {
   try {
     const stored = localStorage.getItem(MODEL_STORAGE_KEY);
-    if (stored && stored.trim()) return stored.trim();
+    if (stored && stored.trim() && !stored.includes('2.0')) return stored.trim();
   } catch {
     // ignore
   }
-  return 'gemini-2.0-flash-lite'; // Default to Flash Lite (500 RPD) for high volume!
+  return 'gemini-2.5-flash-lite'; // Default to Flash Lite (500 RPD) for high volume!
 }
 
 export function setPreferredModel(model: string): void {
@@ -71,11 +69,9 @@ export interface GeminiResponse<T = any> {
 
 // Candidates sorted so 500 RPD Flash-Lite models are prioritized first
 const CANDIDATE_MODELS = [
-  'gemini-2.0-flash-lite',
   'gemini-2.5-flash-lite',
-  'gemini-1.5-flash',
-  'gemini-2.0-flash',
   'gemini-2.5-flash',
+  'gemini-1.5-flash',
 ];
 
 export async function testGeminiApiKey(apiKey: string, modelOverride?: string): Promise<{ success: boolean; message: string }> {

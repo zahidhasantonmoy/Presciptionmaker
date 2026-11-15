@@ -377,9 +377,11 @@ export function TicketMaker() {
                 shift = 0.5;
               } else if (currentTop >= 600) {
                 shift = 1.0;
-              } else if (currentTop >= 180 && currentTop <= 500) {
+              } else if (currentTop >= 180 && currentTop <= 490) {
                 // Table 1 (Journey Information) and Table 2 (Passenger Information) rows
-                shift = 4.2;
+                shift = 4.0;
+              } else if (currentTop > 490 && currentTop < 600) {
+                shift = 1.0;
               } else {
                 shift = 0;
               }
@@ -1330,8 +1332,7 @@ export function TicketMaker() {
                 {/* Table Header Banners & Highlight Boxes */}
                 <rect x="57.895" y="169.123" width="479.491" height="22.461" fill="#039d48" />
                 <rect x="57.895" y="411.371" width="479.491" height="22.461" fill="#039d48" />
-                <rect x="57.520" y="602.113" width="480.241" height="43.200" fill="#e8f5e9" />
-                <rect x="57.520" y="650.188" width="480.241" height="24.600" fill="#fdebd3" />
+                <rect x="57.520" y="602.113" width="480.241" height="43.200" fill="#fdf4ea" stroke="#f6cca9" strokeWidth="0.75" rx="3" />
 
                 {/* Table 1: Outer & Inner Grid Lines */}
                 <line x1="57.895" y1="169.123" x2="57.895" y2="191.209" stroke="#05b454" strokeWidth="0.750" />
@@ -1499,8 +1500,8 @@ export function TicketMaker() {
               <ShohozLogo
                 style={{
                   position: 'absolute',
-                  left: '477.7pt',
-                  top: '64.1pt',
+                  left: '418.0pt',
+                  top: '64.0pt',
                   width: '52.5pt',
                   height: '37.6pt',
                 }}
@@ -1513,10 +1514,10 @@ export function TicketMaker() {
                   alt="QR Code"
                   style={{
                     position: 'absolute',
-                    left: '477.7pt',
-                    top: '105.4pt',
-                    width: '58.3pt',
-                    height: '58.3pt',
+                    left: '474.0pt',
+                    top: '60.0pt',
+                    width: '63.0pt',
+                    height: '63.0pt',
                     display: 'block'
                   }}
                 />
@@ -1528,7 +1529,7 @@ export function TicketMaker() {
                 BANGLADESH RAILWAY
               </span>
               <span className="ticket-span ticket-s" style={{ left: '242.293pt', top: '82.633pt', fontSize: '15.00pt', color: '#1f7ec7' }}>
-                বাংলাদেশ রেলওয়ে
+                বাংলাদেশ রেলওয়ে
               </span>
 
               {/* Greeting & Introductory Confirmation */}
@@ -1887,11 +1888,11 @@ export function TicketMaker() {
               <span className="ticket-span ticket-s" style={{ left: '301.140pt', top: '681.690pt', fontSize: '9.00pt', color: '#333333' }}>
                 আপনার ভ্রমণ সুখকর ও নিরাপদ হোক, এই কামনায়-
               </span>
-              <span className="ticket-span ticket-s" style={{ left: '61.270pt', top: '692.888pt', fontSize: '10.50pt', color: '#333333', WebkitTextStroke: '0.350pt #333333' }}>
+              <span className="ticket-span ticket-r" style={{ left: '61.270pt', top: '692.888pt', fontSize: '10.50pt', color: '#333333', WebkitTextStroke: '0.350pt #333333' }}>
                 Bangladesh Railway
               </span>
               <span className="ticket-span ticket-s" style={{ left: '301.390pt', top: '692.888pt', fontSize: '10.50pt', color: '#333333', WebkitTextStroke: '0.350pt #333333' }}>
-                বাংলাদেশ রেলওয়ে
+                বাংলাদেশ রেলওয়ে
               </span>
                 </div>
               </div>

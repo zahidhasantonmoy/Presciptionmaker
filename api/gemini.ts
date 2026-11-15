@@ -36,13 +36,13 @@ export default async function handler(req: any, res: any) {
   }
 
   // Flash Lite first for 500 Requests/Day, then fallback
+  const rawPreferred = (preferredModel || '').trim();
+  const safePreferred = rawPreferred && !rawPreferred.includes('2.0') ? rawPreferred : 'gemini-2.5-flash-lite';
   const candidateModels = [
-    preferredModel || 'gemini-2.0-flash-lite',
-    'gemini-2.0-flash-lite',
+    safePreferred,
     'gemini-2.5-flash-lite',
-    'gemini-1.5-flash',
-    'gemini-2.0-flash',
     'gemini-2.5-flash',
+    'gemini-1.5-flash',
   ];
 
   // Remove duplicates
