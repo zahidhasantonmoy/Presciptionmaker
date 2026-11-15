@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Key, CheckCircle, XCircle, ExternalLink, X, Loader2, ShieldCheck, Trash2 } from 'lucide-react';
-import { getGeminiApiKey, setGeminiApiKey, testGeminiApiKey } from '../../services/ai/geminiClient';
+import {
+  Sparkles, Key, CheckCircle, XCircle, ExternalLink, X,
+  Loader2, ShieldCheck, Trash2, Cpu, Zap
+} from 'lucide-react';
+import {
+  getGeminiApiKey, setGeminiApiKey, testGeminiApiKey,
+  getPreferredModel, setPreferredModel, AVAILABLE_MODELS
+} from '../../services/ai/geminiClient';
 
 interface GeminiApiKeyModalProps {
   isOpen: boolean;
@@ -10,6 +16,7 @@ interface GeminiApiKeyModalProps {
 
 export function GeminiApiKeyModal({ isOpen, onClose, onSaved }: GeminiApiKeyModalProps) {
   const [key, setKey] = useState('');
+  const [selectedModel, setSelectedModel] = useState('gemini-2.0-flash-lite');
   const [showKey, setShowKey] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -17,6 +24,7 @@ export function GeminiApiKeyModal({ isOpen, onClose, onSaved }: GeminiApiKeyModa
   useEffect(() => {
     if (isOpen) {
       setKey(getGeminiApiKey());
+      setSelectedModel(getPreferredModel());
       setTestResult(null);
     }
   }, [isOpen]);
@@ -30,13 +38,14 @@ export function GeminiApiKeyModal({ isOpen, onClose, onSaved }: GeminiApiKeyModa
     }
     setTesting(true);
     setTestResult(null);
-    const result = await testGeminiApiKey(key.trim());
+    const result = await testGeminiApiKey(key.trim(), selectedModel);
     setTesting(false);
     setTestResult(result);
   };
 
   const handleSave = () => {
     setGeminiApiKey(key.trim());
+    setPreferredModel(selectedModel);
     if (onSaved) onSaved();
     onClose();
   };
@@ -69,7 +78,7 @@ export function GeminiApiKeyModal({ isOpen, onClose, onSaved }: GeminiApiKeyModa
           border: '1px solid rgba(255, 255, 255, 0.15)',
           borderRadius: 16,
           width: '100%',
-          maxWidth: 480,
+          maxWidth: 500,
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(59, 130, 246, 0.2)',
           color: '#f8fafc',
           padding: 24,
@@ -96,10 +105,10 @@ export function GeminiApiKeyModal({ isOpen, onClose, onSaved }: GeminiApiKeyModa
             </div>
             <div>
               <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#fff' }}>
-                Google Gemini API Settings
+                Google Gemini AI Settings
               </h3>
               <p style={{ margin: 0, fontSize: 12, color: '#94a3b8' }}>
-                AI অটোমেশন এবং টিকিট/প্রেসক্রিপশন জেনারেটর
+                মডেল ও ভলিউম কোটা নির্বাচন (Flash Lite 500 RPD)
               </p>
             </div>
           </div>
@@ -117,7 +126,41 @@ export function GeminiApiKeyModal({ isOpen, onClose, onSaved }: GeminiApiKeyModa
           </button>
         </div>
 
-        {/* Content */}
+        {/* Gemini Model Selector */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, fontWeight: 600, color: '#cbd5e1', marginBottom: 6 }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <Cpu size={13} color="#60a5fa" /> পছন্দসই AI মডেল নির্বাচন
+            </span>
+            <span style={{ fontSize: 11, color: '#10b981', fontWeight: 700 }}>
+              🔥 Flash Lite = 500 Requests/Day
+            </span>
+          </label>
+
+          <select
+            value={selectedModel}
+            onChange={(e) => setSelectedModel(e.target.value)}
+            style={{
+              width: '100%',
+              background: '#1e293b',
+              border: '1px solid #334155',
+              borderRadius: 8,
+              padding: '9px 12px',
+              color: '#fff',
+              fontSize: 12.5,
+              outline: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            {AVAILABLE_MODELS.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name} [{m.limit}] — {m.desc}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* API Key Input */}
         <div style={{ marginBottom: 16 }}>
           <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#cbd5e1', marginBottom: 6 }}>
             Gemini API Key
@@ -219,7 +262,7 @@ export function GeminiApiKeyModal({ isOpen, onClose, onSaved }: GeminiApiKeyModa
         )}
 
         <div style={{ background: 'rgba(30, 41, 59, 0.5)', padding: 10, borderRadius: 8, fontSize: 11.5, color: '#94a3b8', marginBottom: 18, lineHeight: 1.5 }}>
-          💡 <strong>টিপস:</strong> আপনার কীটি ব্রাউজারের <code style={{ color: '#cbd5e1' }}>localStorage</code> এ নিরাপদে সংরক্ষিত থাকবে। কী না থাকলেও স্মার্ট লোকাল ইঞ্জিন সব ট্রেনের তথ্য দিয়ে টিকিট তৈরি করতে পারে!
+          💡 <strong>অটোমেটিক ফলব্যাক:</strong> কোনো মডেলে লিমিট শেষ হলে (যেমন ২০ রিকোয়েস্ট পার ডে), সিস্টেম নিজে থেকেই পরবর্তী <strong>Flash Lite (৫০০ রিকোয়েস্ট/দিন)</strong> মডেলে অটো সুইচ করে সার্ভিস চালু রাখবে!
         </div>
 
         {/* Footer Actions */}
@@ -243,7 +286,7 @@ export function GeminiApiKeyModal({ isOpen, onClose, onSaved }: GeminiApiKeyModa
             }}
           >
             {testing ? <Loader2 size={13} className="spin" /> : <ShieldCheck size={13} />}
-            {testing ? 'Testing...' : 'Test Connection'}
+            {testing ? 'Testing...' : 'Test Model'}
           </button>
           <button
             type="button"

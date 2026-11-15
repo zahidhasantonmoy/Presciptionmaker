@@ -29,13 +29,24 @@ export default async function handler(req: any, res: any) {
     }
   }
 
-  const { prompt, systemInstruction } = body || {};
+  const { prompt, systemInstruction, preferredModel } = body || {};
 
   if (!prompt) {
     return res.status(400).json({ error: 'Missing prompt parameter.' });
   }
 
-  const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+  // Flash Lite first for 500 Requests/Day, then fallback
+  const candidateModels = [
+    preferredModel || 'gemini-2.0-flash-lite',
+    'gemini-2.0-flash-lite',
+    'gemini-2.5-flash-lite',
+    'gemini-1.5-flash',
+    'gemini-2.0-flash',
+    'gemini-2.5-flash',
+  ];
+
+  // Remove duplicates
+  const models = Array.from(new Set(candidateModels));
   let lastError = '';
 
   for (const model of models) {
@@ -69,7 +80,7 @@ export default async function handler(req: any, res: any) {
 
       const resJson = await response.json();
       const candidateText = resJson?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      return res.status(200).json({ success: true, text: candidateText });
+      return res.status(200).json({ success: true, text: candidateText, modelUsed: model });
     } catch (err: any) {
       lastError = err?.message || 'Upstream request failed';
     }

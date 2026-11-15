@@ -1,6 +1,33 @@
 // Google Gemini API Client for Antigravity / Suite Generator
 
 const STORAGE_KEY = 'gemini_api_key';
+const MODEL_STORAGE_KEY = 'gemini_preferred_model';
+
+export const AVAILABLE_MODELS = [
+  { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash Lite', limit: '500 RPD', desc: '🔥 বেস্ট ভলিউম ও সুপার ফাস্ট (৫০০ রিকোয়েস্ট/দিন)' },
+  { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite', limit: '500 RPD', desc: '🔥 হাই স্পিড ও কোয়ালিটি (৫০০ রিকোয়েস্ট/দিন)' },
+  { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', limit: 'High Quota', desc: 'স্ট্যাবল ও নির্ভরযোগ্য' },
+  { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', limit: '20 RPD', desc: 'হাই কোয়ালিটি (২০ রিকোয়েস্ট/দিন)' },
+  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', limit: '20 RPD', desc: 'ম্যাক্সিমাম রিজনিং (২০ রিকোয়েস্ট/দিন)' },
+];
+
+export function getPreferredModel(): string {
+  try {
+    const stored = localStorage.getItem(MODEL_STORAGE_KEY);
+    if (stored && stored.trim()) return stored.trim();
+  } catch {
+    // ignore
+  }
+  return 'gemini-2.0-flash-lite'; // Default to Flash Lite (500 RPD) for high volume!
+}
+
+export function setPreferredModel(model: string): void {
+  try {
+    localStorage.setItem(MODEL_STORAGE_KEY, model.trim());
+  } catch {
+    // ignore
+  }
+}
 
 export function getGeminiApiKey(): string {
   try {
@@ -42,19 +69,24 @@ export interface GeminiResponse<T = any> {
   error?: string;
 }
 
+// Candidates sorted so 500 RPD Flash-Lite models are prioritized first
 const CANDIDATE_MODELS = [
-  'gemini-2.5-flash',
-  'gemini-2.0-flash',
+  'gemini-2.0-flash-lite',
+  'gemini-2.5-flash-lite',
   'gemini-1.5-flash',
+  'gemini-2.0-flash',
+  'gemini-2.5-flash',
 ];
 
-export async function testGeminiApiKey(apiKey: string): Promise<{ success: boolean; message: string }> {
+export async function testGeminiApiKey(apiKey: string, modelOverride?: string): Promise<{ success: boolean; message: string }> {
   if (!apiKey || !apiKey.trim()) {
     return { success: false, message: 'API key is empty.' };
   }
 
+  const model = modelOverride || getPreferredModel();
+
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey.trim()}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey.trim()}`;
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -70,7 +102,7 @@ export async function testGeminiApiKey(apiKey: string): Promise<{ success: boole
       return { success: false, message: `Error (${response.status}): ${errMsg}` };
     }
 
-    return { success: true, message: 'Gemini API connection successful!' };
+    return { success: true, message: `Gemini API connection successful! Model: ${model}` };
   } catch (err: any) {
     return { success: false, message: err?.message || 'Network error connecting to Gemini API.' };
   }
@@ -82,6 +114,7 @@ export async function callGeminiJson<T = any>(
   providedKey?: string
 ): Promise<GeminiResponse<T>> {
   const apiKey = (providedKey || getGeminiApiKey()).trim();
+  const preferred = getPreferredModel();
 
   // If no client-side key, try the serverless backend API (/api/gemini)
   if (!apiKey) {
@@ -89,7 +122,7 @@ export async function callGeminiJson<T = any>(
       const serverRes = await fetch('/api/gemini', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, systemInstruction }),
+        body: JSON.stringify({ prompt, systemInstruction, preferredModel: preferred }),
       });
 
       if (serverRes.ok) {
@@ -105,7 +138,7 @@ export async function callGeminiJson<T = any>(
         }
       }
     } catch {
-      // serverless endpoint not available (e.g. local dev without vercel cli)
+      // serverless endpoint not available
     }
 
     return {
@@ -116,7 +149,13 @@ export async function callGeminiJson<T = any>(
 
   let lastError = '';
 
-  for (const model of CANDIDATE_MODELS) {
+  // Put preferred model first, then remaining candidates as fallback
+  const modelsToTry = [
+    preferred,
+    ...CANDIDATE_MODELS.filter((m) => m !== preferred),
+  ];
+
+  for (const model of modelsToTry) {
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
       const payload: any = {
@@ -150,12 +189,13 @@ export async function callGeminiJson<T = any>(
         const errJson = await response.json().catch(() => ({}));
         const errMsg = errJson?.error?.message || `HTTP ${response.status}`;
         lastError = `[${model}] ${errMsg}`;
-        // If 404 model not found, loop to next candidate
-        if (response.status === 404) continue;
-        // If 400 or other, don't try other models if it's invalid key
+
+        // If 400 with invalid API key, no need to try other models
         if (response.status === 400 && errMsg.includes('API key')) {
           return { success: false, error: errMsg };
         }
+
+        // On 429 (quota exceeded) or 404 (model not available), try next model in fallback list
         continue;
       }
 
@@ -164,11 +204,10 @@ export async function callGeminiJson<T = any>(
         resJson?.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
       if (!candidateText) {
-        return { success: false, error: 'Empty response received from Gemini.' };
+        continue;
       }
 
       try {
-        // Strip code fence if present
         let cleaned = candidateText.trim();
         if (cleaned.startsWith('```')) {
           cleaned = cleaned.replace(/^```[a-z]*\s*/i, '').replace(/\s*```$/, '');
