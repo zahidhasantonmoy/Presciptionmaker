@@ -5,6 +5,8 @@ import {
 import { ServiceId, SERVICE_PATHS } from '../../utils/navigation';
 import { SERVICES_REGISTRY, getServiceById } from '../../services/registry';
 import { useAuthStore } from '../../services/auth/useAuthStore';
+import { GeminiApiKeyModal } from '../ai/GeminiApiKeyModal';
+import { hasGeminiApiKey } from '../../services/ai/geminiClient';
 
 interface OmniBarProps {
   activeService: ServiceId;
@@ -14,6 +16,7 @@ interface OmniBarProps {
 export function OmniBar({ activeService, onSwitchService }: OmniBarProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [geminiModalOpen, setGeminiModalOpen] = useState(false);
   const { lock } = useAuthStore();
 
   const currentServiceMeta = getServiceById(activeService);
@@ -233,6 +236,28 @@ export function OmniBar({ activeService, onSwitchService }: OmniBarProps) {
           <span>{currentServiceMeta ? currentServiceMeta.path : '/'}</span>
         </div>
 
+        {/* Gemini AI Settings button */}
+        <button
+          onClick={() => setGeminiModalOpen(true)}
+          style={{
+            background: hasGeminiApiKey() ? 'rgba(59, 130, 246, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+            border: `1px solid ${hasGeminiApiKey() ? 'rgba(59, 130, 246, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`,
+            color: hasGeminiApiKey() ? '#60a5fa' : '#fbbf24',
+            cursor: 'pointer',
+            padding: '3px 8px',
+            borderRadius: 6,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            fontSize: 11,
+            fontWeight: 600,
+          }}
+          title="Configure Google Gemini API"
+        >
+          <Sparkles size={12} />
+          <span>Gemini AI</span>
+        </button>
+
         {/* Lock Session */}
         <button
           onClick={lock}
@@ -281,6 +306,11 @@ export function OmniBar({ activeService, onSwitchService }: OmniBarProps) {
           }
         }
       `}</style>
+
+      <GeminiApiKeyModal
+        isOpen={geminiModalOpen}
+        onClose={() => setGeminiModalOpen(false)}
+      />
     </header>
   );
 }

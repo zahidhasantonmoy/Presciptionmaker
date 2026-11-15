@@ -13,6 +13,8 @@ import {
   toBanglaDigits, getStationBanglaName,
   formatCoachSeat
 } from './railwayData';
+import { AiCommandBar } from '../../components/ai/AiCommandBar';
+import { generateTicketAi } from '../ai/aiGenerators';
 
 export interface BangladeshRailwayTicket {
   id: string;
@@ -291,6 +293,12 @@ export function TicketMaker() {
     localStorage.setItem('personal_railway_tickets_db', JSON.stringify(filtered));
   };
 
+  const handleAiGenerate = async (promptText: string): Promise<string> => {
+    const result = await generateTicketAi(promptText, ticket);
+    setTicket(result.ticket);
+    return result.summary;
+  };
+
   // Download High-Resolution A4 PDF matching exact points with perfect line alignment & small file size
   const handleDownloadPdf = async () => {
     if (!ticketRef.current) return;
@@ -532,6 +540,17 @@ export function TicketMaker() {
             flexShrink: 0,
             boxSizing: 'border-box'
           }}>
+            {/* ── AI Implementation Prompt Bar ── */}
+            <AiCommandBar
+              toolName="ticket"
+              placeholder="যেমন: 'আগামীকাল পদ্মা এক্সপ্রেস এ ১ জনের একটা টিকিট বানাও'"
+              onGenerate={handleAiGenerate}
+              onReviewPdf={handleDownloadPdf}
+              onViewPreview={() => {
+                if (isMobile) setMobileTab('preview');
+              }}
+            />
+
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
               <span style={{ fontSize: 13, fontWeight: 800, color: '#10b981', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                 🚂 Journey & Train Setup

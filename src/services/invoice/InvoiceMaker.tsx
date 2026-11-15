@@ -5,6 +5,8 @@ import {
   Receipt, Plus, Trash2, Download, Printer, CheckCircle2,
   Building, User, Calendar, CreditCard, DollarSign
 } from 'lucide-react';
+import { AiCommandBar } from '../../components/ai/AiCommandBar';
+import { generateInvoiceAi } from '../ai/aiGenerators';
 
 interface InvoiceItem {
   id: string;
@@ -160,6 +162,29 @@ export function InvoiceMaker() {
     }
   };
 
+  const handleAiInvoice = async (promptText: string): Promise<string> => {
+    const res = await generateInvoiceAi(promptText);
+    setInvoice(prev => ({
+      ...prev,
+      clientName: res.clientName || prev.clientName,
+      clientEmail: res.clientEmail || prev.clientEmail,
+      clientAddress: res.clientAddress || prev.clientAddress,
+      currency: res.currency || prev.currency,
+      taxRate: res.taxRate !== undefined ? res.taxRate : prev.taxRate,
+      discount: res.discount !== undefined ? res.discount : prev.discount,
+      notes: res.notes || prev.notes,
+      items: res.items && res.items.length > 0
+        ? res.items.map((it, idx) => ({
+            id: String(idx + 1),
+            description: it.description,
+            quantity: Number(it.quantity) || 1,
+            rate: Number(it.rate) || 0,
+          }))
+        : prev.items,
+    }));
+    return res.summary;
+  };
+
   return (
     <div style={{
       display: 'flex',
@@ -310,6 +335,17 @@ export function InvoiceMaker() {
             flexShrink: 0,
             boxSizing: 'border-box'
           }}>
+          {/* ── AI Assistant Bar ── */}
+          <AiCommandBar
+            toolName="invoice"
+            placeholder="যেমন: 'ওয়েব ডেভেলপমেন্ট সার্ভিস ৫০,০০০ টাকা ক্লায়েন্ট এপেক্স'"
+            onGenerate={handleAiInvoice}
+            onReviewPdf={handleDownloadPdf}
+            onViewPreview={() => {
+              if (isMobile) setMobileTab('preview');
+            }}
+          />
+
           <h2 style={{ fontSize: 14, fontWeight: 700, color: '#10b981', textTransform: 'uppercase', marginBottom: 14 }}>
             Invoice Configuration
           </h2>

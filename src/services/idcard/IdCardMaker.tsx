@@ -5,6 +5,8 @@ import jsPDF from 'jspdf';
 import {
   CreditCard, Download, Printer, Plus, User, Building, ShieldCheck, Upload
 } from 'lucide-react';
+import { AiCommandBar } from '../../components/ai/AiCommandBar';
+import { generateIdCardAi } from '../ai/aiGenerators';
 
 interface IdCardData {
   id: string;
@@ -83,6 +85,20 @@ export function IdCardMaker() {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleAiIdCard = async (promptText: string): Promise<string> => {
+    const res = await generateIdCardAi(promptText);
+    setCard(prev => ({
+      ...prev,
+      fullName: res.fullName || prev.fullName,
+      role: res.role || prev.role,
+      company: res.company || prev.company,
+      department: res.department || prev.department,
+      bloodGroup: res.bloodGroup || prev.bloodGroup,
+      validUntil: res.validUntil || prev.validUntil,
+    }));
+    return res.summary;
   };
 
   return (
@@ -235,6 +251,17 @@ export function IdCardMaker() {
             flexShrink: 0,
             boxSizing: 'border-box'
           }}>
+          {/* ── AI Assistant Bar ── */}
+          <AiCommandBar
+            toolName="idcard"
+            placeholder="যেমন: 'তানভীর আহমেদ - সিনিয়র সফটওয়্যার ইঞ্জিনিয়ার, ডিপার্টমেন্ট এআই'"
+            onGenerate={handleAiIdCard}
+            onReviewPdf={handleDownloadPdf}
+            onViewPreview={() => {
+              if (isMobile) setMobileTab('preview');
+            }}
+          />
+
           <h2 style={{ fontSize: 14, fontWeight: 700, color: '#06b6d4', textTransform: 'uppercase', marginBottom: 14 }}>
             ID Card Information
           </h2>

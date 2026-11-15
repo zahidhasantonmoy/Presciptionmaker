@@ -5,6 +5,8 @@ import jsPDF from 'jspdf';
 import {
   Award, Download, Printer, Plus, CheckCircle2, ShieldCheck
 } from 'lucide-react';
+import { AiCommandBar } from '../../components/ai/AiCommandBar';
+import { generateCertificateAi } from '../ai/aiGenerators';
 
 interface CertificateData {
   id: string;
@@ -89,6 +91,21 @@ export function CertificateMaker() {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleAiCertificate = async (promptText: string): Promise<string> => {
+    const res = await generateCertificateAi(promptText);
+    setCert(prev => ({
+      ...prev,
+      title: res.title || prev.title,
+      recipientName: res.recipientName || prev.recipientName,
+      courseOrAchievement: res.courseOrAchievement || prev.courseOrAchievement,
+      issuerName: res.issuerName || prev.issuerName,
+      issuerTitle: res.issuerTitle || prev.issuerTitle,
+      organization: res.organization || prev.organization,
+      date: res.date || prev.date,
+    }));
+    return res.summary;
   };
 
   return (
@@ -241,6 +258,17 @@ export function CertificateMaker() {
             flexShrink: 0,
             boxSizing: 'border-box'
           }}>
+          {/* ── AI Assistant Bar ── */}
+          <AiCommandBar
+            toolName="certificate"
+            placeholder="যেমন: 'সারাহ রহমান - এক্সেলেন্স ইন ওয়েব ডেভেলপমেন্ট সার্টিফিকেট'"
+            onGenerate={handleAiCertificate}
+            onReviewPdf={handleDownloadPdf}
+            onViewPreview={() => {
+              if (isMobile) setMobileTab('preview');
+            }}
+          />
+
           <h2 style={{ fontSize: 14, fontWeight: 700, color: '#a855f7', textTransform: 'uppercase', marginBottom: 14 }}>
             Certificate Form
           </h2>
