@@ -1373,8 +1373,8 @@ export function TicketMaker() {
                   .railway-ticket-page .jv { color: #05b454; font-weight: 700; font-size: 11.5px; line-height: 10.4px; position: absolute; top: 22.6px; left: 0; }
                   .railway-ticket-page .jv .big { font-size: 17.1px; vertical-align: -2.5px; letter-spacing: -0.5px; }
                   .railway-ticket-page .qr { position: absolute; top: 60.4px; left: 0; width: 80px; height: 80px; display: block; }
-                  .railway-ticket-page .intro { margin-top: 2.8px; font-size: 7.6pt; line-height: 11.84px; color: #333; }
-                  .railway-ticket-page .intro-bn { margin-top: 10.9px; width: 100%; font-size: 7pt; line-height: 11.84px; }
+                  .railway-ticket-page .intro { margin-top: 2.8px; font-size: 7.6pt; line-height: 11.84px; color: #333; padding-right: 88px; }
+                  .railway-ticket-page .intro-bn { margin-top: 10.9px; width: 100%; font-size: 7pt; line-height: 11.84px; padding-right: 88px; }
                   .railway-ticket-page .bar {
                     background: #039d48; color: #ffffff; font-size: 10.5pt; font-weight: 700;
                     height: 29.4px; line-height: 29.4px; padding-left: 4px; margin-top: 8.4px;

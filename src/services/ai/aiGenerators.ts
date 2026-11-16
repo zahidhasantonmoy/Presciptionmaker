@@ -276,51 +276,120 @@ function parseRailwayTicketLocally(
   let detectedFrom = '';
   let detectedTo = '';
 
+  const trainKeywords = [
+    'express', 'mail', 'intercity', 'train', 'commuter', 'shuttle',
+    'এক্সপ্রেস', 'মেইল', 'ট্রেন', 'ইন্টারসিটি', 'কমিউটার'
+  ];
+
   // Find all stations mentioned in prompt and their positions
+  // Disambiguate stations vs trains:
+  // If a station word (like "Padma" or "Chitra") is followed by "express", "mail", "train" etc.
+  // or preceded by "train", it is referring to the train, not the station!
   const matchedStations: { name: string; index: number; nameBn: string }[] = [];
   for (const st of RAILWAY_STATIONS) {
     const sName = st.name.toLowerCase();
     const sBn = st.nameBn;
 
-    let pos = -1;
     // Word boundary match for English station name
-    const enRegex = new RegExp(`\\b${sName}\\b`, 'i');
-    const matchEn = pLower.match(enRegex);
-    if (matchEn && matchEn.index !== undefined) {
-      pos = matchEn.index;
-    } else {
-      const idxBn = prompt.indexOf(sBn);
-      if (idxBn !== -1) pos = idxBn;
+    const enRegex = new RegExp(`\\b${sName}\\b`, 'gi');
+    let match: RegExpExecArray | null;
+    while ((match = enRegex.exec(pLower)) !== null) {
+      const idx = match.index;
+      const afterStr = pLower.slice(idx + sName.length).trim();
+      const beforeStr = pLower.slice(0, idx).trim();
+
+      const firstWordAfter = afterStr.split(/\s+/)[0] || '';
+      const isTrainFollow = trainKeywords.some(kw => firstWordAfter.toLowerCase() === kw.toLowerCase());
+      const lastWordBefore = beforeStr.split(/\s+/).pop() || '';
+      const isTrainPrecede = ['train', 'ট্রেন'].includes(lastWordBefore.toLowerCase());
+
+      if (!isTrainFollow && !isTrainPrecede) {
+        if (!matchedStations.some(m => m.name.toLowerCase() === st.name.toLowerCase() && m.index === idx)) {
+          matchedStations.push({ name: st.name, index: idx, nameBn: st.nameBn });
+        }
+      }
     }
 
-    if (pos !== -1) {
-      if (!matchedStations.some(m => m.name.toLowerCase() === st.name.toLowerCase())) {
-        matchedStations.push({ name: st.name, index: pos, nameBn: st.nameBn });
+    // Bangla station name match
+    let idxBn = prompt.indexOf(sBn);
+    while (idxBn !== -1) {
+      const afterStr = prompt.slice(idxBn + sBn.length).trim();
+      const beforeStr = prompt.slice(0, idxBn).trim();
+
+      const firstWordAfter = afterStr.split(/\s+/)[0] || '';
+      const isTrainFollow = trainKeywords.some(kw => firstWordAfter === kw);
+      const lastWordBefore = beforeStr.split(/\s+/).pop() || '';
+      const isTrainPrecede = ['train', 'ট্রেন'].includes(lastWordBefore);
+
+      if (!isTrainFollow && !isTrainPrecede) {
+        if (!matchedStations.some(m => m.name.toLowerCase() === st.name.toLowerCase())) {
+          matchedStations.push({ name: st.name, index: idxBn, nameBn: st.nameBn });
+        }
       }
+      idxBn = prompt.indexOf(sBn, idxBn + sBn.length);
     }
   }
 
   // Sort by appearance in prompt
   matchedStations.sort((a, b) => a.index - b.index);
 
-  // Check specific "from" and "to" syntax (e.g. "dhaka theke", "theke rajshahi", "ঢাকা থেকে", "রাজশাহী যাব")
-  for (const st of matchedStations) {
-    const sLower = st.name.toLowerCase();
-    const sBn = st.nameBn;
+  // Direct sequence pattern: "[Station A] (theke|থেকে|hote|হতে|to|পর্যন্ত) [Station B]"
+  // Or "from [Station A] (to) [Station B]"
+  for (let i = 0; i < matchedStations.length; i++) {
+    for (let j = 0; j < matchedStations.length; j++) {
+      if (i === j) continue;
+      const stA = matchedStations[i];
+      const stB = matchedStations[j];
 
-    const isFrom =
-      new RegExp(`(?:\\b${sLower}\\b|${sBn})\\s*(?:theke|hote|থেকে|হতে)\\b`, 'i').test(prompt) ||
-      new RegExp(`(?:from|theke|থেকে|হতে)\\s+(?:\\b${sLower}\\b|${sBn})`, 'i').test(prompt);
+      // Station A followed by "theke/থেকে/hote/হতে/to" then Station B
+      const pairRegexBangla = new RegExp(
+        `(?:\\b${stA.name.toLowerCase()}\\b|${stA.nameBn})\\s*(?:theke|hote|থেকে|হতে|to)\\s+(?:\\b${stB.name.toLowerCase()}\\b|${stB.nameBn})`,
+        'i'
+      );
+      if (pairRegexBangla.test(prompt)) {
+        detectedFrom = stA.name;
+        detectedTo = stB.name;
+        break;
+      }
 
-    const isTo =
-      new RegExp(`(?:theke|থেকে|hote|হতে|to|porjonto|পর্যন্ত)\\s+.*?(?:\\b${sLower}\\b|${sBn})`, 'i').test(prompt) ||
-      new RegExp(`\\bto\\s+(?:\\b${sLower}\\b|${sBn})\\b`, 'i').test(prompt) ||
-      new RegExp(`(?:\\b${sLower}\\b|${sBn})\\s*(?:te|jabo|যাব|তে|পৌঁছাবে|পর্যন্ত|porjonto)`, 'i').test(prompt);
+      // "from [Station A] (to) [Station B]"
+      const pairRegexEnglish = new RegExp(
+        `\\bfrom\\s+(?:\\b${stA.name.toLowerCase()}\\b|${stA.nameBn})\\s*(?:to|-|–|—|>)?\\s*(?:\\b${stB.name.toLowerCase()}\\b|${stB.nameBn})`,
+        'i'
+      );
+      if (pairRegexEnglish.test(prompt)) {
+        detectedFrom = stA.name;
+        detectedTo = stB.name;
+        break;
+      }
+    }
+    if (detectedFrom && detectedTo) break;
+  }
 
-    if (isFrom) {
-      detectedFrom = st.name;
-    } else if (isTo && (!detectedFrom || detectedFrom.toLowerCase() !== sLower)) {
-      detectedTo = st.name;
+  // If no direct pair matched, check individual markers:
+  if (!detectedFrom || !detectedTo) {
+    for (const st of matchedStations) {
+      const sLower = st.name.toLowerCase();
+      const sBn = st.nameBn;
+
+      // In Bengali/Banglish: "[Station] theke", "[Station] থেকে", "[Station] hote" -> FROM
+      // In English: "from [Station]" -> FROM
+      const isFrom =
+        new RegExp(`(?:\\b${sLower}\\b|${sBn})\\s*(?:theke|hote|থেকে|হতে)\\b`, 'i').test(prompt) ||
+        new RegExp(`\\bfrom\\s+(?:\\b${sLower}\\b|${sBn})\\b`, 'i').test(prompt);
+
+      // In Bengali/Banglish: "[Station] te", "[Station] jabo", or after "theke ... [Station]" -> TO
+      // In English: "to [Station]" -> TO
+      const isTo =
+        new RegExp(`\\bto\\s+(?:\\b${sLower}\\b|${sBn})\\b`, 'i').test(prompt) ||
+        new RegExp(`(?:theke|থেকে|hote|হতে)\\s+.*?(?:\\b${sLower}\\b|${sBn})`, 'i').test(prompt) ||
+        new RegExp(`(?:\\b${sLower}\\b|${sBn})\\s*(?:te|jabo|যাব|তে|পৌঁছাবে|পর্যন্ত|porjonto)`, 'i').test(prompt);
+
+      if (isFrom && !detectedFrom) {
+        detectedFrom = st.name;
+      } else if (isTo && !detectedTo && (!detectedFrom || detectedFrom.toLowerCase() !== sLower)) {
+        detectedTo = st.name;
+      }
     }
   }
 
