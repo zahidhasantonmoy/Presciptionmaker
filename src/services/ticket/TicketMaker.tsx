@@ -5,7 +5,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import {
   Train, Download, Printer, Plus, CheckCircle2,
-  Trash2, PenTool, Eye, ZoomIn, ZoomOut
+  Trash2, PenTool, Eye, ZoomIn, ZoomOut, MessageCircle, Clock, Share2
 } from 'lucide-react';
 import { ShohozLogo } from './ShohozLogo';
 import {
@@ -15,6 +15,9 @@ import {
 } from './railwayData';
 import { AiCommandBar } from '../../components/ai/AiCommandBar';
 import { generateTicketAi } from '../ai/aiGenerators';
+import { saveDocumentHistory } from '../history/documentHistory';
+import { openWhatsAppTicket } from '../../utils/whatsappShare';
+import { RecentHistoryModal } from '../../components/common/RecentHistoryModal';
 
 export interface BangladeshRailwayTicket {
   id: string;
@@ -103,6 +106,7 @@ export function TicketMaker() {
   const [manualTrainMode, setManualTrainMode] = useState(false);
   const [manualClassMode, setManualClassMode] = useState(false);
   const [aiUpdatedNotice, setAiUpdatedNotice] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [mobileTab, setMobileTab] = useState<'editor' | 'preview'>('editor');
@@ -163,7 +167,10 @@ export function TicketMaker() {
     }
     const match = RAILWAY_TRAINS.find(t => `${t.name} [${t.number}]` === identifier || t.number === identifier || t.name === identifier);
     if (match) {
-      const autoFare = match.fares[ticket.className] || RAILWAY_CLASSES.find(c => c.code === ticket.className)?.defaultFare || 450;
+      const seats = ticket.numSeats || 1;
+      const unitFare = match.fares[ticket.className] || RAILWAY_CLASSES.find(c => c.code === ticket.className)?.defaultFare || 450;
+      const autoFare = unitFare * seats;
+      const autoService = 20 * seats;
       const fromStMatch = RAILWAY_STATIONS.find(s => s.name.toLowerCase() === match.fromStation.toLowerCase());
       const toStMatch = RAILWAY_STATIONS.find(s => s.name.toLowerCase() === match.toStation.toLowerCase());
 
@@ -178,6 +185,7 @@ export function TicketMaker() {
         toStationBn: toStMatch?.nameBn || prev.toStationBn,
         journeyTime: match.departureTime,
         fare: autoFare,
+        serviceCharge: autoService,
       }));
     }
   };
@@ -215,14 +223,19 @@ export function TicketMaker() {
       setManualClassMode(true);
       return;
     }
+    const seats = ticket.numSeats || 1;
     const clsObj = RAILWAY_CLASSES.find(c => c.code === newClass);
     const currentTrain = RAILWAY_TRAINS.find(t => t.number === ticket.trainNumber);
-    const classFare = currentTrain?.fares[newClass] ?? (clsObj?.defaultFare ?? 450);
+    const unitFare = currentTrain?.fares[newClass] ?? (clsObj?.defaultFare ?? 450);
+    const classFare = unitFare * seats;
+    const autoService = 20 * seats;
+
     setTicket(prev => ({
       ...prev,
       className: newClass,
       classNameBn: clsObj?.labelBn || newClass,
       fare: classFare,
+      serviceCharge: autoService,
     }));
   };
 
@@ -269,7 +282,36 @@ export function TicketMaker() {
     const updated = [ticket, ...savedTickets.filter(t => t.id !== ticket.id)];
     setSavedTickets(updated);
     localStorage.setItem('personal_railway_tickets_db', JSON.stringify(updated));
-    alert('Bangladesh Railway ticket saved to history!');
+
+    // Save to unified local document history
+    saveDocumentHistory({
+      service: 'ticket',
+      title: `${ticket.trainName} [${ticket.trainNumber}]`,
+      subtitle: `${ticket.fromStation} ➔ ${ticket.toStation} | ${ticket.passengerName} (${ticket.coachSeat})`,
+      badge: ticket.pnrNumber,
+      data: ticket,
+    });
+
+    alert('বাংলাদেশ রেলওয়ে টিকিট ড্রাফট ও হিস্টোরিতে সংরক্ষিত হয়েছে!');
+  };
+
+  const handleWhatsAppShare = () => {
+    const totalWithCharges = ticket.fare + (ticket.serviceCharge || 20) + (ticket.vat || 0);
+    openWhatsAppTicket(ticket.mobileNumber, {
+      pnrNumber: ticket.pnrNumber,
+      passengerName: ticket.passengerName,
+      trainName: ticket.trainName,
+      trainNumber: ticket.trainNumber,
+      fromStation: ticket.fromStation,
+      toStation: ticket.toStation,
+      journeyDate: ticket.journeyDate,
+      journeyTime: ticket.journeyTime,
+      className: ticket.className,
+      coachSeat: ticket.coachSeat,
+      noOfSeats: ticket.numSeats,
+      totalFare: totalWithCharges,
+      mobileNumber: ticket.mobileNumber,
+    });
   };
 
   const createNewTicket = () => {
@@ -297,6 +339,16 @@ export function TicketMaker() {
   const handleAiGenerate = async (promptText: string): Promise<string> => {
     const result = await generateTicketAi(promptText, ticket);
     setTicket(result.ticket);
+
+    // Save to unified local document history
+    saveDocumentHistory({
+      service: 'ticket',
+      title: `${result.ticket.trainName} [${result.ticket.trainNumber}]`,
+      subtitle: `${result.ticket.fromStation} ➔ ${result.ticket.toStation} | ${result.ticket.passengerName} (${result.ticket.coachSeat})`,
+      badge: result.ticket.pnrNumber,
+      data: result.ticket,
+    });
+
     setAiUpdatedNotice(`AI আপডেট সম্পন্ন! ট্রেন: ${result.ticket.trainName} [${result.ticket.trainNumber}], রুট: ${result.ticket.fromStation} → ${result.ticket.toStation}, সিট: ${result.ticket.coachSeat}। নিচের ফর্মের সব সেটিংস ও লাইভ টিকিট স্বয়ংক্রিয়ভাবে আপডেট করা হয়েছে।`);
     return result.summary;
   };
@@ -483,6 +535,28 @@ export function TicketMaker() {
               <CheckCircle2 size={15} /> Save
             </button>
             <button
+              onClick={handleWhatsAppShare}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: 'rgba(37, 211, 102, 0.15)', border: '1px solid rgba(37, 211, 102, 0.4)',
+                color: '#25d366', padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer'
+              }}
+              title="যাত্রীকে হোয়াটসঅ্যাপে টিকিট পাঠান"
+            >
+              <MessageCircle size={15} /> WhatsApp
+            </button>
+            <button
+              onClick={() => setHistoryOpen(true)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: 'rgba(59, 130, 246, 0.12)', border: '1px solid rgba(59, 130, 246, 0.3)',
+                color: '#93c5fd', padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer'
+              }}
+              title="সংরক্ষিত টিকিট ইতিহাস"
+            >
+              <Clock size={15} /> History
+            </button>
+            <button
               onClick={() => window.print()}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
@@ -519,6 +593,28 @@ export function TicketMaker() {
               title="New Ticket"
             >
               <Plus size={13} /> New
+            </button>
+            <button
+              onClick={handleWhatsAppShare}
+              style={{
+                background: 'rgba(37, 211, 102, 0.15)', border: '1px solid rgba(37, 211, 102, 0.4)',
+                color: '#25d366', padding: '5px 8px', borderRadius: 6, fontSize: 11, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 3
+              }}
+              title="WhatsApp"
+            >
+              <MessageCircle size={13} />
+            </button>
+            <button
+              onClick={() => setHistoryOpen(true)}
+              style={{
+                background: 'rgba(59, 130, 246, 0.12)', border: '1px solid rgba(59, 130, 246, 0.3)',
+                color: '#93c5fd', padding: '5px 8px', borderRadius: 6, fontSize: 11, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 3
+              }}
+              title="History"
+            >
+              <Clock size={13} />
             </button>
             <div style={{ display: 'flex', background: '#1e293b', borderRadius: 6, padding: 2, gap: 2 }}>
               <button
@@ -566,6 +662,7 @@ export function TicketMaker() {
               onViewPreview={() => {
                 if (isMobile) setMobileTab('preview');
               }}
+              onRestoreHistory={(data) => setTicket(data)}
             />
 
             {/* AI Update Confirmation & Notice */}
@@ -1051,7 +1148,19 @@ export function TicketMaker() {
                       type="number"
                       min={1}
                       value={ticket.numSeats}
-                      onChange={e => setTicket({ ...ticket, numSeats: parseInt(e.target.value) || 1 })}
+                      onChange={e => {
+                        const seats = Math.max(1, parseInt(e.target.value) || 1);
+                        const currentTrain = RAILWAY_TRAINS.find(t => t.number === ticket.trainNumber);
+                        const clsObj = RAILWAY_CLASSES.find(c => c.code === ticket.className);
+                        const unitFare = currentTrain?.fares[ticket.className] ?? (clsObj?.defaultFare ?? 450);
+                        setTicket(prev => ({
+                          ...prev,
+                          numSeats: seats,
+                          numAdults: seats,
+                          fare: unitFare * seats,
+                          serviceCharge: 20 * seats,
+                        }));
+                      }}
                       style={{ width: '100%', padding: '6px 8px', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, color: '#fff', fontSize: 12, boxSizing: 'border-box' }}
                     />
                   </div>
@@ -2022,6 +2131,18 @@ export function TicketMaker() {
           }
         }
       `}</style>
+
+      {/* Recent History Modal */}
+      <RecentHistoryModal
+        isOpen={historyOpen}
+        service="ticket"
+        title="বাংলাদেশ রেলওয়ে টিকিট ড্রাফট ও হিস্টোরি"
+        onClose={() => setHistoryOpen(false)}
+        onRestore={(data) => {
+          setTicket(data);
+          setAiUpdatedNotice(`ড্রাফট থেকে টিকিট রিস্টোর সম্পন্ন হয়েছে! ট্রেন: ${data.trainName} [${data.trainNumber}]`);
+        }}
+      />
     </div>
   );
 }

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
   Sparkles, Send, Loader2, Key, CheckCircle2,
-  FileText, Eye, AlertCircle, RefreshCw, Lightbulb, Wifi, WifiOff, Zap
+  FileText, Eye, AlertCircle, RefreshCw, Lightbulb, Wifi, WifiOff, Zap, Clock
 } from 'lucide-react';
 import { hasGeminiApiKey } from '../../services/ai/geminiClient';
 import { hasGroqApiKey } from '../../services/ai/groqClient';
 import { GeminiApiKeyModal } from './GeminiApiKeyModal';
+import { VoiceInputButton } from './VoiceInputButton';
+import { RecentHistoryModal } from '../common/RecentHistoryModal';
 
 export interface AiCommandBarProps {
   toolName: 'ticket' | 'prescription' | 'invoice' | 'certificate' | 'idcard';
@@ -14,6 +16,7 @@ export interface AiCommandBarProps {
   onGenerate: (prompt: string) => Promise<string | void>;
   onReviewPdf?: () => void;
   onViewPreview?: () => void;
+  onRestoreHistory?: (data: any) => void;
 }
 
 const DEFAULT_SUGGESTIONS: Record<string, string[]> = {
@@ -49,11 +52,13 @@ export function AiCommandBar({
   onGenerate,
   onReviewPdf,
   onViewPreview,
+  onRestoreHistory,
 }: AiCommandBarProps) {
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [lastSummary, setLastSummary] = useState<string | null>(null);
   const [keyModalOpen, setKeyModalOpen] = useState(false);
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [geminiActive, setGeminiActive] = useState(() => hasGeminiApiKey());
   const [groqActive, setGroqActive] = useState(() => hasGroqApiKey());
   const [online, setOnline] = useState(() => typeof navigator !== 'undefined' ? navigator.onLine : true);
@@ -180,6 +185,30 @@ export function AiCommandBar({
             <span>{online ? 'Online' : 'Offline Ready'}</span>
           </div>
 
+          {onRestoreHistory && (
+            <button
+              type="button"
+              onClick={() => setHistoryModalOpen(true)}
+              style={{
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                color: '#cbd5e1',
+                padding: '3px 8px',
+                borderRadius: 6,
+                fontSize: 11,
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+              }}
+              title="পূর্ববর্তী ইতিহাস ও ড্রাফট দেখুন"
+            >
+              <Clock size={11} color="#60a5fa" />
+              <span>ইতিহাস / ড্রাফট</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => setKeyModalOpen(true)}
@@ -247,6 +276,14 @@ export function AiCommandBar({
             onBlur={(e) => (e.target.style.borderColor = '#334155')}
           />
         </div>
+
+        {/* Voice Input Button */}
+        <VoiceInputButton
+          onTranscript={(text) => {
+            setPrompt(prev => prev ? `${prev} ${text}` : text);
+          }}
+          disabled={loading}
+        />
 
         <button
           type="button"
@@ -406,6 +443,19 @@ export function AiCommandBar({
         onClose={() => setKeyModalOpen(false)}
         onSaved={refreshKeys}
       />
+
+      {/* Recent History Modal */}
+      {onRestoreHistory && (
+        <RecentHistoryModal
+          isOpen={historyModalOpen}
+          service={toolName}
+          onClose={() => setHistoryModalOpen(false)}
+          onRestore={(data) => {
+            onRestoreHistory(data);
+            setLastSummary('ড্রাফট থেকে রিস্টোর সম্পন্ন হয়েছে!');
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -100,3 +100,56 @@ export function openWhatsAppPrescription(
     : `https://wa.me/?text=${encoded}`;
   window.open(url, '_blank');
 }
+
+// ─────────────────────────────────────────────────────────────
+// Bangladesh Railway E-Ticket WhatsApp Share
+// ─────────────────────────────────────────────────────────────
+
+export interface RailwayTicketSharePayload {
+  pnrNumber: string;
+  passengerName: string;
+  trainName: string;
+  trainNumber: string;
+  fromStation: string;
+  toStation: string;
+  journeyDate: string;
+  journeyTime: string;
+  className: string;
+  coachSeat: string;
+  noOfSeats: number;
+  totalFare: number;
+  mobileNumber?: string;
+}
+
+export function generateWhatsAppTicketText(ticket: RailwayTicketSharePayload): string {
+  const lines: string[] = [];
+  lines.push('🚆 *বাংলাদেশ রেলওয়ে ই-টিকিট নিশ্চিতকরণ* 🚆');
+  lines.push('━━━━━━━━━━━━━━━━━━━━━━━━');
+  lines.push(`👤 *যাত্রীর নাম:* ${ticket.passengerName}`);
+  lines.push(`🎫 *PNR নম্বর:* ${ticket.pnrNumber}`);
+  lines.push(`🚂 *ট্রেন:* ${ticket.trainName} (${ticket.trainNumber})`);
+  lines.push(`📍 *রুট:* ${ticket.fromStation} ➔ ${ticket.toStation}`);
+  lines.push(`📅 *যাত্রার তারিখ ও সময়:* ${ticket.journeyDate} | ${ticket.journeyTime}`);
+  lines.push(`💺 *শ্রেণি ও আসন:* ${ticket.className} | ${ticket.coachSeat} (${ticket.noOfSeats}টি সিট)`);
+  lines.push(`💰 *মোট ভাড়া:* ৳${ticket.totalFare.toLocaleString()} (ভ্যাট ও সার্ভিস চার্জসহ)`);
+  lines.push('━━━━━━━━━━━━━━━━━━━━━━━━');
+  lines.push('⚠️ *জরুরি নির্দেশনাবলী:*');
+  lines.push('• যাত্রার সময় মূল জাতীয় পরিচয়পত্র (NID) বা ছবি সংবলিত আইডি সাথে রাখা বাধ্যতামূলক।');
+  lines.push('• ট্রেন ছাড়ার অন্তত ২০ মিনিট পূর্বে সংশ্লিষ্ট স্টেশনে উপস্থিত থাকুন।');
+  lines.push('');
+  lines.push('🌐 _Generated via EasyPad BD Smart Suite_');
+  return lines.join('\n');
+}
+
+export function openWhatsAppTicket(phone: string | undefined, ticket: RailwayTicketSharePayload) {
+  const text = generateWhatsAppTicketText(ticket);
+  let cleanPhone = (phone || ticket.mobileNumber || '').replace(/[^\d]/g, '');
+  if (cleanPhone.startsWith('01')) {
+    cleanPhone = '88' + cleanPhone;
+  }
+  const encoded = encodeURIComponent(text);
+  const url = cleanPhone
+    ? `https://wa.me/${cleanPhone}?text=${encoded}`
+    : `https://wa.me/?text=${encoded}`;
+  window.open(url, '_blank');
+}

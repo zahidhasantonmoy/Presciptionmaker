@@ -170,7 +170,11 @@ Given the user prompt (English, Bangla, or Banglish), extract and return valid J
   "fare": number,
   "vat": number,
   "serviceCharge": number
-}`;
+}
+RULES:
+1. Multi-passenger: If multiple passenger names are provided (e.g. "জাহিদ, তনময় ও রাফি" or "3 persons: Zahid, Tanvir, Rafiq"), join their names with commas in "passengerName" (e.g. "MD. ZAHID HASAN, TANVIR AHMED, RAFIQUL ISLAM"), set "numSeats" and "numAdults" equal to the passenger count.
+2. Consecutive Seats: For N passengers, generate N consecutive seats in the same coach (e.g. for 2 seats: "TA 34, 35", for 3 seats: "CHA 12, 13, 14").
+3. Accurate Fare: Calculate "fare" = unitClassFare * numSeats, "serviceCharge" = 20 * numSeats.`;
 
       const userText = `Current Prompt: "${prompt}"\nBase Ticket Reference:\n${JSON.stringify({
         fromStation: baseTicket.fromStation,
@@ -368,12 +372,25 @@ function parseRailwayTicketLocally(
     numSeats = 4;
   }
 
-  // 4. Passenger Name
+  // 4. Multi-Passenger & Name Detection
   let passengerName = baseTicket.passengerName;
-  const nameMatch = prompt.match(/(?:name|naam|নাম|passenger)\s*[:=]\s*([A-Za-z.\s]+)/i) ||
-                    prompt.match(/([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\s*(?:এর|er)\s*(?:name|নামে)?/);
-  if (nameMatch && nameMatch[1]) {
-    passengerName = nameMatch[1].trim().toUpperCase();
+  const multiNameMatch = prompt.match(/(?:নাম|name|passenger|যাত্রী)\s*[:=]?\s*([A-Za-z\u0980-\u09FF,.\s&]+?)(?:-|\s+শোভন|\s+স্নিগ্ধা|\s+এসি|\s+টিকিট|\s+ticket|$)/i);
+  if (multiNameMatch && multiNameMatch[1] && multiNameMatch[1].trim().length > 2) {
+    const rawNames = multiNameMatch[1].split(/[,&এবং\s+ও\s+]+/).map(n => n.trim()).filter(n => n.length > 2 && !['টাকা', 'জন', 'সিট'].includes(n));
+    if (rawNames.length > 1) {
+      passengerName = rawNames.map(n => n.toUpperCase()).join(', ');
+      if (rawNames.length > numSeats) {
+        numSeats = Math.min(4, rawNames.length);
+      }
+    } else if (rawNames.length === 1) {
+      passengerName = rawNames[0].toUpperCase();
+    }
+  } else {
+    const nameMatch = prompt.match(/(?:name|naam|নাম|passenger)\s*[:=]\s*([A-Za-z.\s]+)/i) ||
+                      prompt.match(/([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\s*(?:এর|er)\s*(?:name|নামে)?/);
+    if (nameMatch && nameMatch[1]) {
+      passengerName = nameMatch[1].trim().toUpperCase();
+    }
   }
 
   // 5. Class detection
