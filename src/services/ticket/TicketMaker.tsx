@@ -1643,7 +1643,7 @@ export function TicketMaker() {
 
               {/* Greeting & Introductory Confirmation */}
               <span className="ticket-span ticket-r" style={{ left: '57.270pt', top: '103.937pt', fontSize: '7.50pt', color: '#333333' }}>
-                Dear {ticket.passengerName},
+                Dear {ticket.passengerName.includes(',') ? ticket.passengerName.split(',')[0].trim() : ticket.passengerName},
               </span>
               <span className="ticket-span ticket-r" style={{ left: '57.520pt', top: '112.937pt', fontSize: '7.50pt', color: '#333333' }}>
                 Your request to book e-ticket for your journey in Bangladesh Railway was successful. You can travel on the train mentioned in

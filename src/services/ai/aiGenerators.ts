@@ -78,7 +78,16 @@ export function resolveRelativeDate(text: string): { dateStr: string; banglaDate
   let target = new Date();
 
   // 1. Relative keywords
-  if (lower.includes('agamikal') || lower.includes('আগামীকাল') || lower.includes('tomorrow') || lower.includes('kal')) {
+  if (
+    lower.includes('agamikal') ||
+    lower.includes('আগামীকাল') ||
+    lower.includes('tomorrow') ||
+    lower.includes('kalk') ||
+    lower.includes('kalke') ||
+    lower.includes('kal') ||
+    lower.includes('কাল') ||
+    lower.includes('কালকে')
+  ) {
     target.setDate(now.getDate() + 1);
   } else if (lower.includes('porshu') || lower.includes('পরশু') || lower.includes('day after tomorrow')) {
     target.setDate(now.getDate() + 2);
@@ -189,22 +198,40 @@ RULES:
         const { pnr, ticketId } = generateTicketIds();
         const d = res.data;
 
+        const fromStClean = d.fromStation || 'Dhaka';
+        const toStClean = d.toStation || 'Rajshahi';
+
+        // Find train with directional match first
         const matchedTrain = RAILWAY_TRAINS.find(
-          t => t.name.toLowerCase() === (d.trainName || '').toLowerCase() ||
+          t => (d.trainName && t.name.toLowerCase().includes(d.trainName.toLowerCase())) &&
+               t.fromStation.toLowerCase() === fromStClean.toLowerCase() &&
+               t.toStation.toLowerCase() === toStClean.toLowerCase()
+        ) || RAILWAY_TRAINS.find(
+          t => (d.trainName && t.name.toLowerCase().includes(d.trainName.toLowerCase())) &&
+               t.fromStation.toLowerCase() === fromStClean.toLowerCase()
+        ) || RAILWAY_TRAINS.find(
+          t => (d.trainName && t.name.toLowerCase() === d.trainName.toLowerCase()) ||
                (d.trainNumber && t.number === d.trainNumber)
         );
 
-        const fromBn = d.fromStationBn || getStationBanglaName(d.fromStation || 'Dhaka');
-        const toBn = d.toStationBn || getStationBanglaName(d.toStation || 'Rajshahi');
+        const fromBn = d.fromStationBn || getStationBanglaName(fromStClean);
+        const toBn = d.toStationBn || getStationBanglaName(toStClean);
         const coachSeat = d.coachSeat || baseTicket.coachSeat;
         const coachSeatBn = getPureBanglaCoachSeat(coachSeat, d.coachSeatBn);
+
+        const numSeats = Number(d.numSeats) || 1;
+        const unitFare = matchedTrain?.fares[d.className || 'S_CHAIR'] || Number(d.fare) || 450;
+        const totalFare = unitFare * numSeats;
+        const serviceCharge = 20 * numSeats;
 
         const merged: BangladeshRailwayTicket = {
           ...baseTicket,
           ...d,
           id: ticketId,
           pnrNumber: pnr,
+          fromStation: fromStClean,
           fromStationBn: fromBn,
+          toStation: toStClean,
           toStationBn: toBn,
           coachSeat,
           coachSeatBn,
@@ -212,11 +239,11 @@ RULES:
           trainName: matchedTrain ? matchedTrain.name : (d.trainName || 'PADMA EXPRESS'),
           trainNameBn: matchedTrain ? matchedTrain.nameBn : (d.trainNameBn || 'পদ্মা এক্সপ্রেস'),
           journeyTime: matchedTrain ? matchedTrain.departureTime : (d.journeyTime || '23:00'),
-          fare: Number(d.fare) || 450,
+          fare: totalFare,
           vat: Number(d.vat) || 0,
-          serviceCharge: Number(d.serviceCharge) || 20,
-          numSeats: Number(d.numSeats) || 1,
-          numAdults: Number(d.numAdults) || 1,
+          serviceCharge,
+          numSeats,
+          numAdults: numSeats,
           createdAt: new Date().toISOString(),
         };
 
@@ -243,157 +270,261 @@ function parseRailwayTicketLocally(
   const pLower = prompt.toLowerCase();
   const { dateStr } = resolveRelativeDate(prompt);
 
-  // 1. Train detection across all 100+ Bangladesh Railway trains
-  let matchedTrain: any = null;
+  // ─────────────────────────────────────────────────────────────
+  // 1. Station Routing & Direction Detection
+  // ─────────────────────────────────────────────────────────────
+  let detectedFrom = '';
+  let detectedTo = '';
 
-  // Direct name or number match
-  for (const t of RAILWAY_TRAINS) {
-    if (
-      pLower.includes(t.name.toLowerCase()) ||
-      prompt.includes(t.nameBn) ||
-      pLower.includes(t.name.toLowerCase().replace(' express', '')) ||
-      prompt.includes(t.number)
-    ) {
-      matchedTrain = t;
+  // Find all stations mentioned in prompt and their positions
+  const matchedStations: { name: string; index: number }[] = [];
+  for (const st of RAILWAY_STATIONS) {
+    const sName = st.name.toLowerCase();
+    const sBn = st.nameBn;
+
+    let pos = -1;
+    // Word boundary match for English station name
+    const enRegex = new RegExp(`\\b${sName}\\b`, 'i');
+    const matchEn = pLower.match(enRegex);
+    if (matchEn && matchEn.index !== undefined) {
+      pos = matchEn.index;
+    } else {
+      const idxBn = prompt.indexOf(sBn);
+      if (idxBn !== -1) pos = idxBn;
+    }
+
+    if (pos !== -1) {
+      if (!matchedStations.some(m => m.name.toLowerCase() === st.name.toLowerCase())) {
+        matchedStations.push({ name: st.name, index: pos });
+      }
+    }
+  }
+
+  // Sort by appearance in prompt
+  matchedStations.sort((a, b) => a.index - b.index);
+
+  // Check specific "from" and "to" syntax (e.g. "dhaka theke", "theke rajshahi", "ঢাকা থেকে")
+  for (const st of matchedStations) {
+    const sLower = st.name.toLowerCase();
+    const isFrom =
+      new RegExp(`\\b${sLower}\\s*(?:theke|hote|থেকে|হতে)\\b`, 'i').test(pLower) ||
+      new RegExp(`(?:from|theke|থেকে|হতে)\\s+${sLower}\\b`, 'i').test(pLower);
+
+    const isTo =
+      new RegExp(`(?:theke|থেকে|hote|হতে|to)\\s+.*?\\b${sLower}\\b`, 'i').test(pLower) ||
+      new RegExp(`\\bto\\s+${sLower}\\b`, 'i').test(pLower) ||
+      new RegExp(`\\b${sLower}\\s*(?:te|jabo|যাব|তে|পৌঁছাবে)\\b`, 'i').test(pLower);
+
+    if (isFrom) {
+      detectedFrom = st.name;
+    } else if (isTo && (!detectedFrom || detectedFrom.toLowerCase() !== sLower)) {
+      detectedTo = st.name;
+    }
+  }
+
+  // If two stations appeared in sequence like "dhaka theke rajshahi"
+  if (matchedStations.length >= 2) {
+    if (!detectedFrom) detectedFrom = matchedStations[0].name;
+    if (!detectedTo) {
+      // Find the second station that isn't the origin
+      const secondSt = matchedStations.find(s => s.name.toLowerCase() !== detectedFrom.toLowerCase());
+      if (secondSt) detectedTo = secondSt.name;
+    }
+  } else if (matchedStations.length === 1 && !detectedFrom) {
+    detectedFrom = matchedStations[0].name;
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 2. Train Detection (Matching Name + Directional Priority)
+  // ─────────────────────────────────────────────────────────────
+  const trainAliases: Record<string, string> = {
+    'padma': 'PADMA EXPRESS',
+    'পদ্মা': 'PADMA EXPRESS',
+    'sonar bangla': 'SONAR BANGLA EXPRESS',
+    'সোনার বাংলা': 'SONAR BANGLA EXPRESS',
+    'suborno': 'SUBORNO EXPRESS',
+    'suborna': 'SUBORNO EXPRESS',
+    'সুবর্ণ': 'SUBORNO EXPRESS',
+    'cox': 'COX\'S BAZAR EXPRESS',
+    'কক্সবাজার': 'COX\'S BAZAR EXPRESS',
+    'chitra': 'CHITRA EXPRESS',
+    'চিত্রা': 'CHITRA EXPRESS',
+    'parabat': 'PARABAT EXPRESS',
+    'পারাবত': 'PARABAT EXPRESS',
+    'upaban': 'UPABAN EXPRESS',
+    'উপবন': 'UPABAN EXPRESS',
+    'bana': 'BANALATA EXPRESS',
+    'বনলতা': 'BANALATA EXPRESS',
+    'silk': 'SILKCITY EXPRESS',
+    'সিল্কসিটি': 'SILKCITY EXPRESS',
+    'dhumketu': 'DHUMKETU EXPRESS',
+    'ধূমকেতু': 'DHUMKETU EXPRESS',
+    'ekota': 'EKOTA EXPRESS',
+    'একতা': 'EKOTA EXPRESS',
+    'druto': 'DRUTOJAN EXPRESS',
+    'দ্রুতযান': 'DRUTOJAN EXPRESS',
+    'kurigram': 'KURIGRAM EXPRESS',
+    'কুড়িগ্রাম': 'KURIGRAM EXPRESS',
+    'rangpur': 'RANGPUR EXPRESS',
+    'রংপুর': 'RANGPUR EXPRESS',
+    'benapole': 'BENAPOLE EXPRESS',
+    'বেনাপোল': 'BENAPOLE EXPRESS',
+    'sundarban': 'SUNDARBAN EXPRESS',
+    'সুন্দরবন': 'SUNDARBAN EXPRESS',
+    'jamuna': 'JAMUNA EXPRESS',
+    'যমুনা': 'JAMUNA EXPRESS',
+    'kalni': 'KALNI EXPRESS',
+    'কালনী': 'KALNI EXPRESS',
+    'jayantika': 'JAYANTIKA EXPRESS',
+    'জয়ন্তিকা': 'JAYANTIKA EXPRESS',
+  };
+
+  let targetTrainName = '';
+  for (const [key, tName] of Object.entries(trainAliases)) {
+    if (pLower.includes(key)) {
+      targetTrainName = tName;
       break;
     }
   }
 
-  // Aliases and popular train keywords
-  if (!matchedTrain) {
-    const trainAliases: Record<string, string> = {
-      'padma': 'PADMA EXPRESS',
-      'পদ্মা': 'PADMA EXPRESS',
-      'sonar bangla': 'SONAR BANGLA EXPRESS',
-      'সোনার বাংলা': 'SONAR BANGLA EXPRESS',
-      'suborno': 'SUBORNO EXPRESS',
-      'suborna': 'SUBORNO EXPRESS',
-      'সুবর্ণ': 'SUBORNO EXPRESS',
-      'cox': 'COX\'S BAZAR EXPRESS',
-      'কক্সবাজার': 'COX\'S BAZAR EXPRESS',
-      'chitra': 'CHITRA EXPRESS',
-      'চিত্রা': 'CHITRA EXPRESS',
-      'parabat': 'PARABAT EXPRESS',
-      'পারাবত': 'PARABAT EXPRESS',
-      'upaban': 'UPABAN EXPRESS',
-      'উপবন': 'UPABAN EXPRESS',
-      'bana': 'BANALATA EXPRESS',
-      'বনলতা': 'BANALATA EXPRESS',
-      'silk': 'SILKCITY EXPRESS',
-      'সিল্কসিটি': 'SILKCITY EXPRESS',
-      'dhumketu': 'DHUMKETU EXPRESS',
-      'ধূমকেতু': 'DHUMKETU EXPRESS',
-      'ekota': 'EKOTA EXPRESS',
-      'একতা': 'EKOTA EXPRESS',
-      'druto': 'DRUTOJAN EXPRESS',
-      'দ্রুতযান': 'DRUTOJAN EXPRESS',
-      'kurigram': 'KURIGRAM EXPRESS',
-      'কুড়িগ্রাম': 'KURIGRAM EXPRESS',
-      'rangpur': 'RANGPUR EXPRESS',
-      'রংপুর': 'RANGPUR EXPRESS',
-      'benapole': 'BENAPOLE EXPRESS',
-      'বেনাপোল': 'BENAPOLE EXPRESS',
-      'sundarban': 'SUNDARBAN EXPRESS',
-      'সুন্দরবন': 'SUNDARBAN EXPRESS',
-    };
-
-    for (const [key, tName] of Object.entries(trainAliases)) {
-      if (pLower.includes(key)) {
-        matchedTrain = RAILWAY_TRAINS.find(t => t.name.toUpperCase().includes(tName));
-        if (matchedTrain) break;
+  if (!targetTrainName) {
+    for (const t of RAILWAY_TRAINS) {
+      if (pLower.includes(t.name.toLowerCase()) || prompt.includes(t.nameBn) || prompt.includes(t.number)) {
+        targetTrainName = t.name;
+        break;
       }
     }
   }
 
+  let matchedTrain: any = null;
+  if (targetTrainName) {
+    // 1st priority: matching name AND origin AND destination
+    if (detectedFrom && detectedTo) {
+      matchedTrain = RAILWAY_TRAINS.find(
+        t => t.name.toUpperCase().includes(targetTrainName) &&
+             t.fromStation.toLowerCase() === detectedFrom.toLowerCase() &&
+             t.toStation.toLowerCase() === detectedTo.toLowerCase()
+      );
+    }
+    // 2nd priority: matching name AND origin
+    if (!matchedTrain && detectedFrom) {
+      matchedTrain = RAILWAY_TRAINS.find(
+        t => t.name.toUpperCase().includes(targetTrainName) &&
+             t.fromStation.toLowerCase() === detectedFrom.toLowerCase()
+      );
+    }
+    // 3rd priority: matching name AND destination
+    if (!matchedTrain && detectedTo) {
+      matchedTrain = RAILWAY_TRAINS.find(
+        t => t.name.toUpperCase().includes(targetTrainName) &&
+             t.toStation.toLowerCase() === detectedTo.toLowerCase()
+      );
+    }
+    // 4th priority: any train with that name
+    if (!matchedTrain) {
+      matchedTrain = RAILWAY_TRAINS.find(t => t.name.toUpperCase().includes(targetTrainName));
+    }
+  }
+
+  // Fallback train
   if (!matchedTrain) {
-    matchedTrain = RAILWAY_TRAINS[0]; // fallback
+    matchedTrain = RAILWAY_TRAINS.find(
+      t => (!detectedFrom || t.fromStation.toLowerCase() === detectedFrom.toLowerCase()) &&
+           (!detectedTo || t.toStation.toLowerCase() === detectedTo.toLowerCase())
+    ) || RAILWAY_TRAINS[0];
   }
 
-  // 2. Station routing
-  let fromStation = matchedTrain.fromStation;
-  let toStation = matchedTrain.toStation;
-
-  for (const st of RAILWAY_STATIONS) {
-    const stEn = st.name.toLowerCase();
-    const stBn = st.nameBn;
-
-    if (pLower.includes(stEn) || prompt.includes(stBn)) {
-      if (
-        pLower.includes(`theke ${stEn}`) ||
-        pLower.includes(`from ${stEn}`) ||
-        prompt.includes(`${stBn} থেকে`) ||
-        prompt.includes(`${stBn} হতে`)
-      ) {
-        fromStation = st.name;
-      } else if (
-        pLower.includes(`to ${stEn}`) ||
-        pLower.includes(`${stEn} te`) ||
-        pLower.includes(`${stEn} jabo`) ||
-        prompt.includes(`${stBn} তে`) ||
-        prompt.includes(`${stBn} যাব`) ||
-        prompt.includes(`পৌঁছাবে ${stBn}`)
-      ) {
-        toStation = st.name;
-      }
-    }
+  const fromStation = detectedFrom || matchedTrain.fromStation;
+  let toStation = detectedTo;
+  if (!toStation || toStation.toLowerCase() === fromStation.toLowerCase()) {
+    toStation = matchedTrain.toStation.toLowerCase() === fromStation.toLowerCase()
+      ? matchedTrain.fromStation
+      : matchedTrain.toStation;
   }
 
-  // Prevent same fromStation and toStation
-  if (fromStation.toLowerCase() === toStation.toLowerCase()) {
-    if (matchedTrain.fromStation.toLowerCase() !== fromStation.toLowerCase()) {
-      toStation = matchedTrain.fromStation;
-    } else if (matchedTrain.toStation.toLowerCase() !== fromStation.toLowerCase()) {
-      toStation = matchedTrain.toStation;
-    }
-  }
-
-  // Look for exact directional train variant (e.g. Dhaka -> Khulna vs Khulna -> Dhaka)
+  // Final check: ensure directional train matches the resolved fromStation
   const directionalTrain = RAILWAY_TRAINS.find(
+    t => t.name.toLowerCase() === matchedTrain.name.toLowerCase() &&
+         t.fromStation.toLowerCase() === fromStation.toLowerCase() &&
+         t.toStation.toLowerCase() === toStation.toLowerCase()
+  ) || RAILWAY_TRAINS.find(
     t => t.name.toLowerCase() === matchedTrain.name.toLowerCase() &&
          t.fromStation.toLowerCase() === fromStation.toLowerCase()
   );
   if (directionalTrain) {
     matchedTrain = directionalTrain;
-    if (fromStation.toLowerCase() === toStation.toLowerCase() || !toStation) {
-      toStation = directionalTrain.toStation;
-    }
   }
 
-  // 3. Passenger count
+  // ─────────────────────────────────────────────────────────────
+  // 3. Passenger Names & Multi-Passenger Detection
+  // ─────────────────────────────────────────────────────────────
+  // Check for quoted names like "MD ZAHID HASAN" and "MD IMARGENCY MAN"
+  const quotedNames = Array.from(prompt.matchAll(/"([^"]+)"/g))
+    .map(m => m[1].trim())
+    .filter(n => n.length > 1);
+
+  // ─────────────────────────────────────────────────────────────
+  // 4. Passenger Count & Ticket Quantities
+  // ─────────────────────────────────────────────────────────────
   let numSeats = 1;
-  const seatMatch = prompt.match(/(\d+)\s*(jon|person|passenger|সিট|জন|টি)/i);
+  const seatMatch = prompt.match(/(\d+)\s*(?:ta|টা|tikit|ticket|টিকিট|jon|জন|person|passenger|সিট|seat|টি)/i);
   if (seatMatch && seatMatch[1]) {
     numSeats = Math.min(4, Math.max(1, parseInt(seatMatch[1], 10)));
-  } else if (pLower.includes('2 jon') || pLower.includes('dui jon') || prompt.includes('২ জন') || pLower.includes('2 person')) {
+  } else if (
+    pLower.match(/\b(?:2|dui|two)\s*(?:ta|tikit|ticket|jon|person|টি|টা)\b/) ||
+    prompt.includes('২টি') || prompt.includes('২টা') || prompt.includes('২ জন') ||
+    pLower.includes('2 ta') || pLower.includes('dui ta') || pLower.includes('duita')
+  ) {
     numSeats = 2;
-  } else if (pLower.includes('3 jon') || pLower.includes('tin jon') || prompt.includes('৩ জন')) {
+  } else if (
+    pLower.match(/\b(?:3|tin|three)\s*(?:ta|tikit|ticket|jon|person|টি|টা)\b/) ||
+    prompt.includes('৩টি') || prompt.includes('৩টা') || prompt.includes('৩ জন') ||
+    pLower.includes('3 ta') || pLower.includes('tin ta') || pLower.includes('tinta')
+  ) {
     numSeats = 3;
-  } else if (pLower.includes('4 jon') || pLower.includes('char jon') || prompt.includes('৪ জন')) {
+  } else if (
+    pLower.match(/\b(?:4|char|four)\s*(?:ta|tikit|ticket|jon|person|টি|টা)\b/) ||
+    prompt.includes('৪টি') || prompt.includes('৪টা') || prompt.includes('৪ জন') ||
+    pLower.includes('4 ta') || pLower.includes('char ta')
+  ) {
     numSeats = 4;
   }
 
-  // 4. Multi-Passenger & Name Detection
+  // If user provided multiple quoted names, seat count must match names count!
+  if (quotedNames.length > numSeats) {
+    numSeats = Math.min(4, quotedNames.length);
+  }
+
   let passengerName = baseTicket.passengerName;
-  const multiNameMatch = prompt.match(/(?:নাম|name|passenger|যাত্রী)\s*[:=]?\s*([A-Za-z\u0980-\u09FF,.\s&]+?)(?:-|\s+শোভন|\s+স্নিগ্ধা|\s+এসি|\s+টিকিট|\s+ticket|$)/i);
-  if (multiNameMatch && multiNameMatch[1] && multiNameMatch[1].trim().length > 2) {
-    const rawNames = multiNameMatch[1].split(/[,&এবং\s+ও\s+]+/).map(n => n.trim()).filter(n => n.length > 2 && !['টাকা', 'জন', 'সিট'].includes(n));
-    if (rawNames.length > 1) {
-      passengerName = rawNames.map(n => n.toUpperCase()).join(', ');
-      if (rawNames.length > numSeats) {
-        numSeats = Math.min(4, rawNames.length);
-      }
-    } else if (rawNames.length === 1) {
-      passengerName = rawNames[0].toUpperCase();
-    }
+  if (quotedNames.length > 0) {
+    passengerName = quotedNames.map(n => n.toUpperCase()).join(', ');
   } else {
-    const nameMatch = prompt.match(/(?:name|naam|নাম|passenger)\s*[:=]\s*([A-Za-z.\s]+)/i) ||
-                      prompt.match(/([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\s*(?:এর|er)\s*(?:name|নামে)?/);
-    if (nameMatch && nameMatch[1]) {
-      passengerName = nameMatch[1].trim().toUpperCase();
+    // Unquoted name matching
+    const multiNameMatch = prompt.match(/(?:নাম|name|passenger|যাত্রী)\s*[:=]?\s*([A-Za-z\u0980-\u09FF,.\s&]+?)(?:-|\s+শোভন|\s+স্নিগ্ধা|\s+এসি|\s+টিকিট|\s+ticket|$)/i);
+    if (multiNameMatch && multiNameMatch[1] && multiNameMatch[1].trim().length > 2) {
+      const rawNames = multiNameMatch[1].split(/[,&এবং\s+and\s+ও\s+]+/)
+        .map(n => n.trim())
+        .filter(n => n.length > 2 && !['টাকা', 'জন', 'সিট', 'kato', 'tikit', 'ticket'].includes(n.toLowerCase()));
+      if (rawNames.length > 1) {
+        passengerName = rawNames.map(n => n.toUpperCase()).join(', ');
+        if (rawNames.length > numSeats) {
+          numSeats = Math.min(4, rawNames.length);
+        }
+      } else if (rawNames.length === 1) {
+        passengerName = rawNames[0].toUpperCase();
+      }
+    } else {
+      const nameMatch = prompt.match(/(?:name|naam|নাম|passenger)\s*[:=]\s*([A-Za-z.\s]+)/i) ||
+                        prompt.match(/([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\s*(?:এর|er)\s*(?:name|নামে)?/);
+      if (nameMatch && nameMatch[1]) {
+        passengerName = nameMatch[1].trim().toUpperCase();
+      }
     }
   }
 
-  // 5. Class detection
+  // ─────────────────────────────────────────────────────────────
+  // 5. Class Detection
+  // ─────────────────────────────────────────────────────────────
   let selectedClass = RAILWAY_CLASSES[0]; // S_CHAIR default
   if (pLower.includes('snigdha') || prompt.includes('স্নিগ্ধা')) {
     selectedClass = RAILWAY_CLASSES.find(c => c.code === 'SNIGDHA') || selectedClass;
@@ -405,7 +536,9 @@ function parseRailwayTicketLocally(
     selectedClass = RAILWAY_CLASSES.find(c => c.code === 'SHOVON') || selectedClass;
   }
 
-  // 6. Coach & Seat generation
+  // ─────────────────────────────────────────────────────────────
+  // 6. Coach & Consecutive Seat Generation
+  // ─────────────────────────────────────────────────────────────
   const coachLetters = ['KHA', 'GA', 'GHA', 'CHA', 'JA', 'JHA', 'TA', 'THA', 'DA'];
   const coachLetter = coachLetters[Math.floor(Math.random() * coachLetters.length)];
   const startSeat = Math.floor(Math.random() * 35) + 1;
@@ -416,7 +549,9 @@ function parseRailwayTicketLocally(
   const coachSeat = seatList.join(', ');
   const coachSeatBn = getPureBanglaCoachSeat(coachSeat);
 
-  // 7. Fare calculation
+  // ─────────────────────────────────────────────────────────────
+  // 7. Accurate Fare Calculations
+  // ─────────────────────────────────────────────────────────────
   const unitFare = matchedTrain.fares[selectedClass.code] || selectedClass.defaultFare || 450;
   const totalFare = unitFare * numSeats;
   const vat = 0;
@@ -459,7 +594,7 @@ function parseRailwayTicketLocally(
 
   return {
     ticket: generatedTicket,
-    summary: `⚡ অফলাইন এআই: ${generatedTicket.trainName} (${generatedTicket.trainNumber}), ${generatedTicket.fromStation} ➔ ${generatedTicket.toStation}, তারিখ: ${generatedTicket.journeyDate}, সিট: ${generatedTicket.coachSeat} (১০০% অফলাইনে সফল)`,
+    summary: `⚡ এআই প্রসেস সম্পন্ন: ${generatedTicket.trainName} (${generatedTicket.trainNumber}), ${generatedTicket.fromStation} ➔ ${generatedTicket.toStation}, তারিখ: ${generatedTicket.journeyDate}, সিট: ${generatedTicket.coachSeat} (মোট ${numSeats}টি টিকিট, ভাড়া: ৳${totalFare})`,
   };
 }
 
