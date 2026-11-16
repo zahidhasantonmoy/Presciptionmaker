@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
   Sparkles, Send, Loader2, Key, CheckCircle2,
-  FileText, Eye, AlertCircle, RefreshCw, Lightbulb, Wifi, WifiOff, Zap, Clock
+  FileText, Eye, AlertCircle, RefreshCw, Lightbulb, Wifi, WifiOff, Zap, Clock,
+  Image as ImageIcon, Copy
 } from 'lucide-react';
 import { hasGeminiApiKey } from '../../services/ai/geminiClient';
 import { hasGroqApiKey } from '../../services/ai/groqClient';
@@ -15,6 +16,8 @@ export interface AiCommandBarProps {
   suggestions?: string[];
   onGenerate: (prompt: string) => Promise<string | void>;
   onReviewPdf?: () => void;
+  onDownloadJpg?: () => void;
+  onCopyHtml?: () => void;
   onViewPreview?: () => void;
   onRestoreHistory?: (data: any) => void;
 }
@@ -51,6 +54,8 @@ export function AiCommandBar({
   suggestions,
   onGenerate,
   onReviewPdf,
+  onDownloadJpg,
+  onCopyHtml,
   onViewPreview,
   onRestoreHistory,
 }: AiCommandBarProps) {
@@ -430,7 +435,54 @@ export function AiCommandBar({
                 }}
               >
                 <FileText size={13} />
-                <span>📄 PDF রিভিউ ও ডাউনলোড</span>
+                <span>PDF ডাউনলোড</span>
+              </button>
+            )}
+
+            {onDownloadJpg && (
+              <button
+                type="button"
+                onClick={onDownloadJpg}
+                style={{
+                  background: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
+                  border: 'none',
+                  color: '#fff',
+                  padding: '5px 12px',
+                  borderRadius: 6,
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  boxShadow: '0 2px 6px rgba(37, 99, 235, 0.4)',
+                }}
+              >
+                <ImageIcon size={13} />
+                <span>JPG ডাউনলোড</span>
+              </button>
+            )}
+
+            {onCopyHtml && (
+              <button
+                type="button"
+                onClick={onCopyHtml}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  color: '#f8fafc',
+                  padding: '5px 12px',
+                  borderRadius: 6,
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                }}
+              >
+                <Copy size={13} />
+                <span>HTML কপি</span>
               </button>
             )}
           </div>

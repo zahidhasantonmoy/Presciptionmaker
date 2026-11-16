@@ -5,7 +5,8 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import {
   Train, Download, Printer, Plus, CheckCircle2,
-  Trash2, PenTool, Eye, ZoomIn, ZoomOut, MessageCircle, Clock, Share2
+  Trash2, PenTool, Eye, ZoomIn, ZoomOut, MessageCircle, Clock, Share2,
+  Copy, Image as ImageIcon, FileCode, Check
 } from 'lucide-react';
 import { ShohozLogo } from './ShohozLogo';
 import {
@@ -89,6 +90,31 @@ const DEFAULT_BR_TICKET: BangladeshRailwayTicket = {
   createdAt: new Date().toISOString(),
 };
 
+export function generateOfficialTicketFileName(ext: 'pdf' | 'jpg' | 'html', pnr?: string): string {
+  let seed = 123456789;
+  const str = (pnr || 'BDRAILWAY') + 'SHOHOZ_ETICKET_GEN';
+  for (let i = 0; i < str.length; i++) {
+    seed = (Math.imul(seed ^ str.charCodeAt(i), 1597334677) >>> 0);
+  }
+  const nextDigit = () => {
+    seed = (Math.imul(seed ^ (seed >>> 15), 2246822507) >>> 0);
+    return (seed % 10).toString();
+  };
+  const makeDigits = (count: number) => {
+    let res = '';
+    for (let i = 0; i < count; i++) res += nextDigit();
+    return res;
+  };
+
+  const seg1 = makeDigits(15);
+  const seg2 = makeDigits(7);
+  const seg3 = makeDigits(5);
+  const seg4 = makeDigits(7);
+  const seg5 = makeDigits(19);
+
+  return `BDRAILWAY_TICKET${seg1}-${seg2}-${seg3}-${seg4}-${seg5}.${ext}`;
+}
+
 export function TicketMaker() {
   const [ticket, setTicket] = useState<BangladeshRailwayTicket>(DEFAULT_BR_TICKET);
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
@@ -109,6 +135,8 @@ export function TicketMaker() {
   const [historyOpen, setHistoryOpen] = useState(false);
 
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isGeneratingJpg, setIsGeneratingJpg] = useState(false);
+  const [copiedHtml, setCopiedHtml] = useState(false);
   const [mobileTab, setMobileTab] = useState<'editor' | 'preview'>('editor');
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 1024);
   const ticketRef = useRef<HTMLDivElement>(null);
@@ -366,7 +394,7 @@ export function TicketMaker() {
     }
   }, []);
 
-  // Download High-Resolution A4 PDF matching exact points with perfect line alignment & small file size
+  // Download High-Resolution A4 PDF with exact Shohoz BD Railway filename pattern
   const handleDownloadPdf = async () => {
     if (!ticketRef.current) return;
     setIsGeneratingPdf(true);
@@ -386,7 +414,6 @@ export function TicketMaker() {
         windowWidth: 1200,
         windowHeight: 1600,
         onclone: (clonedDoc) => {
-          // Reset scale on cloned page so it captures at full A4 dimensions
           const clonedPage = clonedDoc.getElementById('page');
           if (clonedPage) {
             clonedPage.style.transform = 'none';
@@ -396,8 +423,7 @@ export function TicketMaker() {
         }
       });
 
-      // Compress to high-quality JPEG (0.92) to keep PDF under ~250 KB instead of 6 MB!
-      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
       const pdf = new jsPDF({
         orientation: 'p',
         unit: 'pt',
@@ -407,12 +433,158 @@ export function TicketMaker() {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
-      pdf.save(`BR_ETicket_${ticket.pnrNumber}_${ticket.passengerName.replace(/\s+/g, '_')}.pdf`);
+      const fileName = generateOfficialTicketFileName('pdf', ticket.pnrNumber);
+      pdf.save(fileName);
+      setAiUpdatedNotice(`PDF ডাউনলোড সম্পন্ন হয়েছে: ${fileName}`);
     } catch (err) {
       console.error('Failed to export PDF:', err);
       alert('Could not export PDF. Please check console.');
     } finally {
       setIsGeneratingPdf(false);
+    }
+  };
+
+  // Download High-Resolution JPG Image
+  const handleDownloadJpg = async () => {
+    if (!ticketRef.current) return;
+    setIsGeneratingJpg(true);
+    try {
+      if (document.fonts) {
+        await document.fonts.ready;
+      }
+      const el = ticketRef.current;
+
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: 1200,
+        windowHeight: 1600,
+        onclone: (clonedDoc) => {
+          const clonedPage = clonedDoc.getElementById('page');
+          if (clonedPage) {
+            clonedPage.style.transform = 'none';
+            clonedPage.style.position = 'relative';
+            clonedPage.style.margin = '0 auto';
+          }
+        }
+      });
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const fileName = generateOfficialTicketFileName('jpg', ticket.pnrNumber);
+      const link = document.createElement('a');
+      link.download = fileName;
+      link.href = imgData;
+      link.click();
+      setAiUpdatedNotice(`JPG ইমেজ ডাউনলোড সম্পন্ন হয়েছে: ${fileName}`);
+    } catch (err) {
+      console.error('Failed to export JPG:', err);
+      alert('Could not export JPG.');
+    } finally {
+      setIsGeneratingJpg(false);
+    }
+  };
+
+  // Generate self-contained standalone HTML matching BDRAILWAY_TICKET
+  const getStandaloneTicketHtml = () => {
+    if (!ticketRef.current) return '';
+    const inner = ticketRef.current.innerHTML;
+    return `<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bangladesh Railway e-Ticket - ${ticket.pnrNumber}</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+Bengali:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4; margin: 0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: #ffffff; }
+  body { font-family: Roboto, 'Helvetica Neue', Arial, sans-serif; color: #333333; }
+  .bn { font-family: 'Noto Sans Bengali', 'SolaimanLipi', 'Kalpurush', sans-serif; }
+  .page { width: 210mm; min-height: 297mm; margin: 0 auto; background: #ffffff; padding-top: 61.7px; }
+  .frame { margin: 0 56.96px 0 56.96px; border: 4.5px solid #039d48; padding: 15.1px; min-height: 979.6px; position: relative; }
+  .hdr { position: relative; height: 64.9px; }
+  .logo { position: absolute; top: 1.6px; left: 7.7px; width: 44.2px; height: 57.9px; object-fit: contain; }
+  .titlewrap { position: absolute; left: 0; width: 100%; top: 0; text-align: center; }
+  .title-en { color: #1f7ec7; font-size: 21px; line-height: 22px; font-weight: 700; letter-spacing: -0.75px; position: absolute; top: 10.5px; width: 100%; }
+  .title-bn { color: #1f7ec7; font-size: 21px; line-height: 21px; font-weight: 500; position: absolute; top: 34.8px; width: 100%; }
+  .hdr-right { position: absolute; top: 0; right: 0; width: 80px; height: 160px; }
+  .powered { color: #333; font-size: 8.3px; line-height: 8.3px; font-weight: 700; position: absolute; top: 6.9px; left: 0; }
+  .jv { color: #05b454; font-weight: 700; font-size: 11.5px; line-height: 10.4px; position: absolute; top: 22.6px; left: 0; }
+  .jv .big { font-size: 17.1px; vertical-align: -2.5px; letter-spacing: -0.5px; }
+  .qr { position: absolute; top: 60.4px; left: 0; width: 80px; height: 80px; display: block; }
+  .intro { margin-top: 2.8px; font-size: 7.6pt; line-height: 11.84px; color: #333; padding-right: 88px; }
+  .intro-bn { margin-top: 10.9px; width: 100%; font-size: 7pt; line-height: 11.84px; padding-right: 88px; }
+  .bar { background: #039d48; color: #ffffff; font-size: 10.5pt; font-weight: 700; height: 29.4px; line-height: 29.4px; padding-left: 4px; margin-top: 8.4px; }
+  table.outer + .bar { margin-top: 21.2px; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 8pt; }
+  td { border: 1px solid #c7c7c7; padding: 0 4px; vertical-align: middle; height: 17.12px; line-height: 16.1px; }
+  td:first-child { width: 320.3px; }
+  td.b { font-weight: 700; }
+  table.outer { border: 1.3px solid #039d48; }
+  table.outer td { border-top: 1px solid #c7c7c7; border-bottom: none; }
+  table.outer tr:last-child td { border-bottom: 1.3px solid #039d48; }
+  table.outer td:first-child { border-left: none; }
+  table.outer td:last-child { border-right: none; }
+  .note-row td { font-size: 5.8pt; line-height: 6.5px; height: 14.7px; padding-top: 0; padding-bottom: 0; }
+  .pleasenote { margin-top: 5.1px; font-size: 8pt; }
+  .pn-cols { display: flex; }
+  .pn-en { width: 315px; flex: none; }
+  .pn-bn { flex: 1; }
+  .pn-head { line-height: 9px; font-weight: 700; }
+  .pn-en div.it { margin-top: 17px; font-size: 8pt; line-height: 14px; }
+  .pn-bn div.it { margin-top: 17px; font-size: 8pt; line-height: 14px; }
+  .banner1 { background: #e8f5e9; color: #e65100; font-weight: 700; text-align: center; font-size: 11.5pt; line-height: 19.5px; padding-top: 8.5px; height: 51.5px; margin-top: 7.1px; }
+  .banner2 { background: #fbe8d3; color: #b71c1c; font-weight: 700; text-align: center; font-size: 11.5pt; padding-top: 12.4px; height: 36.8px; margin-top: 9.5px; }
+  .footer { display: flex; margin-top: 14.9px; }
+  .f-en { width: 50%; font-size: 9pt; line-height: 14px; }
+  .f-en .big { font-size: 11pt; font-weight: 700; }
+  .f-bn { width: 50%; font-size: 9pt; line-height: 14px; }
+  .f-bn .big { font-size: 11pt; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="page" id="page">
+${inner}
+</div>
+</body>
+</html>`;
+  };
+
+  // Copy HTML to clipboard
+  const handleCopyHtml = async () => {
+    try {
+      const html = getStandaloneTicketHtml();
+      await navigator.clipboard.writeText(html);
+      setCopiedHtml(true);
+      setTimeout(() => setCopiedHtml(false), 2500);
+      setAiUpdatedNotice('টিকেটের সম্পূর্ণ অফিসিয়াল HTML কোড ক্লিপবোর্ডে কপি করা হয়েছে!');
+    } catch (err) {
+      console.error('Failed to copy HTML:', err);
+      alert('Could not copy HTML.');
+    }
+  };
+
+  // Download standalone HTML file
+  const handleDownloadHtml = () => {
+    try {
+      const html = getStandaloneTicketHtml();
+      const fileName = generateOfficialTicketFileName('html', ticket.pnrNumber);
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      link.click();
+      URL.revokeObjectURL(url);
+      setAiUpdatedNotice(`HTML ফাইল ডাউনলোড সম্পন্ন হয়েছে: ${fileName}`);
+    } catch (err) {
+      console.error('Failed to download HTML:', err);
+      alert('Could not download HTML.');
     }
   };
 
@@ -529,8 +701,38 @@ export function TicketMaker() {
                 fontSize: 12, fontWeight: 700, cursor: 'pointer',
                 boxShadow: '0 4px 12px rgba(3, 157, 72, 0.4)'
               }}
+              title="Official PDF Download"
             >
               <Download size={15} /> {isGeneratingPdf ? 'Generating...' : 'PDF Download'}
+            </button>
+            <button
+              onClick={handleDownloadJpg}
+              disabled={isGeneratingJpg}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
+                color: '#fff', border: 'none', padding: '7px 14px', borderRadius: 8,
+                fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.4)'
+              }}
+              title="Official High-Resolution JPG Download"
+            >
+              <ImageIcon size={15} /> {isGeneratingJpg ? 'Processing...' : 'JPG Download'}
+            </button>
+            <button
+              onClick={handleCopyHtml}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: copiedHtml ? 'rgba(34, 197, 94, 0.2)' : 'rgba(255,255,255,0.06)',
+                border: copiedHtml ? '1px solid #22c55e' : '1px solid rgba(255,255,255,0.15)',
+                color: copiedHtml ? '#4ade80' : '#f1f5f9',
+                padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              title="Copy Standalone Official HTML to Clipboard"
+            >
+              {copiedHtml ? <Check size={15} /> : <Copy size={15} />}
+              {copiedHtml ? 'HTML Copied!' : 'Copy HTML'}
             </button>
           </div>
         ) : (
@@ -612,6 +814,8 @@ export function TicketMaker() {
               placeholder="যেমন: 'আগামীকাল পদ্মা এক্সপ্রেস এ ১ জনের একটা টিকিট বানাও'"
               onGenerate={handleAiGenerate}
               onReviewPdf={handleDownloadPdf}
+              onDownloadJpg={handleDownloadJpg}
+              onCopyHtml={handleCopyHtml}
               onViewPreview={() => {
                 if (isMobile) setMobileTab('preview');
               }}
@@ -1310,12 +1514,42 @@ export function TicketMaker() {
                   style={{
                     display: 'flex', alignItems: 'center', gap: 5,
                     background: 'linear-gradient(135deg, #039d48 0%, #05b454 100%)',
-                    color: '#fff', border: 'none', padding: '5px 12px', borderRadius: 6,
+                    color: '#fff', border: 'none', padding: '5px 11px', borderRadius: 6,
                     fontSize: 11.5, fontWeight: 700, cursor: 'pointer',
                     boxShadow: '0 2px 8px rgba(3, 157, 72, 0.4)'
                   }}
+                  title="PDF Download"
                 >
                   <Download size={13} /> {isGeneratingPdf ? '...' : 'PDF'}
+                </button>
+                <button
+                  onClick={handleDownloadJpg}
+                  disabled={isGeneratingJpg}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    background: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
+                    color: '#fff', border: 'none', padding: '5px 11px', borderRadius: 6,
+                    fontSize: 11.5, fontWeight: 700, cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(37, 99, 235, 0.4)'
+                  }}
+                  title="JPG Download"
+                >
+                  <ImageIcon size={13} /> {isGeneratingJpg ? '...' : 'JPG'}
+                </button>
+                <button
+                  onClick={handleCopyHtml}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    background: copiedHtml ? 'rgba(34, 197, 94, 0.2)' : 'rgba(255,255,255,0.08)',
+                    border: copiedHtml ? '1px solid #22c55e' : '1px solid rgba(255,255,255,0.15)',
+                    color: copiedHtml ? '#4ade80' : '#fff', padding: '5px 10px', borderRadius: 6,
+                    fontSize: 11.5, fontWeight: 600, cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                  title="Copy Standalone HTML to Clipboard"
+                >
+                  {copiedHtml ? <Check size={13} /> : <Copy size={13} />}
+                  <span>{copiedHtml ? 'Copied' : 'HTML'}</span>
                 </button>
                 <button
                   onClick={() => window.print()}
@@ -1715,17 +1949,50 @@ export function TicketMaker() {
             onClick={handleDownloadPdf}
             disabled={isGeneratingPdf}
             style={{
-              display: 'flex', alignItems: 'center', gap: 5,
+              display: 'flex', alignItems: 'center', gap: 4,
               background: 'linear-gradient(135deg, #039d48 0%, #05b454 100%)',
               color: '#fff', border: 'none',
-              padding: '7px 14px', borderRadius: 18,
-              fontSize: 11.5, fontWeight: 700,
+              padding: '6px 10px', borderRadius: 16,
+              fontSize: 11, fontWeight: 700,
               cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(3, 157, 72, 0.4)',
+              boxShadow: '0 2px 8px rgba(3, 157, 72, 0.4)',
             }}
           >
-            <Download size={14} />
-            <span>{isGeneratingPdf ? 'Wait...' : 'PDF'}</span>
+            <Download size={13} />
+            <span>PDF</span>
+          </button>
+
+          <button
+            onClick={handleDownloadJpg}
+            disabled={isGeneratingJpg}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              background: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
+              color: '#fff', border: 'none',
+              padding: '6px 10px', borderRadius: 16,
+              fontSize: 11, fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(37, 99, 235, 0.4)',
+            }}
+          >
+            <ImageIcon size={13} />
+            <span>JPG</span>
+          </button>
+
+          <button
+            onClick={handleCopyHtml}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              background: copiedHtml ? 'rgba(34, 197, 94, 0.25)' : 'rgba(255, 255, 255, 0.08)',
+              border: copiedHtml ? '1px solid #22c55e' : '1px solid rgba(255, 255, 255, 0.15)',
+              color: copiedHtml ? '#4ade80' : '#fff',
+              padding: '6px 10px', borderRadius: 16,
+              fontSize: 11, fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            {copiedHtml ? <Check size={13} /> : <Copy size={13} />}
+            <span>HTML</span>
           </button>
         </nav>
       )}
