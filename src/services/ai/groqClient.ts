@@ -6,6 +6,9 @@ const GROQ_MODEL_STORAGE_KEY = 'groq_preferred_model';
 export const GROQ_AVAILABLE_MODELS = [
   { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B Versatile', desc: '🚀 সেরা ইন্টেলিজেন্স ও সুপার ফাস্ট (সুপারিশকৃত)' },
   { id: 'llama-3.1-8b-instant', name: 'Llama 3.1 8B Instant', desc: '⚡ আল্ট্রা ফাস্ট রেসপন্স ও লো-লেটেন্সি' },
+  { id: 'openai/gpt-oss-120b', name: 'GPT-OSS 120B (OpenAI on Groq)', desc: '১,০০০ রিকোয়েস্ট/দিন ও হাই কোয়ালিটি' },
+  { id: 'openai/gpt-oss-20b', name: 'GPT-OSS 20B (OpenAI on Groq)', desc: '১,০০০ রিকোয়েস্ট/দিন ও লো-লেটেন্সি' },
+  { id: 'qwen/qwen3.8-27b', name: 'Qwen 3.8 27B', desc: '১,০০০ রিকোয়েস্ট/দিন ও এক্সিলেন্ট রিজনাল সাপোর্ট' },
   { id: 'mixtral-8x7b-32768', name: 'Mixtral 8x7B (32k Context)', desc: 'হাই থ্রুপুট ও বড় কনটেক্সট' },
   { id: 'gemma2-9b-it', name: 'Gemma 2 9B IT', desc: 'গুগল আর্কিটেকচার বেসড ওপেন মডেল' },
 ];

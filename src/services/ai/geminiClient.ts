@@ -6,6 +6,7 @@ const MODEL_STORAGE_KEY = 'gemini_preferred_model';
 export const AVAILABLE_MODELS = [
   { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite', limit: '500 RPD', desc: '🔥 বেস্ট ভলিউম ও সুপার ফাস্ট (৫০০ রিকোয়েস্ট/দিন)' },
   { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', limit: '20 RPD', desc: 'ম্যাক্সিমাম কোয়ালিটি ও রিজনিং (২০ রিকোয়েস্ট/দিন)' },
+  { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', limit: '15 RPM', desc: 'স্ট্যান্ডার্ড মাল্টিমোডাল মডেল' },
   { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', limit: 'High Quota', desc: 'স্ট্যাবল ও নির্ভরযোগ্য' },
 ];
 
@@ -79,7 +80,8 @@ export async function testGeminiApiKey(apiKey: string, modelOverride?: string): 
     return { success: false, message: 'API key is empty.' };
   }
 
-  const model = modelOverride || getPreferredModel();
+  const rawModel = modelOverride || getPreferredModel();
+  const model = rawModel && !rawModel.includes('2.0-flash-lite') ? rawModel : 'gemini-2.5-flash-lite';
 
   try {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey.trim()}`;

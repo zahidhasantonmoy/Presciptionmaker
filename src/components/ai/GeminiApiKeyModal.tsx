@@ -38,7 +38,8 @@ export function GeminiApiKeyModal({ isOpen, onClose, onSaved }: GeminiApiKeyModa
   useEffect(() => {
     if (isOpen) {
       setGeminiKey(getGeminiApiKey());
-      setGeminiModel(getPreferredModel());
+      const prefGemini = getPreferredModel();
+      setGeminiModel(prefGemini.includes('2.0-flash-lite') ? 'gemini-2.5-flash-lite' : prefGemini);
       setGroqKey(getGroqApiKey());
       setGroqModel(getGroqPreferredModel());
       setTestResult(null);

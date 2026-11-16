@@ -277,7 +277,7 @@ function parseRailwayTicketLocally(
   let detectedTo = '';
 
   // Find all stations mentioned in prompt and their positions
-  const matchedStations: { name: string; index: number }[] = [];
+  const matchedStations: { name: string; index: number; nameBn: string }[] = [];
   for (const st of RAILWAY_STATIONS) {
     const sName = st.name.toLowerCase();
     const sBn = st.nameBn;
@@ -295,7 +295,7 @@ function parseRailwayTicketLocally(
 
     if (pos !== -1) {
       if (!matchedStations.some(m => m.name.toLowerCase() === st.name.toLowerCase())) {
-        matchedStations.push({ name: st.name, index: pos });
+        matchedStations.push({ name: st.name, index: pos, nameBn: st.nameBn });
       }
     }
   }
@@ -303,17 +303,19 @@ function parseRailwayTicketLocally(
   // Sort by appearance in prompt
   matchedStations.sort((a, b) => a.index - b.index);
 
-  // Check specific "from" and "to" syntax (e.g. "dhaka theke", "theke rajshahi", "ঢাকা থেকে")
+  // Check specific "from" and "to" syntax (e.g. "dhaka theke", "theke rajshahi", "ঢাকা থেকে", "রাজশাহী যাব")
   for (const st of matchedStations) {
     const sLower = st.name.toLowerCase();
+    const sBn = st.nameBn;
+
     const isFrom =
-      new RegExp(`\\b${sLower}\\s*(?:theke|hote|থেকে|হতে)\\b`, 'i').test(pLower) ||
-      new RegExp(`(?:from|theke|থেকে|হতে)\\s+${sLower}\\b`, 'i').test(pLower);
+      new RegExp(`(?:\\b${sLower}\\b|${sBn})\\s*(?:theke|hote|থেকে|হতে)\\b`, 'i').test(prompt) ||
+      new RegExp(`(?:from|theke|থেকে|হতে)\\s+(?:\\b${sLower}\\b|${sBn})`, 'i').test(prompt);
 
     const isTo =
-      new RegExp(`(?:theke|থেকে|hote|হতে|to)\\s+.*?\\b${sLower}\\b`, 'i').test(pLower) ||
-      new RegExp(`\\bto\\s+${sLower}\\b`, 'i').test(pLower) ||
-      new RegExp(`\\b${sLower}\\s*(?:te|jabo|যাব|তে|পৌঁছাবে)\\b`, 'i').test(pLower);
+      new RegExp(`(?:theke|থেকে|hote|হতে|to|porjonto|পর্যন্ত)\\s+.*?(?:\\b${sLower}\\b|${sBn})`, 'i').test(prompt) ||
+      new RegExp(`\\bto\\s+(?:\\b${sLower}\\b|${sBn})\\b`, 'i').test(prompt) ||
+      new RegExp(`(?:\\b${sLower}\\b|${sBn})\\s*(?:te|jabo|যাব|তে|পৌঁছাবে|পর্যন্ত|porjonto)`, 'i').test(prompt);
 
     if (isFrom) {
       detectedFrom = st.name;
@@ -347,6 +349,8 @@ function parseRailwayTicketLocally(
     'সুবর্ণ': 'SUBORNO EXPRESS',
     'cox': 'COX\'S BAZAR EXPRESS',
     'কক্সবাজার': 'COX\'S BAZAR EXPRESS',
+    'parjatak': 'PARJATAK EXPRESS',
+    'পর্যটক': 'PARJATAK EXPRESS',
     'chitra': 'CHITRA EXPRESS',
     'চিত্রা': 'CHITRA EXPRESS',
     'parabat': 'PARABAT EXPRESS',
@@ -361,12 +365,38 @@ function parseRailwayTicketLocally(
     'ধূমকেতু': 'DHUMKETU EXPRESS',
     'ekota': 'EKOTA EXPRESS',
     'একতা': 'EKOTA EXPRESS',
+    'drutojan': 'DRUTOJAN EXPRESS',
     'druto': 'DRUTOJAN EXPRESS',
     'দ্রুতযান': 'DRUTOJAN EXPRESS',
+    'banglabandha': 'BANGLABANDHA EXPRESS',
+    'বাংলাবান্ধা': 'BANGLABANDHA EXPRESS',
+    'tista': 'TISTA EXPRESS',
+    'তিস্তা': 'TISTA EXPRESS',
+    'agnibeena': 'AGNIBEENA EXPRESS',
+    'অগ্নিবীণা': 'AGNIBEENA EXPRESS',
+    'tungipara': 'TUNGIPARA EXPRESS',
+    'টুঙ্গিপাড়া': 'TUNGIPARA EXPRESS',
+    'টুঙ্গিপাড়া': 'TUNGIPARA EXPRESS',
+    'karatoa': 'KARATOA EXPRESS',
+    'করতোয়া': 'KARATOA EXPRESS',
+    'dolonchapa': 'DOLONCHAPA EXPRESS',
+    'দোলনচাঁপা': 'DOLONCHAPA EXPRESS',
+    'দোলনচাপা': 'DOLONCHAPA EXPRESS',
+    'madhumati': 'MADHUMATI EXPRESS',
+    'modhumoti': 'MADHUMATI EXPRESS',
+    'মধুমতী': 'MADHUMATI EXPRESS',
+    'burimari': 'BURIMARI EXPRESS',
+    'বুড়িমারী': 'BURIMARI EXPRESS',
+    'বুড়িমারী': 'BURIMARI EXPRESS',
+    'chilahati': 'CHILAHATI EXPRESS',
+    'চিলাহাটি': 'CHILAHATI EXPRESS',
     'kurigram': 'KURIGRAM EXPRESS',
     'কুড়িগ্রাম': 'KURIGRAM EXPRESS',
+    'কুড়িগ্রাম': 'KURIGRAM EXPRESS',
     'rangpur': 'RANGPUR EXPRESS',
     'রংপুর': 'RANGPUR EXPRESS',
+    'lalmoni': 'LALMONI EXPRESS',
+    'লালমনি': 'LALMONI EXPRESS',
     'benapole': 'BENAPOLE EXPRESS',
     'বেনাপোল': 'BENAPOLE EXPRESS',
     'sundarban': 'SUNDARBAN EXPRESS',
@@ -377,6 +407,39 @@ function parseRailwayTicketLocally(
     'কালনী': 'KALNI EXPRESS',
     'jayantika': 'JAYANTIKA EXPRESS',
     'জয়ন্তিকা': 'JAYANTIKA EXPRESS',
+    'kapotaksha': 'KAPOTAKKHA EXPRESS',
+    'kapotakkha': 'KAPOTAKKHA EXPRESS',
+    'কপোতাক্ষ': 'KAPOTAKKHA EXPRESS',
+    'sagordari': 'SAGORDARI EXPRESS',
+    'সাগরদাঁড়ী': 'SAGORDARI EXPRESS',
+    'সাগরদাড়ী': 'SAGORDARI EXPRESS',
+    'rupsha': 'RUPSHA EXPRESS',
+    'রূপসা': 'RUPSHA EXPRESS',
+    'simanta': 'SIMANTA EXPRESS',
+    'সীমান্ত': 'SIMANTA EXPRESS',
+    'turna': 'TURNA EXPRESS',
+    'তূর্ণা': 'TURNA EXPRESS',
+    'mahanagar': 'MAHANAGAR EXPRESS',
+    'মহানগর': 'MAHANAGAR EXPRESS',
+    'chattala': 'CHATTALA EXPRESS',
+    'চট্টলা': 'CHATTALA EXPRESS',
+    'bijoy': 'BIJOY EXPRESS',
+    'বিজয়': 'BIJOY EXPRESS',
+    'paharika': 'PAHARIKA EXPRESS',
+    'পাহাড়িকা': 'PAHARIKA EXPRESS',
+    'পাহাড়িকা': 'PAHARIKA EXPRESS',
+    'udayan': 'UDAYAN EXPRESS',
+    'উদয়ন': 'UDAYAN EXPRESS',
+    'sirajganj': 'SIRAJGANJ EXPRESS',
+    'সিরাজগঞ্জ': 'SIRAJGANJ EXPRESS',
+    'haor': 'HAOR EXPRESS',
+    'হাওর': 'HAOR EXPRESS',
+    'mohonganj': 'MOHANGANJ EXPRESS',
+    'মোহনগঞ্জ': 'MOHANGANJ EXPRESS',
+    'meghna': 'MEGHNA EXPRESS',
+    'মেঘনা': 'MEGHNA EXPRESS',
+    'jamalpur': 'JAMALPUR EXPRESS',
+    'জামালপুর': 'JAMALPUR EXPRESS',
   };
 
   let targetTrainName = '';
