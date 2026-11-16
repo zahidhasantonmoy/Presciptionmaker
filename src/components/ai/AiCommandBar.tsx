@@ -4,6 +4,7 @@ import {
   FileText, Eye, AlertCircle, RefreshCw, Lightbulb, Wifi, WifiOff, Zap
 } from 'lucide-react';
 import { hasGeminiApiKey } from '../../services/ai/geminiClient';
+import { hasGroqApiKey } from '../../services/ai/groqClient';
 import { GeminiApiKeyModal } from './GeminiApiKeyModal';
 
 export interface AiCommandBarProps {
@@ -53,8 +54,14 @@ export function AiCommandBar({
   const [loading, setLoading] = useState(false);
   const [lastSummary, setLastSummary] = useState<string | null>(null);
   const [keyModalOpen, setKeyModalOpen] = useState(false);
-  const [hasKey, setHasKey] = useState(() => hasGeminiApiKey());
+  const [geminiActive, setGeminiActive] = useState(() => hasGeminiApiKey());
+  const [groqActive, setGroqActive] = useState(() => hasGroqApiKey());
   const [online, setOnline] = useState(() => typeof navigator !== 'undefined' ? navigator.onLine : true);
+
+  const refreshKeys = () => {
+    setGeminiActive(hasGeminiApiKey());
+    setGroqActive(hasGroqApiKey());
+  };
 
   useEffect(() => {
     const handleOnline = () => setOnline(true);
@@ -177,9 +184,9 @@ export function AiCommandBar({
             type="button"
             onClick={() => setKeyModalOpen(true)}
             style={{
-              background: hasKey ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-              border: `1px solid ${hasKey ? 'rgba(16, 185, 129, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`,
-              color: hasKey ? '#34d399' : '#fbbf24',
+              background: (geminiActive || groqActive) ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+              border: `1px solid ${(geminiActive || groqActive) ? 'rgba(16, 185, 129, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`,
+              color: (geminiActive || groqActive) ? '#34d399' : '#fbbf24',
               padding: '3px 8px',
               borderRadius: 6,
               fontSize: 11,
@@ -189,10 +196,26 @@ export function AiCommandBar({
               alignItems: 'center',
               gap: 5,
             }}
-            title={hasKey ? 'Gemini API Key Connected' : 'Click to add Gemini API Key'}
+            title={
+              geminiActive && groqActive
+                ? 'Gemini + Groq Fallback Connected'
+                : geminiActive
+                ? 'Gemini AI Connected'
+                : groqActive
+                ? 'Groq Fallback Connected'
+                : 'Configure AI Keys (Gemini & Groq)'
+            }
           >
             <Key size={11} />
-            <span>{hasKey ? 'Gemini Key Active' : 'Add Gemini Key'}</span>
+            <span>
+              {geminiActive && groqActive
+                ? 'Gemini + Groq Active'
+                : geminiActive
+                ? 'Gemini Key Active'
+                : groqActive
+                ? 'Groq Key Active'
+                : 'Setup AI Keys'}
+            </span>
           </button>
         </div>
       </div>
@@ -381,7 +404,7 @@ export function AiCommandBar({
       <GeminiApiKeyModal
         isOpen={keyModalOpen}
         onClose={() => setKeyModalOpen(false)}
-        onSaved={() => setHasKey(hasGeminiApiKey())}
+        onSaved={refreshKeys}
       />
     </div>
   );

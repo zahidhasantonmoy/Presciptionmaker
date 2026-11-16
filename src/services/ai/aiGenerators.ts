@@ -1,4 +1,4 @@
-import { callGeminiJson, hasGeminiApiKey } from './geminiClient';
+import { callSmartAiJson } from './aiOrchestrator';
 import { BangladeshRailwayTicket } from '../ticket/TicketMaker';
 import {
   RAILWAY_TRAINS,
@@ -142,8 +142,8 @@ export async function generateTicketAi(
   prompt: string,
   baseTicket: BangladeshRailwayTicket
 ): Promise<{ ticket: BangladeshRailwayTicket; summary: string }> {
-  // Try online Gemini API if internet and key are available
-  if (isOnline() && hasGeminiApiKey()) {
+  // Try online Multi-Provider AI (Gemini -> Groq fallback)
+  if (isOnline()) {
     try {
       const systemInstruction = `You are an expert Bangladesh Railway ticketing assistant.
 Current date is: ${new Date().toISOString().split('T')[0]}.
@@ -179,7 +179,7 @@ Given the user prompt (English, Bangla, or Banglish), extract and return valid J
         className: baseTicket.className,
       })}`;
 
-      const res = await callGeminiJson<Partial<BangladeshRailwayTicket>>(userText, systemInstruction);
+      const res = await callSmartAiJson<Partial<BangladeshRailwayTicket>>(userText, systemInstruction);
 
       if (res.success && res.data) {
         const { pnr, ticketId } = generateTicketIds();
@@ -216,9 +216,11 @@ Given the user prompt (English, Bangla, or Banglish), extract and return valid J
           createdAt: new Date().toISOString(),
         };
 
+        const aiTag = res.provider === 'groq' ? '⚡ Groq LPU AI' : '🌐 Gemini AI';
+
         return {
           ticket: merged,
-          summary: `🌐 Gemini AI: ${merged.trainName} (${merged.trainNumber}), ${merged.fromStation} ➔ ${merged.toStation}, তারিখ: ${merged.journeyDate}, সিট: ${merged.coachSeat}`,
+          summary: `${aiTag}: ${merged.trainName} (${merged.trainNumber}), ${merged.fromStation} ➔ ${merged.toStation}, তারিখ: ${merged.journeyDate}, সিট: ${merged.coachSeat}`,
         };
       }
     } catch {
@@ -468,7 +470,7 @@ export interface PrescriptionAiResult {
 }
 
 export async function generatePrescriptionAi(prompt: string): Promise<PrescriptionAiResult> {
-  if (isOnline() && hasGeminiApiKey()) {
+  if (isOnline()) {
     try {
       const systemInstruction = `You are an AI Clinical Assistant for doctors in Bangladesh.
 Extract clinical information from the prompt (English, Bangla, or Banglish).
@@ -494,11 +496,12 @@ Return JSON:
   "summary": string
 }`;
 
-      const res = await callGeminiJson<PrescriptionAiResult>(prompt, systemInstruction);
+      const res = await callSmartAiJson<PrescriptionAiResult>(prompt, systemInstruction);
       if (res.success && res.data) {
+        const aiTag = res.provider === 'groq' ? '⚡ Groq LPU AI' : '🌐 Gemini AI';
         return {
           ...res.data,
-          summary: `🌐 Gemini AI: ${res.data.summary || 'প্রেসক্রিপশন সফলভাবে জেনারেট হয়েছে'}`,
+          summary: `${aiTag}: ${res.data.summary || 'প্রেসক্রিপশন সফলভাবে জেনারেট হয়েছে'}`,
         };
       }
     } catch {
@@ -672,7 +675,7 @@ export interface InvoiceAiResult {
 }
 
 export async function generateInvoiceAi(prompt: string): Promise<InvoiceAiResult> {
-  if (isOnline() && hasGeminiApiKey()) {
+  if (isOnline()) {
     try {
       const systemInstruction = `You are an AI Invoice Assistant. Extract invoice billing details:
 {
@@ -686,11 +689,12 @@ export async function generateInvoiceAi(prompt: string): Promise<InvoiceAiResult
   "notes": string,
   "summary": string
 }`;
-      const res = await callGeminiJson<InvoiceAiResult>(prompt, systemInstruction);
+      const res = await callSmartAiJson<InvoiceAiResult>(prompt, systemInstruction);
       if (res.success && res.data) {
+        const aiTag = res.provider === 'groq' ? '⚡ Groq LPU AI' : '🌐 Gemini AI';
         return {
           ...res.data,
-          summary: `🌐 Gemini AI: ${res.data.summary || 'ইনভয়েস সফলভাবে জেনারেট হয়েছে'}`,
+          summary: `${aiTag}: ${res.data.summary || 'ইনভয়েস সফলভাবে জেনারেট হয়েছে'}`,
         };
       }
     } catch {
@@ -743,7 +747,7 @@ export interface CertificateAiResult {
 }
 
 export async function generateCertificateAi(prompt: string): Promise<CertificateAiResult> {
-  if (isOnline() && hasGeminiApiKey()) {
+  if (isOnline()) {
     try {
       const systemInstruction = `You are an AI Certificate Assistant. Extract certificate details:
 {
@@ -756,11 +760,14 @@ export async function generateCertificateAi(prompt: string): Promise<Certificate
   "date": "YYYY-MM-DD",
   "summary": string
 }`;
-      const res = await callGeminiJson<CertificateAiResult>(prompt, systemInstruction);
-      if (res.success && res.data) return {
-        ...res.data,
-        summary: `🌐 Gemini AI: ${res.data.summary}`,
-      };
+      const res = await callSmartAiJson<CertificateAiResult>(prompt, systemInstruction);
+      if (res.success && res.data) {
+        const aiTag = res.provider === 'groq' ? '⚡ Groq LPU AI' : '🌐 Gemini AI';
+        return {
+          ...res.data,
+          summary: `${aiTag}: ${res.data.summary || 'প্রশংসাপত্র সফলভাবে তৈরি হয়েছে'}`,
+        };
+      }
     } catch {
       // fallback
     }
@@ -799,7 +806,7 @@ export interface IdCardAiResult {
 }
 
 export async function generateIdCardAi(prompt: string): Promise<IdCardAiResult> {
-  if (isOnline() && hasGeminiApiKey()) {
+  if (isOnline()) {
     try {
       const systemInstruction = `You are an AI Employee ID Card Generator. Extract details:
 {
@@ -811,11 +818,14 @@ export async function generateIdCardAi(prompt: string): Promise<IdCardAiResult> 
   "validUntil": "YYYY-MM-DD",
   "summary": string
 }`;
-      const res = await callGeminiJson<IdCardAiResult>(prompt, systemInstruction);
-      if (res.success && res.data) return {
-        ...res.data,
-        summary: `🌐 Gemini AI: ${res.data.summary}`,
-      };
+      const res = await callSmartAiJson<IdCardAiResult>(prompt, systemInstruction);
+      if (res.success && res.data) {
+        const aiTag = res.provider === 'groq' ? '⚡ Groq LPU AI' : '🌐 Gemini AI';
+        return {
+          ...res.data,
+          summary: `${aiTag}: ${res.data.summary || 'আইডি কার্ড সফলভাবে তৈরি হয়েছে'}`,
+        };
+      }
     } catch {
       // fallback
     }
