@@ -16,6 +16,7 @@ import {
 } from './railwayData';
 import { AiCommandBar } from '../../components/ai/AiCommandBar';
 import { generateTicketAi } from '../ai/aiGenerators';
+import type { TicketAiWarning } from '../ai/aiGenerators';
 import { saveDocumentHistory } from '../history/documentHistory';
 import { openWhatsAppTicket } from '../../utils/whatsappShare';
 import { RecentHistoryModal } from '../../components/common/RecentHistoryModal';
@@ -137,6 +138,7 @@ export function TicketMaker() {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isGeneratingJpg, setIsGeneratingJpg] = useState(false);
   const [copiedHtml, setCopiedHtml] = useState(false);
+  const [aiWarningPopup, setAiWarningPopup] = useState<{ title: string; messageBn: string; messageEn: string } | null>(null);
   const [mobileTab, setMobileTab] = useState<'editor' | 'preview'>('editor');
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 1024);
   const ticketRef = useRef<HTMLDivElement>(null);
@@ -377,10 +379,19 @@ export function TicketMaker() {
       data: result.ticket,
     });
 
+    // Show warning popup for route mismatch or off-day
+    if (result.warnings && result.warnings.length > 0) {
+      const warn = result.warnings[0];
+      setAiWarningPopup({
+        title: warn.type === 'off_day' ? '⚠️ ছুটির দিন সতর্কতা!' : '⚠️ রুট সমস্যা!',
+        messageBn: warn.messageBn,
+        messageEn: warn.message,
+      });
+    }
+
     setAiUpdatedNotice(`AI আপডেট সম্পন্ন! ট্রেন: ${result.ticket.trainName} [${result.ticket.trainNumber}], রুট: ${result.ticket.fromStation} → ${result.ticket.toStation}, সিট: ${result.ticket.coachSeat}। নিচের ফর্মের সব সেটিংস ও লাইভ টিকিট স্বয়ংক্রিয়ভাবে আপডেট করা হয়েছে।`);
     return result.summary;
   };
-
   // Auto-run if redirected from Home Central AI Hub
   useEffect(() => {
     try {
@@ -405,25 +416,31 @@ export function TicketMaker() {
       const el = ticketRef.current;
 
       const canvas = await html2canvas(el, {
-        scale: 2,
+        scale: 3,
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
         scrollX: 0,
         scrollY: 0,
-        windowWidth: 1200,
-        windowHeight: 1600,
+        width: 794,
+        height: 1123,
+        windowWidth: 794,
+        windowHeight: 1123,
         onclone: (clonedDoc) => {
           const clonedPage = clonedDoc.getElementById('page');
           if (clonedPage) {
             clonedPage.style.transform = 'none';
             clonedPage.style.position = 'relative';
-            clonedPage.style.margin = '0 auto';
+            clonedPage.style.width = '793.7px';
+            clonedPage.style.height = '1122.5px';
+            clonedPage.style.margin = '0';
+            clonedPage.style.paddingTop = '61.7px';
+            clonedPage.style.boxSizing = 'border-box';
           }
         }
       });
 
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const imgData = canvas.toDataURL('image/jpeg', 0.97);
       const pdf = new jsPDF({
         orientation: 'p',
         unit: 'pt',
@@ -455,25 +472,31 @@ export function TicketMaker() {
       const el = ticketRef.current;
 
       const canvas = await html2canvas(el, {
-        scale: 2,
+        scale: 3,
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
         scrollX: 0,
         scrollY: 0,
-        windowWidth: 1200,
-        windowHeight: 1600,
+        width: 794,
+        height: 1123,
+        windowWidth: 794,
+        windowHeight: 1123,
         onclone: (clonedDoc) => {
           const clonedPage = clonedDoc.getElementById('page');
           if (clonedPage) {
             clonedPage.style.transform = 'none';
             clonedPage.style.position = 'relative';
-            clonedPage.style.margin = '0 auto';
+            clonedPage.style.width = '793.7px';
+            clonedPage.style.height = '1122.5px';
+            clonedPage.style.margin = '0';
+            clonedPage.style.paddingTop = '61.7px';
+            clonedPage.style.boxSizing = 'border-box';
           }
         }
       });
 
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const imgData = canvas.toDataURL('image/jpeg', 0.97);
       const fileName = generateOfficialTicketFileName('jpg', ticket.pnrNumber);
       const link = document.createElement('a');
       link.download = fileName;
@@ -598,6 +621,43 @@ ${inner}
       overflow: 'hidden',
       fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
     }}>
+      {/* ─── AI Warning Popup Modal ─────────────────────────────────────── */}
+      {aiWarningPopup && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(0,0,0,0.80)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 16,
+        }}>
+          <div style={{
+            background: '#1e293b', borderRadius: 14, padding: 28,
+            maxWidth: 480, width: '100%',
+            border: '2px solid #f59e0b',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
+          }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#fbbf24', marginBottom: 14 }}>
+              {aiWarningPopup.title}
+            </div>
+            <div style={{ fontSize: 15, color: '#e2e8f0', lineHeight: 1.7, marginBottom: 10, fontFamily: "'Noto Sans Bengali', sans-serif" }}>
+              {aiWarningPopup.messageBn}
+            </div>
+            <div style={{ fontSize: 12, color: '#94a3b8', lineHeight: 1.5, marginBottom: 22 }}>
+              {aiWarningPopup.messageEn}
+            </div>
+            <button
+              onClick={() => setAiWarningPopup(null)}
+              style={{
+                background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                color: '#000', border: 'none', borderRadius: 8,
+                padding: '11px 24px', fontWeight: 700, fontSize: 15, cursor: 'pointer',
+                width: '100%',
+              }}
+            >
+              বুঝেছি, ঠিক আছে (OK)
+            </button>
+          </div>
+        </div>
+      )}
       {/* ─── Top Control Header ────────────────────────────────────────── */}
       <div style={{
         padding: isMobile ? '8px 12px' : '12px 20px',

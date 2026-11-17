@@ -147,10 +147,84 @@ export function isOnline(): boolean {
 // 1. RAILWAY TICKET AI GENERATOR (ONLINE & OFFLINE)
 // ─────────────────────────────────────────────────────────────
 
+export interface TicketAiWarning {
+  type: 'route_mismatch' | 'off_day' | 'station_not_found';
+  message: string;
+  messageBn: string;
+}
+
+// Checks if a train runs on the given journey date (YYYY-MM-DD)
+export function checkTrainOffDay(train: { offDay: string; name: string }, journeyDate: string): TicketAiWarning | null {
+  if (!train.offDay || train.offDay === 'None' || train.offDay === 'none') return null;
+  if (!journeyDate) return null;
+
+  const dateObj = new Date(journeyDate);
+  if (isNaN(dateObj.getTime())) return null;
+
+  const dayOfWeek = dateObj.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+  const dayNames: Record<string, number> = {
+    'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3,
+    'Thursday': 4, 'Friday': 5, 'Saturday': 6,
+  };
+  const dayNamesBn: Record<string, string> = {
+    'Sunday': 'রবিবার', 'Monday': 'সোমবার', 'Tuesday': 'মঙ্গলবার',
+    'Wednesday': 'বুধবার', 'Thursday': 'বৃহস্পতিবার', 'Friday': 'শুক্রবার', 'Saturday': 'শনিবার',
+  };
+
+  const offDayNum = dayNames[train.offDay];
+  if (offDayNum !== undefined && dayOfWeek === offDayNum) {
+    const bn = dayNamesBn[train.offDay] || train.offDay;
+    return {
+      type: 'off_day',
+      message: `⚠️ Off Day Alert: "${train.name}" does NOT run on ${train.offDay}s. The selected date (${journeyDate}) is a ${train.offDay}. Please choose a different date.`,
+      messageBn: `⚠️ ছুটির দিন সতর্কতা: "${train.name}" ট্রেনটি ${bn}ে চলে না! আপনার নির্বাচিত তারিখ (${journeyDate}) ${bn}। দয়া করে অন্য তারিখ বেছে নিন।`,
+    };
+  }
+  return null;
+}
+
+// Checks if a train serves the requested route (endpoint or intermediate)
+export function checkTrainRoute(
+  trainName: string,
+  fromStation: string,
+  toStation: string
+): TicketAiWarning | null {
+  if (!fromStation || !toStation) return null;
+
+  const normalize = (s: string) => s.toLowerCase().trim();
+  const allVariants = RAILWAY_TRAINS.filter(t =>
+    t.name.toUpperCase().replace(/\s+/g, '').includes(trainName.toUpperCase().replace(/\s+/g, ''))
+  );
+  if (allVariants.length === 0) return null;
+
+  // A train "serves" a station if it's either the from or to endpoint
+  // Intermediate stops are not in our DB so we check if requested stations
+  // are plausible endpoints for any variant
+  const allEndpoints = new Set<string>();
+  allVariants.forEach(t => {
+    allEndpoints.add(normalize(t.fromStation));
+    allEndpoints.add(normalize(t.toStation));
+  });
+
+  const servesFrom = allEndpoints.has(normalize(fromStation));
+  const servesTo = allEndpoints.has(normalize(toStation));
+
+  if (!servesFrom || !servesTo) {
+    const routes = allVariants.map(t => `${t.fromStation} → ${t.toStation}`).join(' | ');
+    const missingStation = !servesFrom ? fromStation : toStation;
+    return {
+      type: 'route_mismatch',
+      message: `⚠️ Route Mismatch: "${trainName}" does not stop at "${missingStation}". Available routes: ${routes}`,
+      messageBn: `⚠️ রুট সমস্যা: "${trainName}" ট্রেনটি "${missingStation}" স্টেশনে থামে না। এই ট্রেনের রুট: ${routes}। অন্য ট্রেন বা স্টেশন বেছে নিন।`,
+    };
+  }
+  return null;
+}
+
 export async function generateTicketAi(
   prompt: string,
   baseTicket: BangladeshRailwayTicket
-): Promise<{ ticket: BangladeshRailwayTicket; summary: string }> {
+): Promise<{ ticket: BangladeshRailwayTicket; summary: string; warnings?: TicketAiWarning[] }> {
   // Try online Multi-Provider AI (Gemini -> Groq fallback)
   if (isOnline()) {
     try {
@@ -181,9 +255,10 @@ Given the user prompt (English, Bangla, or Banglish), extract and return valid J
   "serviceCharge": number
 }
 RULES:
-1. Multi-passenger: If multiple passenger names are provided (e.g. "জাহিদ, তনময় ও রাফি" or "3 persons: Zahid, Tanvir, Rafiq"), join their names with commas in "passengerName" (e.g. "MD. ZAHID HASAN, TANVIR AHMED, RAFIQUL ISLAM"), set "numSeats" and "numAdults" equal to the passenger count.
+1. Multi-passenger: If multiple passenger names are provided (e.g. "জাহিদ, তনময় ও রাফি" or "3 persons: Zahid, Tanvir, Rafiq" or "nam zahid, robiul, kamel"), join all names with commas in "passengerName" (e.g. "MD. ZAHID HASAN, ROBIUL ISLAM, KAMEL HOSSAIN"), set "numSeats" and "numAdults" equal to the passenger count.
 2. Consecutive Seats: For N passengers, generate N consecutive seats in the same coach (e.g. for 2 seats: "TA 34, 35", for 3 seats: "CHA 12, 13, 14").
-3. Accurate Fare: Calculate "fare" = unitClassFare * numSeats, "serviceCharge" = 20 * numSeats.`;
+3. Accurate Fare: Calculate "fare" = unitClassFare * numSeats, "serviceCharge" = 20 * numSeats.
+4. Strict Station Extraction: Extract the exact destination into "toStation" and exact origin into "fromStation" from the user prompt (e.g. "Ibrahimabad", "Rajshahi", "Dhaka"). NEVER replace or auto-correct the user's requested destination with the train's terminal station.`;
 
       const userText = `Current Prompt: "${prompt}"\nBase Ticket Reference:\n${JSON.stringify({
         fromStation: baseTicket.fromStation,
@@ -198,8 +273,13 @@ RULES:
         const { pnr, ticketId } = generateTicketIds();
         const d = res.data;
 
-        const fromStClean = d.fromStation || 'Dhaka';
-        const toStClean = d.toStation || 'Rajshahi';
+        // Cross-verify with local detection to preserve explicitly requested intermediate/origin/destination stations
+        const localDetection = parseRailwayTicketLocally(prompt, baseTicket);
+        const fromStClean = d.fromStation || localDetection.ticket.fromStation || 'Dhaka';
+        let toStClean = d.toStation || localDetection.ticket.toStation || 'Rajshahi';
+        if (localDetection.ticket.toStation && prompt.toLowerCase().includes(localDetection.ticket.toStation.toLowerCase())) {
+          toStClean = localDetection.ticket.toStation;
+        }
 
         // Find train with directional match first
         const matchedTrain = RAILWAY_TRAINS.find(
@@ -249,9 +329,17 @@ RULES:
 
         const aiTag = res.provider === 'groq' ? '⚡ Groq LPU AI' : '🌐 Gemini AI';
 
+        // Run validation warnings on AI result
+        const aiWarnings: TicketAiWarning[] = [];
+        const routeWarn = checkTrainRoute(merged.trainName, fromStClean, toStClean);
+        if (routeWarn) aiWarnings.push(routeWarn);
+        const offDayWarn = merged.journeyDate ? checkTrainOffDay({ offDay: matchedTrain?.offDay || 'None', name: merged.trainName }, merged.journeyDate) : null;
+        if (offDayWarn) aiWarnings.push(offDayWarn);
+
         return {
           ticket: merged,
           summary: `${aiTag}: ${merged.trainName} (${merged.trainNumber}), ${merged.fromStation} ➔ ${merged.toStation}, তারিখ: ${merged.journeyDate}, সিট: ${merged.coachSeat}`,
+          warnings: aiWarnings.length > 0 ? aiWarnings : undefined,
         };
       }
     } catch {
@@ -266,7 +354,7 @@ RULES:
 function parseRailwayTicketLocally(
   prompt: string,
   baseTicket: BangladeshRailwayTicket
-): { ticket: BangladeshRailwayTicket; summary: string } {
+): { ticket: BangladeshRailwayTicket; summary: string; warnings?: TicketAiWarning[] } {
   const pLower = prompt.toLowerCase();
   const { dateStr } = resolveRelativeDate(prompt);
 
@@ -427,6 +515,8 @@ function parseRailwayTicketLocally(
     'upaban': 'UPABAN EXPRESS',
     'উপবন': 'UPABAN EXPRESS',
     'bana': 'BANALATA EXPRESS',
+    'banalata': 'BANALATA EXPRESS',
+    'bonolota': 'BANALATA EXPRESS',
     'বনলতা': 'BANALATA EXPRESS',
     'silk': 'SILKCITY EXPRESS',
     'সিল্কসিটি': 'SILKCITY EXPRESS',
@@ -519,9 +609,17 @@ function parseRailwayTicketLocally(
     }
   }
 
+  // Normalize BANALATA variant: match both "BANA LATA EXPRESS" and "BANALATA EXPRESS"
+  const isBanalata = targetTrainName === 'BANALATA EXPRESS' || pLower.includes('bana lata');
+  const trainNameMatcher = (t: { name: string }) => {
+    const tUp = t.name.toUpperCase().replace(/\s+/g, '');
+    const target = targetTrainName.replace(/\s+/g, '');
+    return tUp.includes(target) || (isBanalata && t.name.toUpperCase().includes('BANA'));
+  };
+
   if (!targetTrainName) {
     for (const t of RAILWAY_TRAINS) {
-      if (pLower.includes(t.name.toLowerCase()) || prompt.includes(t.nameBn) || prompt.includes(t.number)) {
+      if (pLower.includes(t.name.toLowerCase()) || pLower.includes(t.name.toLowerCase().replace(/\s+/g, '')) || prompt.includes(t.nameBn) || prompt.includes(t.number)) {
         targetTrainName = t.name;
         break;
       }
@@ -529,11 +627,13 @@ function parseRailwayTicketLocally(
   }
 
   let matchedTrain: any = null;
+  let routeValidationWarning = ''; // ← Route validation warning
+
   if (targetTrainName) {
     // 1st priority: matching name AND origin AND destination
     if (detectedFrom && detectedTo) {
       matchedTrain = RAILWAY_TRAINS.find(
-        t => t.name.toUpperCase().includes(targetTrainName) &&
+        t => trainNameMatcher(t) &&
              t.fromStation.toLowerCase() === detectedFrom.toLowerCase() &&
              t.toStation.toLowerCase() === detectedTo.toLowerCase()
       );
@@ -541,20 +641,39 @@ function parseRailwayTicketLocally(
     // 2nd priority: matching name AND origin
     if (!matchedTrain && detectedFrom) {
       matchedTrain = RAILWAY_TRAINS.find(
-        t => t.name.toUpperCase().includes(targetTrainName) &&
+        t => trainNameMatcher(t) &&
              t.fromStation.toLowerCase() === detectedFrom.toLowerCase()
       );
     }
     // 3rd priority: matching name AND destination
     if (!matchedTrain && detectedTo) {
       matchedTrain = RAILWAY_TRAINS.find(
-        t => t.name.toUpperCase().includes(targetTrainName) &&
+        t => trainNameMatcher(t) &&
              t.toStation.toLowerCase() === detectedTo.toLowerCase()
       );
     }
     // 4th priority: any train with that name
     if (!matchedTrain) {
-      matchedTrain = RAILWAY_TRAINS.find(t => t.name.toUpperCase().includes(targetTrainName));
+      matchedTrain = RAILWAY_TRAINS.find(t => trainNameMatcher(t));
+    }
+
+    // ── Route Validation: Check if detected train actually serves the requested route ──
+    if (matchedTrain && detectedFrom && detectedTo) {
+      const allRoutesForTrain = RAILWAY_TRAINS.filter(t => trainNameMatcher(t));
+      // Check if any variant of this train serves Ibrahimabad or intermediate stations
+      const servesFrom = allRoutesForTrain.some(t =>
+        t.fromStation.toLowerCase() === detectedFrom.toLowerCase() ||
+        t.toStation.toLowerCase() === detectedFrom.toLowerCase()
+      );
+      const servesTo = allRoutesForTrain.some(t =>
+        t.fromStation.toLowerCase() === detectedTo.toLowerCase() ||
+        t.toStation.toLowerCase() === detectedTo.toLowerCase()
+      );
+      if (!servesFrom || !servesTo) {
+        // Train doesn't serve this route at all — set warning, still generate best match ticket
+        const trainRoutes = allRoutesForTrain.map(t => `${t.fromStation} → ${t.toStation}`).join(', ');
+        routeValidationWarning = `⚠️ সতর্কতা: "${matchedTrain.name}" ট্রেনটি "${detectedFrom} → ${detectedTo}" রুটে চলে না। এই ট্রেনের রুট: ${trainRoutes}। সম্ভব হলে অন্য ট্রেন বেছে নিন।`;
+      }
     }
   }
 
@@ -632,11 +751,26 @@ function parseRailwayTicketLocally(
     passengerName = quotedNames.map(n => n.toUpperCase()).join(', ');
   } else {
     // Unquoted name matching
-    const multiNameMatch = prompt.match(/(?:নাম|name|passenger|যাত্রী)\s*[:=]?\s*([A-Za-z\u0980-\u09FF,.\s&]+?)(?:-|\s+শোভন|\s+স্নিগ্ধা|\s+এসি|\s+টিকিট|\s+ticket|$)/i);
+    const multiNameMatch = prompt.match(/(?:passenger\s+name|যাত্রীর\s+নাম|যাত্রী|passenger|নাম|name|nam|naam)\s*[:=]?\s*([A-Za-z\u0980-\u09FF,.\s&]+)/i);
     if (multiNameMatch && multiNameMatch[1] && multiNameMatch[1].trim().length > 2) {
-      const rawNames = multiNameMatch[1].split(/[,&এবং\s+and\s+ও\s+]+/)
+      let rawPart = multiNameMatch[1];
+      const cutoffPatterns = [
+        /\b(?:express|mail|intercity|train|commuter|shuttle|এক্সপ্রেস|মেইল|ট্রেন)\b/i,
+        /\b(?:padma|sonar\s*bangla|suborno|suborna|cox|parjatak|chitra|parabat|upaban|bana\s*lata|banalata|bonolota|silkcity|dhumketu|ekota|drutojan|banglabandha|tista|agnibeena|tungipara|karatoa|dolonchapa|madhumati|burimari|chilahati|kurigram|rangpur|lalmoni|benapole|sundarban|jamuna|kalni|jayantika|kapotakkha|sagordari|rupsha|simanta|turna|mahanagar|chattala|bijoy|paharika|udayan|sirajganj|haor|mohonganj|meghna|jamalpur)\b/i,
+        /\b(?:dhaka|rajshahi|chattogram|chittagong|sylhet|cox's\s*bazar|khulna|rangpur|dinajpur|ibrahimabad)\b/i,
+        /\b(?:shovon|shovon_chair|snigdha|ac|ac_s|ac_b|f_seat|f_berth|শোভন|স্নিগ্ধা|এসি|সিট|আসন|seat)\b/i,
+        /\b(?:tikit|ticket|টিকিট|kato|kato\s*ta|কাটো|কাটুন|দিন|দেন|বুক|book)\b/i,
+        /\b\d+\s*(?:ta|টা|jon|জন|person|টি)\b/i
+      ];
+      for (const pat of cutoffPatterns) {
+        const cMatch = rawPart.match(pat);
+        if (cMatch && cMatch.index !== undefined) {
+          rawPart = rawPart.slice(0, cMatch.index);
+        }
+      }
+      const rawNames = rawPart.split(/\s*(?:,|&|এবং|\band\b|\+|ও)\s*/)
         .map(n => n.trim())
-        .filter(n => n.length > 2 && !['টাকা', 'জন', 'সিট', 'kato', 'tikit', 'ticket'].includes(n.toLowerCase()));
+        .filter(n => n.length >= 2 && !['kato', 'tikit', 'ticket', 'jon', 'ta', 'er', 'theke', 'hote', 'to', 'and', 'name', 'nam', 'টাকা', 'জন', 'সিট'].includes(n.toLowerCase()));
       if (rawNames.length > 1) {
         passengerName = rawNames.map(n => n.toUpperCase()).join(', ');
         if (rawNames.length > numSeats) {
@@ -724,9 +858,19 @@ function parseRailwayTicketLocally(
     createdAt: new Date().toISOString(),
   };
 
+  // -- Warnings: off-day + route mismatch checks --
+  const finalWarnings: TicketAiWarning[] = [];
+  const offDayWarn = checkTrainOffDay({ offDay: matchedTrain.offDay, name: matchedTrain.name }, dateStr);
+  if (offDayWarn) finalWarnings.push(offDayWarn);
+  if (detectedFrom && detectedTo) {
+    const routeWarn = checkTrainRoute(matchedTrain.name, fromStation, toStation);
+    if (routeWarn) finalWarnings.push(routeWarn);
+  }
+
   return {
     ticket: generatedTicket,
     summary: `⚡ এআই প্রসেস সম্পন্ন: ${generatedTicket.trainName} (${generatedTicket.trainNumber}), ${generatedTicket.fromStation} ➔ ${generatedTicket.toStation}, তারিখ: ${generatedTicket.journeyDate}, সিট: ${generatedTicket.coachSeat} (মোট ${numSeats}টি টিকিট, ভাড়া: ৳${totalFare})`,
+    warnings: finalWarnings.length > 0 ? finalWarnings : undefined,
   };
 }
 

@@ -201,6 +201,19 @@ export const RAILWAY_STATIONS: RailwayStation[] = [
   { name: 'Mohanganj', nameBn: 'মোহনগঞ্জ', code: 'MHG', district: 'Netrokona' },
   { name: 'Barhatta', nameBn: 'বারহাট্টা', code: 'BHT', district: 'Netrokona' },
   { name: 'Kendua', nameBn: 'কেন্দুয়া', code: 'KND', district: 'Netrokona' },
+
+  // Natore / Rajshahi Division extra stations
+  { name: 'Ibrahimabad', nameBn: 'ইব্রাহিমাবাদ', code: 'IBD', district: 'Natore' },
+  { name: 'Ahsanganj', nameBn: 'আহসানগঞ্জ', code: 'ASG', district: 'Natore' },
+  { name: 'Atrai', nameBn: 'আত্রাই', code: 'ATR', district: 'Naogaon' },
+  { name: 'Naogaon', nameBn: 'নওগাঁ', code: 'NOG', district: 'Naogaon' },
+  { name: 'Akkelpur', nameBn: 'আক্কেলপুর', code: 'AKP', district: 'Joypurhat' },
+  { name: 'Nowdapara', nameBn: 'নওদাপাড়া', code: 'NDP', district: 'Rajshahi' },
+  { name: 'Chapai Nawabganj', nameBn: 'চাঁপাইনবাবগঞ্জ', code: 'CNJ', district: 'Chapai Nawabganj' },
+  { name: 'Rohanpur', nameBn: 'রোহনপুর', code: 'RHP', district: 'Chapai Nawabganj' },
+
+  // Chittagong / Cox's Bazar extra
+  { name: 'Islamabad', nameBn: 'ইসলামাবাদ', code: 'ISB2', district: 'Cox\'s Bazar' },
 ];
 
 export const RAILWAY_TRAINS: RailwayTrain[] = [
@@ -292,6 +305,29 @@ export const RAILWAY_TRAINS: RailwayTrain[] = [
     arrivalTime: '18:15',
     offDay: 'Friday',
     fares: { S_CHAIR: 525, SNIGDHA: 1000, AC_S: 1200, AC_B: 1800, SHOVON: 440 },
+  },
+  // BANALATA also has a Chapai Nawabganj variant via Rajshahi
+  {
+    number: '792',
+    name: 'BANALATA EXPRESS',
+    nameBn: 'বনলতা এক্সপ্রেস',
+    fromStation: 'Chapai Nawabganj',
+    toStation: 'Dhaka',
+    departureTime: '04:30',
+    arrivalTime: '10:45',
+    offDay: 'Friday',
+    fares: { S_CHAIR: 580, SNIGDHA: 1115, AC_S: 1335, AC_B: 2005, SHOVON: 485 },
+  },
+  {
+    number: '791',
+    name: 'BANALATA EXPRESS',
+    nameBn: 'বনলতা এক্সপ্রেস',
+    fromStation: 'Dhaka',
+    toStation: 'Chapai Nawabganj',
+    departureTime: '13:30',
+    arrivalTime: '20:00',
+    offDay: 'Friday',
+    fares: { S_CHAIR: 580, SNIGDHA: 1115, AC_S: 1335, AC_B: 2005, SHOVON: 485 },
   },
   {
     number: '755',
