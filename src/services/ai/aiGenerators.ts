@@ -4,6 +4,9 @@ import {
   RAILWAY_TRAINS,
   RAILWAY_STATIONS,
   RAILWAY_CLASSES,
+  STATION_ALIASES,
+  normalizeStationName,
+  doesTrainServeStation,
   toBanglaDigits,
   getStationBanglaName,
   formatCoachSeat,
@@ -183,7 +186,7 @@ export function checkTrainOffDay(train: { offDay: string; name: string }, journe
   return null;
 }
 
-// Checks if a train serves the requested route (endpoint or intermediate)
+// Checks if a train serves the requested route (endpoint or intermediate corridor stop)
 export function checkTrainRoute(
   trainName: string,
   fromStation: string,
@@ -191,27 +194,20 @@ export function checkTrainRoute(
 ): TicketAiWarning | null {
   if (!fromStation || !toStation) return null;
 
-  const normalize = (s: string) => s.toLowerCase().trim();
+  const resolvedFrom = normalizeStationName(fromStation);
+  const resolvedTo = normalizeStationName(toStation);
   const allVariants = RAILWAY_TRAINS.filter(t =>
-    t.name.toUpperCase().replace(/\s+/g, '').includes(trainName.toUpperCase().replace(/\s+/g, ''))
+    t.name.toUpperCase().replace(/\s+/g, '').includes(trainName.toUpperCase().replace(/\s+/g, '')) ||
+    trainName.toUpperCase().replace(/\s+/g, '').includes(t.name.toUpperCase().replace(/\s+/g, ''))
   );
   if (allVariants.length === 0) return null;
 
-  // A train "serves" a station if it's either the from or to endpoint
-  // Intermediate stops are not in our DB so we check if requested stations
-  // are plausible endpoints for any variant
-  const allEndpoints = new Set<string>();
-  allVariants.forEach(t => {
-    allEndpoints.add(normalize(t.fromStation));
-    allEndpoints.add(normalize(t.toStation));
-  });
-
-  const servesFrom = allEndpoints.has(normalize(fromStation));
-  const servesTo = allEndpoints.has(normalize(toStation));
+  const servesFrom = doesTrainServeStation(trainName, resolvedFrom);
+  const servesTo = doesTrainServeStation(trainName, resolvedTo);
 
   if (!servesFrom || !servesTo) {
     const routes = allVariants.map(t => `${t.fromStation} → ${t.toStation}`).join(' | ');
-    const missingStation = !servesFrom ? fromStation : toStation;
+    const missingStation = !servesFrom ? resolvedFrom : resolvedTo;
     return {
       type: 'route_mismatch',
       message: `⚠️ Route Mismatch: "${trainName}" does not stop at "${missingStation}". Available routes: ${routes}`,
@@ -274,23 +270,36 @@ RULES:
         const d = res.data;
 
         // Cross-verify with local detection to preserve explicitly requested intermediate/origin/destination stations
-        const localDetection = parseRailwayTicketLocally(prompt, baseTicket);
-        const fromStClean = d.fromStation || localDetection.ticket.fromStation || 'Dhaka';
-        let toStClean = d.toStation || localDetection.ticket.toStation || 'Rajshahi';
-        if (localDetection.ticket.toStation && prompt.toLowerCase().includes(localDetection.ticket.toStation.toLowerCase())) {
-          toStClean = localDetection.ticket.toStation;
-        }
+        const localDetection = parseRailwayTicketLocallyDetailed(prompt, baseTicket);
+        const aiFrom = d.fromStation ? normalizeStationName(d.fromStation) : '';
+        const aiTo = d.toStation ? normalizeStationName(d.toStation) : '';
+        const fromStClean = localDetection.hasExplicitFrom
+          ? localDetection.ticket.fromStation
+          : (aiFrom || localDetection.ticket.fromStation || 'Dhaka');
+        const toStClean = localDetection.hasExplicitTo
+          ? localDetection.ticket.toStation
+          : (aiTo || localDetection.ticket.toStation || 'Rajshahi');
 
-        // Find train with directional match first
+        // Find train with directional match first (handles intermediate corridor stops like Dhaka -> Ibrahimabad on Silkcity)
+        const trainNameMatches = (t: { name: string }) =>
+          Boolean(d.trainName && (
+            t.name.toLowerCase().includes(d.trainName.toLowerCase()) ||
+            d.trainName.toLowerCase().includes(t.name.toLowerCase())
+          ));
+
         const matchedTrain = RAILWAY_TRAINS.find(
-          t => (d.trainName && t.name.toLowerCase().includes(d.trainName.toLowerCase())) &&
+          t => trainNameMatches(t) &&
                t.fromStation.toLowerCase() === fromStClean.toLowerCase() &&
                t.toStation.toLowerCase() === toStClean.toLowerCase()
         ) || RAILWAY_TRAINS.find(
-          t => (d.trainName && t.name.toLowerCase().includes(d.trainName.toLowerCase())) &&
+          t => trainNameMatches(t) &&
+               t.fromStation.toLowerCase() === fromStClean.toLowerCase() &&
+               doesTrainServeStation(t.name, toStClean)
+        ) || RAILWAY_TRAINS.find(
+          t => trainNameMatches(t) &&
                t.fromStation.toLowerCase() === fromStClean.toLowerCase()
         ) || RAILWAY_TRAINS.find(
-          t => (d.trainName && t.name.toLowerCase() === d.trainName.toLowerCase()) ||
+          t => trainNameMatches(t) ||
                (d.trainNumber && t.number === d.trainNumber)
         );
 
@@ -355,11 +364,37 @@ function parseRailwayTicketLocally(
   prompt: string,
   baseTicket: BangladeshRailwayTicket
 ): { ticket: BangladeshRailwayTicket; summary: string; warnings?: TicketAiWarning[] } {
+  const { ticket, summary, warnings } = parseRailwayTicketLocallyDetailed(prompt, baseTicket);
+  return { ticket, summary, warnings };
+}
+
+const NON_STATION_PROMPT_WORDS = new Set([
+  'agamikal', 'tomorrow', 'porshu', 'kalke', 'kal', 'sunday', 'monday',
+  'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'theke', 'hote',
+  'porjonto', 'express', 'intercity', 'train', 'commuter', 'shuttle',
+  'ticket', 'tikit', 'snigdha', 'shovon', 'shulov', 'berth', 'chair',
+  'passenger', 'seat', 'seats', 'silkcity', 'dhumketu', 'banalata', 'bonolota',
+  'suborno', 'suborna', 'parabat', 'upaban', 'ekota', 'drutojan', 'banglabandha',
+  'panchagarh', 'agnibeena', 'tungipara', 'karatoa', 'dolonchapa', 'madhumati',
+  'modhumoti', 'sundarban', 'jayantika', 'kapotaksha', 'kapotakkha', 'sagordari',
+  'mahanagar', 'paharika', 'mohonganj', 'jamalpur', 'sonar', 'bangla',
+]);
+
+function parseRailwayTicketLocallyDetailed(
+  prompt: string,
+  baseTicket: BangladeshRailwayTicket
+): {
+  ticket: BangladeshRailwayTicket;
+  summary: string;
+  warnings?: TicketAiWarning[];
+  hasExplicitFrom: boolean;
+  hasExplicitTo: boolean;
+} {
   const pLower = prompt.toLowerCase();
   const { dateStr } = resolveRelativeDate(prompt);
 
   // ─────────────────────────────────────────────────────────────
-  // 1. Station Routing & Direction Detection
+  // 1. Station Routing & Direction Detection (Exact + Banglish + Fuzzy)
   // ─────────────────────────────────────────────────────────────
   let detectedFrom = '';
   let detectedTo = '';
@@ -369,128 +404,158 @@ function parseRailwayTicketLocally(
     'এক্সপ্রেস', 'মেইল', 'ট্রেন', 'ইন্টারসিটি', 'কমিউটার'
   ];
 
-  // Find all stations mentioned in prompt and their positions
-  // Disambiguate stations vs trains:
-  // If a station word (like "Padma" or "Chitra") is followed by "express", "mail", "train" etc.
-  // or preceded by "train", it is referring to the train, not the station!
-  const matchedStations: { name: string; index: number; nameBn: string }[] = [];
-  for (const st of RAILWAY_STATIONS) {
-    const sName = st.name.toLowerCase();
-    const sBn = st.nameBn;
+  interface MatchedStationSpan {
+    name: string;
+    nameBn: string;
+    index: number;
+    endIndex: number;
+  }
 
-    // Word boundary match for English station name
-    const enRegex = new RegExp(`\\b${sName}\\b`, 'gi');
-    let match: RegExpExecArray | null;
-    while ((match = enRegex.exec(pLower)) !== null) {
-      const idx = match.index;
-      const afterStr = pLower.slice(idx + sName.length).trim();
-      const beforeStr = pLower.slice(0, idx).trim();
+  const matchedStations: MatchedStationSpan[] = [];
 
-      const firstWordAfter = afterStr.split(/\s+/)[0] || '';
-      const isTrainFollow = trainKeywords.some(kw => firstWordAfter.toLowerCase() === kw.toLowerCase());
-      const lastWordBefore = beforeStr.split(/\s+/).pop() || '';
-      const isTrainPrecede = ['train', 'ট্রেন'].includes(lastWordBefore.toLowerCase());
+  const isTrainReferenceAtSpan = (idx: number, endIdx: number): boolean => {
+    const afterStr = pLower.slice(endIdx).trim();
+    const beforeStr = pLower.slice(0, idx).trim();
+    const firstWordAfter = afterStr.split(/\s+/)[0] || '';
+    const isTrainFollow = trainKeywords.some(kw => firstWordAfter.toLowerCase() === kw.toLowerCase());
+    const lastWordBefore = beforeStr.split(/\s+/).pop() || '';
+    const isTrainPrecede = ['train', 'ট্রেন'].includes(lastWordBefore.toLowerCase());
+    return isTrainFollow || isTrainPrecede;
+  };
 
-      if (!isTrainFollow && !isTrainPrecede) {
-        if (!matchedStations.some(m => m.name.toLowerCase() === st.name.toLowerCase() && m.index === idx)) {
-          matchedStations.push({ name: st.name, index: idx, nameBn: st.nameBn });
-        }
+  const addStationSpan = (canonicalName: string, idx: number, endIdx: number) => {
+    const stObj = RAILWAY_STATIONS.find(s => s.name.toLowerCase() === canonicalName.toLowerCase());
+    if (!stObj) return;
+    if (isTrainReferenceAtSpan(idx, endIdx)) return;
+    // Skip if overlapping an already matched longer span
+    const overlaps = matchedStations.some(
+      m => idx < m.endIndex && endIdx > m.index
+    );
+    if (!overlaps) {
+      matchedStations.push({
+        name: stObj.name,
+        nameBn: stObj.nameBn,
+        index: idx,
+        endIndex: endIdx,
+      });
+    }
+  };
+
+  // (a) Longest-first English station names + Banglish/spelling aliases
+  const candidatePatterns: { needle: string; canonical: string }[] = [
+    ...RAILWAY_STATIONS.map(st => ({ needle: st.name.toLowerCase(), canonical: st.name })),
+    ...Object.entries(STATION_ALIASES).map(([alias, canonical]) => ({
+      needle: alias.toLowerCase(),
+      canonical,
+    })),
+  ].sort((a, b) => b.needle.length - a.needle.length);
+
+  const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  for (const { needle, canonical } of candidatePatterns) {
+    if (!needle) continue;
+    const isAscii = /^[a-z0-9\s'-]+$/i.test(needle);
+    if (isAscii) {
+      const re = new RegExp(`\\b${escapeRegex(needle)}\\b`, 'gi');
+      let match: RegExpExecArray | null;
+      while ((match = re.exec(pLower)) !== null) {
+        addStationSpan(canonical, match.index, match.index + match[0].length);
+      }
+    } else {
+      let idxBn = prompt.indexOf(needle);
+      while (idxBn !== -1) {
+        addStationSpan(canonical, idxBn, idxBn + needle.length);
+        idxBn = prompt.indexOf(needle, idxBn + needle.length);
       }
     }
+  }
 
-    // Bangla station name match
-    let idxBn = prompt.indexOf(sBn);
+  // (b) Exact Bangla station names
+  for (const st of RAILWAY_STATIONS) {
+    let idxBn = prompt.indexOf(st.nameBn);
     while (idxBn !== -1) {
-      const afterStr = prompt.slice(idxBn + sBn.length).trim();
-      const beforeStr = prompt.slice(0, idxBn).trim();
+      addStationSpan(st.name, idxBn, idxBn + st.nameBn.length);
+      idxBn = prompt.indexOf(st.nameBn, idxBn + st.nameBn.length);
+    }
+  }
 
-      const firstWordAfter = afterStr.split(/\s+/)[0] || '';
-      const isTrainFollow = trainKeywords.some(kw => firstWordAfter === kw);
-      const lastWordBefore = beforeStr.split(/\s+/).pop() || '';
-      const isTrainPrecede = ['train', 'ট্রেন'].includes(lastWordBefore);
-
-      if (!isTrainFollow && !isTrainPrecede) {
-        if (!matchedStations.some(m => m.name.toLowerCase() === st.name.toLowerCase())) {
-          matchedStations.push({ name: st.name, index: idxBn, nameBn: st.nameBn });
-        }
-      }
-      idxBn = prompt.indexOf(sBn, idxBn + sBn.length);
+  // (c) Bounded fuzzy matching for remaining unmatched alphabetic tokens (e.g., "ibrahimbad")
+  const tokenRegex = /[a-z][a-z'-]{4,}/gi;
+  let tokMatch: RegExpExecArray | null;
+  while ((tokMatch = tokenRegex.exec(pLower)) !== null) {
+    const word = tokMatch[0];
+    const start = tokMatch.index;
+    const end = start + word.length;
+    if (NON_STATION_PROMPT_WORDS.has(word)) continue;
+    if (matchedStations.some(m => start < m.endIndex && end > m.index)) continue;
+    const resolved = normalizeStationName(word);
+    if (resolved && resolved.toLowerCase() !== word.toLowerCase()) {
+      addStationSpan(resolved, start, end);
     }
   }
 
   // Sort by appearance in prompt
   matchedStations.sort((a, b) => a.index - b.index);
 
-  // Direct sequence pattern: "[Station A] (theke|থেকে|hote|হতে|to|পর্যন্ত) [Station B]"
-  // Or "from [Station A] (to) [Station B]"
-  for (let i = 0; i < matchedStations.length; i++) {
-    for (let j = 0; j < matchedStations.length; j++) {
-      if (i === j) continue;
-      const stA = matchedStations[i];
-      const stB = matchedStations[j];
+  // Direct sequence pattern using actual span indices (handles typos & aliases seamlessly)
+  for (let i = 0; i < matchedStations.length - 1; i++) {
+    const stA = matchedStations[i];
+    const stB = matchedStations[i + 1];
+    if (stA.name.toLowerCase() === stB.name.toLowerCase()) continue;
+    const between = prompt.slice(stA.endIndex, stB.index).trim().toLowerCase();
+    const beforeA = prompt.slice(0, stA.index).trim().toLowerCase();
 
-      // Station A followed by "theke/থেকে/hote/হতে/to" then Station B
-      const pairRegexBangla = new RegExp(
-        `(?:\\b${stA.name.toLowerCase()}\\b|${stA.nameBn})\\s*(?:theke|hote|থেকে|হতে|to)\\s+(?:\\b${stB.name.toLowerCase()}\\b|${stB.nameBn})`,
-        'i'
-      );
-      if (pairRegexBangla.test(prompt)) {
-        detectedFrom = stA.name;
-        detectedTo = stB.name;
-        break;
-      }
-
-      // "from [Station A] (to) [Station B]"
-      const pairRegexEnglish = new RegExp(
-        `\\bfrom\\s+(?:\\b${stA.name.toLowerCase()}\\b|${stA.nameBn})\\s*(?:to|-|–|—|>)?\\s*(?:\\b${stB.name.toLowerCase()}\\b|${stB.nameBn})`,
-        'i'
-      );
-      if (pairRegexEnglish.test(prompt)) {
-        detectedFrom = stA.name;
-        detectedTo = stB.name;
-        break;
-      }
+    if (/^(theke|hote|থেকে|হতে|to|-|–|—|>)$/.test(between) || /\b(theke|hote|থেকে|হতে|to)\b/.test(between)) {
+      detectedFrom = stA.name;
+      detectedTo = stB.name;
+      break;
     }
-    if (detectedFrom && detectedTo) break;
+    if (/\bfrom$/.test(beforeA) && /^(to|-|–|—|>|)$/.test(between)) {
+      detectedFrom = stA.name;
+      detectedTo = stB.name;
+      break;
+    }
   }
 
-  // If no direct pair matched, check individual markers:
+  // Individual contextual markers around matched spans
   if (!detectedFrom || !detectedTo) {
     for (const st of matchedStations) {
-      const sLower = st.name.toLowerCase();
-      const sBn = st.nameBn;
+      const beforeStr = prompt.slice(0, st.index).trim().toLowerCase();
+      const afterStr = prompt.slice(st.endIndex).trim().toLowerCase();
 
-      // In Bengali/Banglish: "[Station] theke", "[Station] থেকে", "[Station] hote" -> FROM
-      // In English: "from [Station]" -> FROM
       const isFrom =
-        new RegExp(`(?:\\b${sLower}\\b|${sBn})\\s*(?:theke|hote|থেকে|হতে)\\b`, 'i').test(prompt) ||
-        new RegExp(`\\bfrom\\s+(?:\\b${sLower}\\b|${sBn})\\b`, 'i').test(prompt);
+        /^(theke|hote|থেকে|হতে)\b/i.test(afterStr) ||
+        /\bfrom$/i.test(beforeStr);
 
-      // In Bengali/Banglish: "[Station] te", "[Station] jabo", or after "theke ... [Station]" -> TO
-      // In English: "to [Station]" -> TO
       const isTo =
-        new RegExp(`\\bto\\s+(?:\\b${sLower}\\b|${sBn})\\b`, 'i').test(prompt) ||
-        new RegExp(`(?:theke|থেকে|hote|হতে)\\s+.*?(?:\\b${sLower}\\b|${sBn})`, 'i').test(prompt) ||
-        new RegExp(`(?:\\b${sLower}\\b|${sBn})\\s*(?:te|jabo|যাব|তে|পৌঁছাবে|পর্যন্ত|porjonto)`, 'i').test(prompt);
+        /\b(to|theke|থেকে|hote|হতে)$/i.test(beforeStr) ||
+        /(?:theke|থেকে|hote|হতে)\b/i.test(beforeStr) ||
+        /^(te|jabo|যাব|তে|পৌঁছাবে|পর্যন্ত|porjonto)\b/i.test(afterStr);
 
       if (isFrom && !detectedFrom) {
         detectedFrom = st.name;
-      } else if (isTo && !detectedTo && (!detectedFrom || detectedFrom.toLowerCase() !== sLower)) {
+      } else if (isTo && !detectedTo && (!detectedFrom || detectedFrom.toLowerCase() !== st.name.toLowerCase())) {
         detectedTo = st.name;
       }
     }
   }
 
-  // If two stations appeared in sequence like "dhaka theke rajshahi"
+  // Fallback positional sequence if two stations appeared (e.g. "dhaka ibrahimbad")
   if (matchedStations.length >= 2) {
     if (!detectedFrom) detectedFrom = matchedStations[0].name;
     if (!detectedTo) {
-      // Find the second station that isn't the origin
       const secondSt = matchedStations.find(s => s.name.toLowerCase() !== detectedFrom.toLowerCase());
       if (secondSt) detectedTo = secondSt.name;
     }
   } else if (matchedStations.length === 1 && !detectedFrom) {
-    detectedFrom = matchedStations[0].name;
+    const onlySt = matchedStations[0];
+    const beforeStr = prompt.slice(0, onlySt.index).trim().toLowerCase();
+    const afterStr = prompt.slice(onlySt.endIndex).trim().toLowerCase();
+    if (/\bto$/i.test(beforeStr) || /^(te|jabo|যাব|তে|porjonto|পর্যন্ত)\b/i.test(afterStr)) {
+      detectedTo = onlySt.name;
+    } else {
+      detectedFrom = onlySt.name;
+    }
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -657,22 +722,11 @@ function parseRailwayTicketLocally(
       matchedTrain = RAILWAY_TRAINS.find(t => trainNameMatcher(t));
     }
 
-    // ── Route Validation: Check if detected train actually serves the requested route ──
+    // ── Route Validation: Check if detected train actually serves the requested route (endpoints or corridor stops) ──
     if (matchedTrain && detectedFrom && detectedTo) {
-      const allRoutesForTrain = RAILWAY_TRAINS.filter(t => trainNameMatcher(t));
-      // Check if any variant of this train serves Ibrahimabad or intermediate stations
-      const servesFrom = allRoutesForTrain.some(t =>
-        t.fromStation.toLowerCase() === detectedFrom.toLowerCase() ||
-        t.toStation.toLowerCase() === detectedFrom.toLowerCase()
-      );
-      const servesTo = allRoutesForTrain.some(t =>
-        t.fromStation.toLowerCase() === detectedTo.toLowerCase() ||
-        t.toStation.toLowerCase() === detectedTo.toLowerCase()
-      );
-      if (!servesFrom || !servesTo) {
-        // Train doesn't serve this route at all — set warning, still generate best match ticket
-        const trainRoutes = allRoutesForTrain.map(t => `${t.fromStation} → ${t.toStation}`).join(', ');
-        routeValidationWarning = `⚠️ সতর্কতা: "${matchedTrain.name}" ট্রেনটি "${detectedFrom} → ${detectedTo}" রুটে চলে না। এই ট্রেনের রুট: ${trainRoutes}। সম্ভব হলে অন্য ট্রেন বেছে নিন।`;
+      const routeWarn = checkTrainRoute(matchedTrain.name, detectedFrom, detectedTo);
+      if (routeWarn) {
+        routeValidationWarning = routeWarn.messageBn;
       }
     }
   }
@@ -862,7 +916,7 @@ function parseRailwayTicketLocally(
   const finalWarnings: TicketAiWarning[] = [];
   const offDayWarn = checkTrainOffDay({ offDay: matchedTrain.offDay, name: matchedTrain.name }, dateStr);
   if (offDayWarn) finalWarnings.push(offDayWarn);
-  if (detectedFrom && detectedTo) {
+  if (routeValidationWarning || (detectedFrom && detectedTo)) {
     const routeWarn = checkTrainRoute(matchedTrain.name, fromStation, toStation);
     if (routeWarn) finalWarnings.push(routeWarn);
   }
@@ -871,6 +925,8 @@ function parseRailwayTicketLocally(
     ticket: generatedTicket,
     summary: `⚡ এআই প্রসেস সম্পন্ন: ${generatedTicket.trainName} (${generatedTicket.trainNumber}), ${generatedTicket.fromStation} ➔ ${generatedTicket.toStation}, তারিখ: ${generatedTicket.journeyDate}, সিট: ${generatedTicket.coachSeat} (মোট ${numSeats}টি টিকিট, ভাড়া: ৳${totalFare})`,
     warnings: finalWarnings.length > 0 ? finalWarnings : undefined,
+    hasExplicitFrom: Boolean(detectedFrom),
+    hasExplicitTo: Boolean(detectedTo),
   };
 }
 

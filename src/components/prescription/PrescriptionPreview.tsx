@@ -506,7 +506,28 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
     );
 
     if (isSanmunTheme) {
-      const isBlank = !prescription.medicines.length && !prescription.patient.name && !prescription.advice;
+      const isBlank =
+        !prescription.medicines.length &&
+        !prescription.patient.name &&
+        !prescription.advice &&
+        !prescription.adviceBn &&
+        !prescription.complaints &&
+        !prescription.diagnoses.length &&
+        !prescription.investigations.length &&
+        !prescription.followUpText &&
+        !prescription.followUpDate &&
+        !prescription.additionalNotes;
+
+      const clinicTitle = doctorProfile?.clinicName || 'সানমুন ডেন্টাল কেয়ার';
+      const rawTitle = doctorProfile?.title || 'Assistant Professor, Dhaka International Diploma Medical College';
+      const commaIdx = rawTitle.indexOf(',');
+      const titleLine = commaIdx > -1 ? rawTitle.slice(0, commaIdx).trim() : rawTitle;
+      const instituteLine = commaIdx > -1
+        ? rawTitle.slice(commaIdx + 1).trim()
+        : (!doctorProfile || doctorProfile.id === 'dr-ahsanur-rahman-dental'
+            ? 'Dhaka International Diploma Medical College'
+            : '');
+
       return (
         <div
           ref={ref}
@@ -518,14 +539,15 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
             {/* Header (Navy Banner) */}
             {!isPadMode ? (
               <header className="rx-sanmun-hdr">
-                <div className="rx-sanmun-title" data-text={doctorProfile?.clinicName || "সানমুন ডেন্টাল কেয়ার"}>
-                  {doctorProfile?.clinicName || "সানমুন ডেন্টাল কেয়ার"}
+                <div className="rx-sanmun-title">
+                  <span className="rx-sanmun-title-stroke" aria-hidden="true">{clinicTitle}</span>
+                  <span className="rx-sanmun-title-fill">{clinicTitle}</span>
                 </div>
                 <div className="rx-sanmun-addr bn">
-                  {doctorProfile?.address || "১৭০৪ রায়েরবাগ, বাসস্ট্যান্ড, গ্যাস রোডের মাথায়, কদমতলী, ঢাকা-১৩৬২ । মোবাইল : ০১৯২২-০৪১৮২৫"}
+                  {doctorProfile?.address || '১৭০৪ রায়েরবাগ, বাসস্ট্যান্ড, গ্যাস রোডের মাথায়, কদমতলী, ঢাকা-১৩৬২ । মোবাইল : ০১৯২২-০৪১৮২৫'}
                 </div>
                 <div className="rx-sanmun-hours bn">
-                  {doctorProfile?.consultationHours || "রোগী দেখার সময় : সকাল ১০টা থেকে দুপুর ২টা, বিকাল ৪টা থেকে রাত ১০টা পর্যন্ত"}
+                  {doctorProfile?.consultationHours || 'রোগী দেখার সময় : সকাল ১০টা থেকে দুপুর ২টা, বিকাল ৪টা থেকে রাত ১০টা পর্যন্ত'}
                 </div>
               </header>
             ) : (
@@ -537,12 +559,12 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
               <section className="rx-sanmun-docband">
                 <img className="rx-sanmun-photo" src={doctorProfile?.logoUrl || SANMUN_DOC_PHOTO} alt="" />
                 <div className="rx-sanmun-docinfo">
-                  <div className="rx-sanmun-docname">{doctorProfile?.name || "Dr. Md. Ahsanur Rahman"}</div>
-                  <div className="rx-sanmun-docline">{doctorProfile?.degrees || "BDS, PGT"}</div>
-                  <div className="rx-sanmun-docline">{doctorProfile?.specialty || "Oral & Dental Surgeon"}</div>
-                  <div className="rx-sanmun-docline"><b>{doctorProfile?.title || "Assistant Professor"}</b></div>
-                  <div className="rx-sanmun-docline">{doctorProfile?.addressBn || "Dhaka International Diploma Medical College"}</div>
-                  <div className="rx-sanmun-docline">BMDC Reg No: {doctorProfile?.bmdcNumber || "3083"}</div>
+                  <div className="rx-sanmun-docname">{doctorProfile?.name || 'Dr. Md. Ahsanur Rahman'}</div>
+                  <div className="rx-sanmun-docline">{doctorProfile?.degrees || 'BDS, PGT'}</div>
+                  <div className="rx-sanmun-docline">{doctorProfile?.specialty || 'Oral & Dental Surgeon'}</div>
+                  <div className="rx-sanmun-docline"><b>{titleLine}</b></div>
+                  {instituteLine && <div className="rx-sanmun-docline">{instituteLine}</div>}
+                  <div className="rx-sanmun-docline">BMDC Reg No: {doctorProfile?.bmdcNumber || '3083'}</div>
                 </div>
                 <img className="rx-sanmun-smile" src={SANMUN_SMILE_GRAPHIC} alt="" />
               </section>
@@ -553,20 +575,20 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
             {/* Patient Strip */}
             <div className="rx-sanmun-strip">
               <span className="rx-sanmun-s-name">
-                <b>Name :</b> {prescription.patient.name ? ` ${prescription.patient.name}` : ''}
+                {prescription.patient.name ? <><b>Name :</b>&nbsp;{prescription.patient.name}</> : 'Name :'}
               </span>
               <span className="rx-sanmun-s-age">
-                <b>Age :</b> {patientAge ? ` ${patientAge}` : ''}
+                {patientAge ? <><b>Age :</b>&nbsp;{patientAge}</> : 'Age :'}
               </span>
               <span className="rx-sanmun-s-sex">
-                <b>Sex :</b> {patientGender ? ` ${patientGender}` : ' Male / Female'}
+                {patientGender ? <><b>Sex :</b>&nbsp;{patientGender}</> : 'Sex :\u00A0 Male / Female'}
               </span>
               <span className="rx-sanmun-s-date">
-                <b>Date :</b> {prescription.date && !isBlank ? ` ${formatDateDisplay(prescription.date)}` : ''}
+                {prescription.date && !isBlank ? <><b>Date :</b>&nbsp;{formatDateDisplay(prescription.date)}</> : 'Date :'}
               </span>
             </div>
 
-            {/* Body (Aside + Main) */}
+            {/* Body (Aside + Main + Referral Pink Box) */}
             <div className="rx-sanmun-body">
               {/* Left Column (Aside) */}
               <aside className="rx-sanmun-aside">
@@ -605,80 +627,85 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
                     </div>
                   )}
                 </div>
-                {/* Pink Referral Box */}
-                <div className="rx-sanmun-pinkbox bn">
-                  <div className="rx-sanmun-pinkbox-head">
-                    <img src={SANMUN_PINKBOX_LOGO} alt="" />
-                    <b>ঢাকা ডেন্টাল পয়েন্ট</b>
-                  </div>
-                  <div className="rx-sanmun-pinkbox-txt">
-                    নোতনা মসজিদ রোড,<br />উত্তর রায়েরবাগ, যাত্রাবড়ী, ঢাকা ।
-                  </div>
-                  <div className="rx-sanmun-pinkbox-phones">০১৭৬৪-৪১৬৩৩৩, ০১৮১১-১৩২৪০৯</div>
-                </div>
               </aside>
 
               {/* Main Rx Column */}
               <main className="rx-sanmun-main" style={{ backgroundImage: `url("${SANMUN_WATERMARK_BG}")` }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 14px 2px 14px' }}>
-                  <div style={{ fontSize: '22pt', fontWeight: 'bold', color: '#1E3A66', fontFamily: 'serif' }}>℞</div>
-                  {qrCodeUrl && prescription.showQrCode !== false && !isBlank && (
-                    <img src={qrCodeUrl} alt="QR" style={{ width: 38, height: 38, borderRadius: 3 }} />
-                  )}
-                </div>
+                {!isBlank && (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 14px 2px 14px' }}>
+                      <div style={{ fontSize: '22pt', fontWeight: 'bold', color: '#1E3A66', fontFamily: 'serif' }}>℞</div>
+                      {qrCodeUrl && prescription.showQrCode !== false && (
+                        <img src={qrCodeUrl} alt="QR" style={{ width: 38, height: 38, borderRadius: 3 }} />
+                      )}
+                    </div>
 
-                {/* Medicines List */}
-                <div className="rx-sanmun-meds" style={{ padding: '0 14px 6px 14px', flex: 1, minHeight: 0, overflow: 'hidden' }}>
-                  {prescription.medicines.map((med, idx) => renderMedicineRow(med, idx + 1))}
+                    {/* Medicines List */}
+                    <div className="rx-sanmun-meds" style={{ padding: '0 14px 6px 14px', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+                      {prescription.medicines.map((med, idx) => renderMedicineRow(med, idx + 1))}
 
-                  {/* Advice */}
-                  {(prescription.advice || prescription.adviceBn) && (
-                    <div style={{ marginTop: 12, padding: '8px 12px', background: '#f8fafc', borderLeft: '3px solid #1E3A66', borderRadius: '0 6px 6px 0' }}>
-                      <div style={{ fontWeight: 700, fontSize: '9pt', color: '#1E3A66', marginBottom: 3 }}>পরামর্শ / Advice:</div>
-                      <div style={{ fontSize: '8.5pt', lineHeight: 1.45, whiteSpace: 'pre-wrap', color: '#1e293b' }}>
-                        {prescription.advice}
+                      {/* Advice */}
+                      {(prescription.advice || prescription.adviceBn) && (
+                        <div style={{ marginTop: 12, padding: '8px 12px', background: '#f8fafc', borderLeft: '3px solid #1E3A66', borderRadius: '0 6px 6px 0' }}>
+                          <div style={{ fontWeight: 700, fontSize: '9pt', color: '#1E3A66', marginBottom: 3 }}>পরামর্শ / Advice:</div>
+                          <div style={{ fontSize: '8.5pt', lineHeight: 1.45, whiteSpace: 'pre-wrap', color: '#1e293b' }}>
+                            {prescription.advice || prescription.adviceBn}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Follow Up */}
+                      {(prescription.followUpText || prescription.followUpDate) && (
+                        <div style={{ marginTop: 8, fontSize: '8.5pt', fontWeight: 600, color: '#b91c1c' }}>
+                          পরবর্তী সাক্ষাৎ: {prescription.followUpText || (prescription.followUpDate && formatDateDisplay(prescription.followUpDate))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Doctor Seal & Sign Area */}
+                    <div style={{ padding: '0 18px 8px 18px', display: 'flex', justifyContent: 'flex-end', marginTop: 'auto' }}>
+                      <div style={{ textAlign: 'center', width: 140 }}>
+                        <div style={{ borderTop: '1px solid #94a3b8', paddingTop: 3, fontSize: '8pt', color: '#64748b' }}>
+                          Doctor's Signature
+                        </div>
                       </div>
                     </div>
-                  )}
-
-                  {/* Follow Up */}
-                  {(prescription.followUpText || prescription.followUpDate) && (
-                    <div style={{ marginTop: 8, fontSize: '8.5pt', fontWeight: 600, color: '#b91c1c' }}>
-                      পরবর্তী সাক্ষাৎ: {prescription.followUpText || (prescription.followUpDate && formatDateDisplay(prescription.followUpDate))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Doctor Seal & Sign Area */}
-                <div style={{ padding: '0 18px 8px 18px', display: 'flex', justifyContent: 'flex-end', marginTop: 'auto' }}>
-                  <div style={{ textAlign: 'center', width: 140 }}>
-                    <div style={{ borderTop: '1px solid #94a3b8', paddingTop: 3, fontSize: '8pt', color: '#64748b' }}>
-                      Doctor's Signature
-                    </div>
-                  </div>
-                </div>
+                  </>
+                )}
               </main>
+
+              {/* Pink Referral Box */}
+              <div className="rx-sanmun-pinkbox bn">
+                <div className="rx-sanmun-pinkbox-head">
+                  <img src={SANMUN_PINKBOX_LOGO} alt="" />
+                  <b>ঢাকা ডেন্টাল পয়েন্ট</b>
+                </div>
+                <div className="rx-sanmun-pinkbox-txt">
+                  নোতনা মসজিদ রোড,<br />উত্তর রায়েরবাগ, যাত্রাবড়ী, ঢাকা ।
+                </div>
+                <div className="rx-sanmun-pinkbox-phones">০১৭৬৪-৪১৬৩৩৩, ০১৮১১-১৩২৪০৯</div>
+              </div>
             </div>
 
             {/* Footer (Checklist) */}
             {!isPadMode ? (
               <footer className="rx-sanmun-footer">
                 <div className="rx-sanmun-row">
-                  <span className="rx-sanmun-it">Heart Disease</span>
-                  <span className="rx-sanmun-it">Tuberculoses</span>
-                  <span className="rx-sanmun-it">Rheumatic Fever</span>
-                  <span className="rx-sanmun-it">Hypertension</span>
-                  <span className="rx-sanmun-it">Diabetes</span>
-                  <span className="rx-sanmun-it">Drug Allergy</span>
+                  <span className="rx-sanmun-it"><span className="rx-sanmun-chk" />Heart Disease</span>
+                  <span className="rx-sanmun-it"><span className="rx-sanmun-chk" />Tuberculoses</span>
+                  <span className="rx-sanmun-it"><span className="rx-sanmun-chk" />Rheumatic Fever</span>
+                  <span className="rx-sanmun-it"><span className="rx-sanmun-chk" />Hypertension</span>
+                  <span className="rx-sanmun-it"><span className="rx-sanmun-chk" />Diabetes</span>
+                  <span className="rx-sanmun-it"><span className="rx-sanmun-chk" />Drug Allergy</span>
                 </div>
                 <div className="rx-sanmun-row">
-                  <span className="rx-sanmun-it">Convulsion</span>
-                  <span className="rx-sanmun-it">Hpatisis</span>
-                  <span className="rx-sanmun-it">Peptic Ulcer</span>
-                  <span className="rx-sanmun-it">Pregnancy</span>
-                  <span className="rx-sanmun-it">Asthma</span>
-                  <span className="rx-sanmun-it">Sinsitivity</span>
-                  <span className="rx-sanmun-it">Others</span>
+                  <span className="rx-sanmun-it"><span className="rx-sanmun-chk" />Convulsion</span>
+                  <span className="rx-sanmun-it"><span className="rx-sanmun-chk" />Hpatisis</span>
+                  <span className="rx-sanmun-it"><span className="rx-sanmun-chk" />Peptic Ulcer</span>
+                  <span className="rx-sanmun-it"><span className="rx-sanmun-chk" />Pregnancy</span>
+                  <span className="rx-sanmun-it"><span className="rx-sanmun-chk" />Asthma</span>
+                  <span className="rx-sanmun-it"><span className="rx-sanmun-chk" />Sinsitivity</span>
+                  <span className="rx-sanmun-it"><span className="rx-sanmun-chk" />Others</span>
                 </div>
               </footer>
             ) : (

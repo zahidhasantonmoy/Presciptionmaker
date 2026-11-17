@@ -11,7 +11,7 @@ import {
 import { ShohozLogo } from './ShohozLogo';
 import {
   RAILWAY_STATIONS, RAILWAY_TRAINS, RAILWAY_CLASSES,
-  toBanglaDigits, getStationBanglaName,
+  doesTrainServeStation, toBanglaDigits, getStationBanglaName,
   formatCoachSeat, getPureBanglaCoachSeat
 } from './railwayData';
 import { AiCommandBar } from '../../components/ai/AiCommandBar';
@@ -179,12 +179,23 @@ export function TicketMaker() {
   const zoomOut = () => setPreviewScale(prev => Math.max(0.25, parseFloat((prev - 0.1).toFixed(2))));
   const resetZoom = () => setPreviewScale(1);
 
-  // Filter trains for selected origin and destination
+  // Filter trains for selected origin and destination (including intermediate corridor stops)
   const availableTrains = useMemo(() => {
     if (!ticket.fromStation && !ticket.toStation) return RAILWAY_TRAINS;
-    return RAILWAY_TRAINS.filter(t => {
+    const directMatches = RAILWAY_TRAINS.filter(t => {
       const matchFrom = !ticket.fromStation || t.fromStation.toLowerCase() === ticket.fromStation.toLowerCase();
       const matchTo = !ticket.toStation || t.toStation.toLowerCase() === ticket.toStation.toLowerCase();
+      return matchFrom && matchTo;
+    });
+    if (directMatches.length > 0) return directMatches;
+
+    return RAILWAY_TRAINS.filter(t => {
+      const matchFrom = !ticket.fromStation ||
+        t.fromStation.toLowerCase() === ticket.fromStation.toLowerCase() ||
+        doesTrainServeStation(t.name, ticket.fromStation);
+      const matchTo = !ticket.toStation ||
+        t.toStation.toLowerCase() === ticket.toStation.toLowerCase() ||
+        doesTrainServeStation(t.name, ticket.toStation);
       return matchFrom && matchTo;
     });
   }, [ticket.fromStation, ticket.toStation]);
@@ -292,7 +303,7 @@ export function TicketMaker() {
   // Calculations
   const isBeddingClass = ticket.className === 'AC_B' || ticket.className === 'F_BERTH';
   const beddingCharge = isBeddingClass ? 50 * ticket.numSeats : 0;
-  const totalFare = (ticket.fare * ticket.numAdults) + ticket.vat + ticket.serviceCharge + beddingCharge;
+  const totalFare = ticket.fare + ticket.vat + ticket.serviceCharge + beddingCharge;
 
   // Format date helper
   const formatDateEn = (dateStr: string, timeStr: string) => {
@@ -322,7 +333,7 @@ export function TicketMaker() {
       data: ticket,
     });
 
-    alert('বাংলাদেশ রেলওয়ে টিকিট ড্রাফট ও হিস্টোরিতে সংরক্ষিত হয়েছে!');
+    setAiUpdatedNotice('বাংলাদেশ রেলওয়ে টিকিট ড্রাফট ও হিস্টোরিতে সংরক্ষিত হয়েছে!');
   };
 
   const handleWhatsAppShare = () => {
@@ -429,8 +440,17 @@ export function TicketMaker() {
         onclone: (clonedDoc) => {
           const clonedPage = clonedDoc.getElementById('page');
           if (clonedPage) {
+            const parent = clonedPage.parentElement;
+            if (parent) {
+              parent.style.width = '793.7px';
+              parent.style.height = '1122.5px';
+              parent.style.overflow = 'visible';
+              parent.style.boxShadow = 'none';
+            }
             clonedPage.style.transform = 'none';
             clonedPage.style.position = 'relative';
+            clonedPage.style.top = '0';
+            clonedPage.style.left = '0';
             clonedPage.style.width = '793.7px';
             clonedPage.style.height = '1122.5px';
             clonedPage.style.margin = '0';
@@ -455,7 +475,7 @@ export function TicketMaker() {
       setAiUpdatedNotice(`PDF ডাউনলোড সম্পন্ন হয়েছে: ${fileName}`);
     } catch (err) {
       console.error('Failed to export PDF:', err);
-      alert('Could not export PDF. Please check console.');
+      setAiUpdatedNotice('PDF তৈরি করতে সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।');
     } finally {
       setIsGeneratingPdf(false);
     }
@@ -485,8 +505,17 @@ export function TicketMaker() {
         onclone: (clonedDoc) => {
           const clonedPage = clonedDoc.getElementById('page');
           if (clonedPage) {
+            const parent = clonedPage.parentElement;
+            if (parent) {
+              parent.style.width = '793.7px';
+              parent.style.height = '1122.5px';
+              parent.style.overflow = 'visible';
+              parent.style.boxShadow = 'none';
+            }
             clonedPage.style.transform = 'none';
             clonedPage.style.position = 'relative';
+            clonedPage.style.top = '0';
+            clonedPage.style.left = '0';
             clonedPage.style.width = '793.7px';
             clonedPage.style.height = '1122.5px';
             clonedPage.style.margin = '0';
@@ -505,16 +534,33 @@ export function TicketMaker() {
       setAiUpdatedNotice(`JPG ইমেজ ডাউনলোড সম্পন্ন হয়েছে: ${fileName}`);
     } catch (err) {
       console.error('Failed to export JPG:', err);
-      alert('Could not export JPG.');
+      setAiUpdatedNotice('JPG তৈরি করতে সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।');
     } finally {
       setIsGeneratingJpg(false);
     }
   };
 
-  // Generate self-contained standalone HTML matching BDRAILWAY_TICKET
+  // Generate self-contained standalone HTML matching official BDRAILWAY_TICKET
   const getStandaloneTicketHtml = () => {
     if (!ticketRef.current) return '';
-    const inner = ticketRef.current.innerHTML;
+    let inner = ticketRef.current.innerHTML;
+    try {
+      const logoEl = ticketRef.current.querySelector('img.logo') as HTMLImageElement | null;
+      if (logoEl && logoEl.complete && logoEl.naturalWidth > 0) {
+        const c = document.createElement('canvas');
+        c.width = logoEl.naturalWidth;
+        c.height = logoEl.naturalHeight;
+        const ctx = c.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(logoEl, 0, 0);
+          const dataUri = c.toDataURL('image/png');
+          inner = inner.replace('src="/20428_4-78474535-icon.png"', `src="${dataUri}"`);
+        }
+      }
+    } catch {
+      // keep existing src if tainted
+    }
+
     return `<!DOCTYPE html>
 <html lang="bn">
 <head>
@@ -540,29 +586,32 @@ export function TicketMaker() {
   .jv { color: #05b454; font-weight: 700; font-size: 11.5px; line-height: 10.4px; position: absolute; top: 22.6px; left: 0; }
   .jv .big { font-size: 17.1px; vertical-align: -2.5px; letter-spacing: -0.5px; }
   .qr { position: absolute; top: 60.4px; left: 0; width: 80px; height: 80px; display: block; }
-  .intro { margin-top: 2.8px; font-size: 7.6pt; line-height: 11.84px; color: #333; padding-right: 88px; }
-  .intro-bn { margin-top: 10.9px; width: 100%; font-size: 7pt; line-height: 11.84px; padding-right: 88px; }
-  .bar { background: #039d48; color: #ffffff; font-size: 10.5pt; font-weight: 700; height: 29.4px; line-height: 29.4px; padding-left: 4px; margin-top: 8.4px; }
+  .intro { margin-top: 2.8px; font-size: 7.45pt; line-height: 11.84px; color: #333; padding-right: 82px; }
+  .intro-bn { margin-top: 10.9px; width: 100%; font-size: 6.85pt; line-height: 11.84px; padding-right: 84px; }
+  .bar { background: #039d48; color: #ffffff; font-size: 10.5pt; font-weight: 700; height: 29.4px; display: flex; align-items: center; padding: 0 6px 1px 6px; margin-top: 8.4px; line-height: 1.15; }
   table.outer + .bar { margin-top: 21.2px; }
   table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 8pt; }
-  td { border: 1px solid #c7c7c7; padding: 0 4px; vertical-align: middle; height: 17.12px; line-height: 16.1px; }
+  td { border: 1px solid #c7c7c7; padding: 0; vertical-align: middle; height: 17.6px; }
   td:first-child { width: 320.3px; }
   td.b { font-weight: 700; }
+  td .td-c { display: flex; align-items: center; min-height: 17.6px; padding: 1px 5px 2px 5px; line-height: 11.5px; width: 100%; }
   table.outer { border: 1.3px solid #039d48; }
   table.outer td { border-top: 1px solid #c7c7c7; border-bottom: none; }
+  table.outer tr:first-child td { border-top: none; }
   table.outer tr:last-child td { border-bottom: 1.3px solid #039d48; }
   table.outer td:first-child { border-left: none; }
   table.outer td:last-child { border-right: none; }
-  .note-row td { font-size: 5.8pt; line-height: 6.5px; height: 14.7px; padding-top: 0; padding-bottom: 0; }
-  .pleasenote { margin-top: 5.1px; font-size: 8pt; }
+  .note-row td { height: auto; }
+  .note-row td .td-c { font-size: 5.7pt; line-height: 8.5px; min-height: 15.5px; padding: 2px 5px 2.5px 5px; }
+  .pleasenote { margin-top: 7px; font-size: 8pt; }
   .pn-cols { display: flex; }
-  .pn-en { width: 315px; flex: none; }
+  .pn-en { width: 315px; flex: none; padding-right: 8px; }
   .pn-bn { flex: 1; }
-  .pn-head { line-height: 9px; font-weight: 700; }
-  .pn-en div.it { margin-top: 17px; font-size: 8pt; line-height: 14px; }
-  .pn-bn div.it { margin-top: 17px; font-size: 8pt; line-height: 14px; }
-  .banner1 { background: #e8f5e9; color: #e65100; font-weight: 700; text-align: center; font-size: 11.5pt; line-height: 19.5px; padding-top: 8.5px; height: 51.5px; margin-top: 7.1px; }
-  .banner2 { background: #fbe8d3; color: #b71c1c; font-weight: 700; text-align: center; font-size: 11.5pt; padding-top: 12.4px; height: 36.8px; margin-top: 9.5px; }
+  .pn-head { line-height: 11px; font-weight: 700; }
+  .pn-en div.it { margin-top: 12px; font-size: 8pt; line-height: 14px; }
+  .pn-bn div.it { margin-top: 12px; font-size: 8pt; line-height: 14px; }
+  .banner1 { background: #e8f5e9; color: #e65100; font-weight: 700; text-align: center; font-size: 11.5pt; line-height: 19px; height: 51.5px; margin-top: 9px; display: flex; align-items: center; justify-content: center; padding: 0 12px 2px 12px; }
+  .banner2 { background: #fbe8d3; color: #b71c1c; font-weight: 700; text-align: center; font-size: 11.5pt; line-height: 16px; height: 36.8px; margin-top: 9.5px; display: flex; align-items: center; justify-content: center; padding: 0 8px 2px 8px; }
   .footer { display: flex; margin-top: 14.9px; }
   .f-en { width: 50%; font-size: 9pt; line-height: 14px; }
   .f-en .big { font-size: 11pt; font-weight: 700; }
@@ -585,10 +634,10 @@ ${inner}
       await navigator.clipboard.writeText(html);
       setCopiedHtml(true);
       setTimeout(() => setCopiedHtml(false), 2500);
-      setAiUpdatedNotice('টিকেটের সম্পূর্ণ অফিসিয়াল HTML কোড ক্লিপবোর্ডে কপি করা হয়েছে!');
+      setAiUpdatedNotice('টিকেটের সম্পূর্ণ অফিসিয়াল HTML কোড ক্লিপবোর্ডে কপি করা হয়েছে!');
     } catch (err) {
       console.error('Failed to copy HTML:', err);
-      alert('Could not copy HTML.');
+      setAiUpdatedNotice('HTML কপি করতে সমস্যা হয়েছে।');
     }
   };
 
@@ -604,10 +653,10 @@ ${inner}
       link.download = fileName;
       link.click();
       URL.revokeObjectURL(url);
-      setAiUpdatedNotice(`HTML ফাইল ডাউনলোড সম্পন্ন হয়েছে: ${fileName}`);
+      setAiUpdatedNotice(`HTML ফাইল ডাউনলোড সম্পন্ন হয়েছে: ${fileName}`);
     } catch (err) {
       console.error('Failed to download HTML:', err);
-      alert('Could not download HTML.');
+      setAiUpdatedNotice('HTML ফাইল ডাউনলোড করতে সমস্যা হয়েছে।');
     }
   };
 
@@ -1667,37 +1716,42 @@ ${inner}
                   .railway-ticket-page .jv { color: #05b454; font-weight: 700; font-size: 11.5px; line-height: 10.4px; position: absolute; top: 22.6px; left: 0; }
                   .railway-ticket-page .jv .big { font-size: 17.1px; vertical-align: -2.5px; letter-spacing: -0.5px; }
                   .railway-ticket-page .qr { position: absolute; top: 60.4px; left: 0; width: 80px; height: 80px; display: block; }
-                  .railway-ticket-page .intro { margin-top: 2.8px; font-size: 7.6pt; line-height: 11.84px; color: #333; padding-right: 88px; }
-                  .railway-ticket-page .intro-bn { margin-top: 10.9px; width: 100%; font-size: 7pt; line-height: 11.84px; padding-right: 88px; }
+                  .railway-ticket-page .intro { margin-top: 2.8px; font-size: 7.45pt; line-height: 11.84px; color: #333; padding-right: 82px; }
+                  .railway-ticket-page .intro-bn { margin-top: 10.9px; width: 100%; font-size: 6.85pt; line-height: 11.84px; padding-right: 84px; }
                   .railway-ticket-page .bar {
                     background: #039d48; color: #ffffff; font-size: 10.5pt; font-weight: 700;
-                    height: 29.4px; line-height: 29.4px; padding-left: 4px; margin-top: 8.4px;
+                    height: 29.4px; display: flex; align-items: center; padding: 0 6px 1px 6px; margin-top: 8.4px; line-height: 1.15;
                   }
                   .railway-ticket-page table.outer + .bar { margin-top: 21.2px; }
                   .railway-ticket-page table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 8pt; }
-                  .railway-ticket-page td { border: 1px solid #c7c7c7; padding: 0 4px; vertical-align: middle; height: 17.12px; line-height: 16.1px; }
+                  .railway-ticket-page td { border: 1px solid #c7c7c7; padding: 0; vertical-align: middle; height: 17.6px; }
                   .railway-ticket-page td:first-child { width: 320.3px; }
                   .railway-ticket-page td.b { font-weight: 700; }
+                  .railway-ticket-page td .td-c { display: flex; align-items: center; min-height: 17.6px; padding: 1px 5px 2px 5px; line-height: 11.5px; width: 100%; }
                   .railway-ticket-page table.outer { border: 1.3px solid #039d48; }
                   .railway-ticket-page table.outer td { border-top: 1px solid #c7c7c7; border-bottom: none; }
+                  .railway-ticket-page table.outer tr:first-child td { border-top: none; }
                   .railway-ticket-page table.outer tr:last-child td { border-bottom: 1.3px solid #039d48; }
                   .railway-ticket-page table.outer td:first-child { border-left: none; }
                   .railway-ticket-page table.outer td:last-child { border-right: none; }
-                  .railway-ticket-page .note-row td { font-size: 5.8pt; line-height: 6.5px; height: 14.7px; padding-top: 0; padding-bottom: 0; }
-                  .railway-ticket-page .pleasenote { margin-top: 5.1px; font-size: 8pt; }
+                  .railway-ticket-page .note-row td { height: auto; }
+                  .railway-ticket-page .note-row td .td-c { font-size: 5.7pt; line-height: 8.5px; min-height: 15.5px; padding: 2px 5px 2.5px 5px; }
+                  .railway-ticket-page .pleasenote { margin-top: 7px; font-size: 8pt; }
                   .railway-ticket-page .pn-cols { display: flex; }
-                  .railway-ticket-page .pn-en { width: 315px; flex: none; }
+                  .railway-ticket-page .pn-en { width: 315px; flex: none; padding-right: 8px; }
                   .railway-ticket-page .pn-bn { flex: 1; }
-                  .railway-ticket-page .pn-head { line-height: 9px; font-weight: 700; }
-                  .railway-ticket-page .pn-en div.it { margin-top: 17px; font-size: 8pt; line-height: 14px; }
-                  .railway-ticket-page .pn-bn div.it { margin-top: 17px; font-size: 8pt; line-height: 14px; }
+                  .railway-ticket-page .pn-head { line-height: 11px; font-weight: 700; }
+                  .railway-ticket-page .pn-en div.it { margin-top: 12px; font-size: 8pt; line-height: 14px; }
+                  .railway-ticket-page .pn-bn div.it { margin-top: 12px; font-size: 8pt; line-height: 14px; }
                   .railway-ticket-page .banner1 {
                     background: #e8f5e9; color: #e65100; font-weight: 700; text-align: center;
-                    font-size: 11.5pt; line-height: 19.5px; padding-top: 8.5px; height: 51.5px; margin-top: 7.1px;
+                    font-size: 11.5pt; line-height: 19px; height: 51.5px; margin-top: 9px;
+                    display: flex; align-items: center; justify-content: center; padding: 0 12px 2px 12px;
                   }
                   .railway-ticket-page .banner2 {
                     background: #fbe8d3; color: #b71c1c; font-weight: 700; text-align: center;
-                    font-size: 11.5pt; padding-top: 12.4px; height: 36.8px; margin-top: 9.5px;
+                    font-size: 11.5pt; line-height: 16px; height: 36.8px; margin-top: 9.5px;
+                    display: flex; align-items: center; justify-content: center; padding: 0 8px 2px 8px;
                   }
                   .railway-ticket-page .footer { display: flex; margin-top: 14.9px; }
                   .railway-ticket-page .f-en { width: 50%; font-size: 9pt; line-height: 14px; }
@@ -1762,133 +1816,133 @@ ${inner}
 
                     {/* Table 1: Journey Information */}
                     <div className="bar">
-                      Journey Information <span className="bn">(যাত্রার তথ্য)</span>
+                      <span>Journey Information <span className="bn">(যাত্রার তথ্য)</span></span>
                     </div>
                     <table className="outer">
                       <tbody>
                         <tr>
-                          <td>Issue Date &amp; Time <span className="bn">(প্রদানের তারিখ ও সময়)</span></td>
-                          <td>
+                          <td><div className="td-c"><span>Issue Date &amp; Time <span className="bn">(প্রদানের তারিখ ও সময়)</span></span></div></td>
+                          <td><div className="td-c"><span>
                             {formatDateEn(ticket.issueDate, ticket.issueTime)} <span className="bn">({formatDateBn(ticket.issueDate, ticket.issueTime)})</span>
-                          </td>
+                          </span></div></td>
                         </tr>
                         <tr>
-                          <td>Journey Date &amp; Time <span className="bn">(যাত্রার তারিখ ও সময়)</span></td>
-                          <td>
+                          <td><div className="td-c"><span>Journey Date &amp; Time <span className="bn">(যাত্রার তারিখ ও সময়)</span></span></div></td>
+                          <td><div className="td-c"><span>
                             {formatDateEn(ticket.journeyDate, ticket.journeyTime)} <span className="bn">({formatDateBn(ticket.journeyDate, ticket.journeyTime)})</span>
-                          </td>
+                          </span></div></td>
                         </tr>
                         <tr>
-                          <td>Train Name &amp; Number <span className="bn">(ট্রেন নম্বর ও নাম)</span></td>
-                          <td>
+                          <td><div className="td-c"><span>Train Name &amp; Number <span className="bn">(ট্রেন নম্বর ও নাম)</span></span></div></td>
+                          <td><div className="td-c"><span>
                             {ticket.trainName} [{ticket.trainNumber}] <span className="bn">({ticket.trainNameBn} [{toBanglaDigits(ticket.trainNumber)}])</span>
-                          </td>
+                          </span></div></td>
                         </tr>
                         <tr>
-                          <td>From Station <span className="bn">(প্রারম্ভিক স্টেশন)</span></td>
-                          <td>
+                          <td><div className="td-c"><span>From Station <span className="bn">(প্রারম্ভিক স্টেশন)</span></span></div></td>
+                          <td><div className="td-c"><span>
                             {ticket.fromStation} <span className="bn">({ticket.fromStationBn || getStationBanglaName(ticket.fromStation)})</span>
-                          </td>
+                          </span></div></td>
                         </tr>
                         <tr>
-                          <td>To Station <span className="bn">(গন্তব্য স্টেশন)</span></td>
-                          <td>
+                          <td><div className="td-c"><span>To Station <span className="bn">(গন্তব্য স্টেশন)</span></span></div></td>
+                          <td><div className="td-c"><span>
                             {ticket.toStation} <span className="bn">({ticket.toStationBn || getStationBanglaName(ticket.toStation)})</span>
-                          </td>
+                          </span></div></td>
                         </tr>
                         <tr>
-                          <td>Class Name <span className="bn">(শ্রেণির নাম)</span></td>
-                          <td>
+                          <td><div className="td-c"><span>Class Name <span className="bn">(শ্রেণির নাম)</span></span></div></td>
+                          <td><div className="td-c"><span>
                             {ticket.className} <span className="bn">({ticket.classNameBn})</span>
-                          </td>
+                          </span></div></td>
                         </tr>
                         <tr>
-                          <td>Coach Name / Seat(s) <span className="bn">(কোচের নাম / আসন)</span></td>
-                          <td>
+                          <td><div className="td-c"><span>Coach Name / Seat(s) <span className="bn">(কোচের নাম / আসন)</span></span></div></td>
+                          <td><div className="td-c"><span>
                             {ticket.coachSeat} <span className="bn">({getPureBanglaCoachSeat(ticket.coachSeat, ticket.coachSeatBn)})</span>
-                          </td>
+                          </span></div></td>
                         </tr>
                         <tr>
-                          <td>No. of Seats <span className="bn">(আসন সংখ্যা)</span></td>
-                          <td>
+                          <td><div className="td-c"><span>No. of Seats <span className="bn">(আসন সংখ্যা)</span></span></div></td>
+                          <td><div className="td-c"><span>
                             {ticket.numSeats} <span className="bn">({toBanglaDigits(ticket.numSeats)})</span>
-                          </td>
+                          </span></div></td>
                         </tr>
                         <tr>
-                          <td>No. of Adult Passenger(s) <span className="bn">(প্রাপ্তবয়স্ক যাত্রীর সংখ্যা)</span></td>
-                          <td>
+                          <td><div className="td-c"><span>No. of Adult Passenger(s) <span className="bn">(প্রাপ্তবয়স্ক যাত্রীর সংখ্যা)</span></span></div></td>
+                          <td><div className="td-c"><span>
                             {ticket.numAdults} <span className="bn">({toBanglaDigits(ticket.numAdults)})</span>
-                          </td>
+                          </span></div></td>
                         </tr>
                         <tr>
-                          <td>No. of Senior Citizen Passenger(s) <span className="bn">(প্রবীণ যাত্রীর সংখ্যা)</span></td>
-                          <td>
+                          <td><div className="td-c"><span>No. of Senior Citizen Passenger(s) <span className="bn">(প্রবীণ যাত্রীর সংখ্যা)</span></span></div></td>
+                          <td><div className="td-c"><span>
                             {ticket.numSeniors} <span className="bn">({toBanglaDigits(ticket.numSeniors)})</span>
-                          </td>
+                          </span></div></td>
                         </tr>
                         <tr>
-                          <td>No. of Child Passenger(s) <span className="bn">(শিশু যাত্রীর সংখ্যা)</span></td>
-                          <td>
+                          <td><div className="td-c"><span>No. of Child Passenger(s) <span className="bn">(শিশু যাত্রীর সংখ্যা)</span></span></div></td>
+                          <td><div className="td-c"><span>
                             {ticket.numChildren} <span className="bn">({toBanglaDigits(ticket.numChildren)})</span>
-                          </td>
+                          </span></div></td>
                         </tr>
                         <tr>
-                          <td>Fare <span className="bn">(ভাড়া)</span></td>
-                          <td>
+                          <td><div className="td-c"><span>Fare <span className="bn">(ভাড়া)</span></span></div></td>
+                          <td><div className="td-c"><span>
                             BDT {ticket.fare.toFixed(2)} <span className="bn">({toBanglaDigits(ticket.fare.toFixed(2))} টাকা)</span>
-                          </td>
+                          </span></div></td>
                         </tr>
                         <tr>
-                          <td>VAT <span className="bn">(ভ্যাট)</span></td>
-                          <td>
+                          <td><div className="td-c"><span>VAT <span className="bn">(ভ্যাট)</span></span></div></td>
+                          <td><div className="td-c"><span>
                             BDT {ticket.vat.toFixed(2)} <span className="bn">({toBanglaDigits(ticket.vat.toFixed(2))} টাকা)</span>
-                          </td>
+                          </span></div></td>
                         </tr>
                         <tr>
-                          <td>Service Charge <span className="bn">(সেবা খরচ)</span></td>
-                          <td>
+                          <td><div className="td-c"><span>Service Charge <span className="bn">(সেবা খরচ)</span></span></div></td>
+                          <td><div className="td-c"><span>
                             BDT {ticket.serviceCharge.toFixed(2)} <span className="bn">({toBanglaDigits(ticket.serviceCharge.toFixed(2))} টাকা)</span>
-                          </td>
+                          </span></div></td>
                         </tr>
                         <tr>
-                          <td>Total Fare (মোট ভাড়া)**</td>
-                          <td className="b">
-                            BDT {(ticket.fare + ticket.vat + ticket.serviceCharge).toFixed(2)} <span className="bn">({toBanglaDigits((ticket.fare + ticket.vat + ticket.serviceCharge).toFixed(2))} টাকা)</span>
-                          </td>
+                          <td><div className="td-c"><span>Total Fare <span className="bn">(মোট ভাড়া)</span>**</span></div></td>
+                          <td className="b"><div className="td-c"><span>
+                            BDT {totalFare.toFixed(2)} <span className="bn">({toBanglaDigits(totalFare.toFixed(2))} টাকা)</span>
+                          </span></div></td>
                         </tr>
                         <tr className="note-row">
-                          <td colSpan={2}>
+                          <td colSpan={2}><div className="td-c"><span>
                             ** Total Fare includes BDT 50 Bedding Charges per seat for AC_B and F_BERTH seat classes. <span className="bn">(এসি_বি এবং এফ_বার্থ সিট ক্লাসের প্রতি সিটে মোট ভাড়ার সাথে ৫০ টাকা বেডিং চার্জ অন্তর্ভুক্ত)</span>
-                          </td>
+                          </span></div></td>
                         </tr>
                       </tbody>
                     </table>
 
                     {/* Table 2: Passenger Information */}
                     <div className="bar">
-                      Passenger Information <span className="bn">(যাত্রীর তথ্য)</span>
+                      <span>Passenger Information <span className="bn">(যাত্রীর তথ্য)</span></span>
                     </div>
                     <table className="outer">
                       <tbody>
                         <tr>
-                          <td>Passenger Name <span className="bn">(যাত্রীর নাম)</span></td>
-                          <td>{ticket.passengerName}</td>
+                          <td><div className="td-c"><span>Passenger Name <span className="bn">(যাত্রীর নাম)</span></span></div></td>
+                          <td><div className="td-c"><span>{ticket.passengerName}</span></div></td>
                         </tr>
                         <tr>
-                          <td>Identification Type <span className="bn">(পরিচয়ের ধরণ)</span></td>
-                          <td>{ticket.idType} <span className="bn">({ticket.idTypeBn})</span></td>
+                          <td><div className="td-c"><span>Identification Type <span className="bn">(পরিচয়ের ধরণ)</span></span></div></td>
+                          <td><div className="td-c"><span>{ticket.idType} <span className="bn">({ticket.idTypeBn})</span></span></div></td>
                         </tr>
                         <tr>
-                          <td>Identification Number <span className="bn">(পরিচয়পত্র নম্বর)</span></td>
-                          <td className="b">{ticket.idNumber} <span className="bn">({toBanglaDigits(ticket.idNumber)})</span></td>
+                          <td><div className="td-c"><span>Identification Number <span className="bn">(পরিচয়পত্র নম্বর)</span></span></div></td>
+                          <td className="b"><div className="td-c"><span>{ticket.idNumber} <span className="bn">({toBanglaDigits(ticket.idNumber)})</span></span></div></td>
                         </tr>
                         <tr>
-                          <td>Mobile Number <span className="bn">(মোবাইল নম্বর)</span></td>
-                          <td className="b">{ticket.mobileNumber} <span className="bn">({toBanglaDigits(ticket.mobileNumber)})</span></td>
+                          <td><div className="td-c"><span>Mobile Number <span className="bn">(মোবাইল নম্বর)</span></span></div></td>
+                          <td className="b"><div className="td-c"><span>{ticket.mobileNumber} <span className="bn">({toBanglaDigits(ticket.mobileNumber)})</span></span></div></td>
                         </tr>
                         <tr>
-                          <td>PNR Number <span className="bn">(পিএনআর নম্বর)</span></td>
-                          <td className="b">{ticket.pnrNumber}</td>
+                          <td><div className="td-c"><span>PNR Number <span className="bn">(পিএনআর নম্বর)</span></span></div></td>
+                          <td className="b"><div className="td-c"><span>{ticket.pnrNumber}</span></div></td>
                         </tr>
                       </tbody>
                     </table>
@@ -1919,11 +1973,11 @@ ${inner}
 
                     {/* Banners */}
                     <div className="banner1 bn">
-                      রেলওয়ে সেবার জন্য ১৩১ এবং আইন শৃঙ্খলা বিষয়ক সহায়তার জন্য রেলওয়ে পুলিশ হটলাইন ০১৩২০১৭৭৫৯৮ নম্বরে যোগাযোগ করুন।
+                      <span>রেলওয়ে সেবার জন্য ১৩১ এবং আইন শৃঙ্খলা বিষয়ক সহায়তার জন্য রেলওয়ে পুলিশ হটলাইন ০১৩২০১৭৭৫৯৮ নম্বরে যোগাযোগ করুন।</span>
                     </div>
 
                     <div className="banner2 bn">
-                      "ধূমপান ও তামাকজাত দ্রব্য ব্যবহার হইতে বিরত থাকুন, ইহা শাস্তিযোগ্য অপরাধ"
+                      <span>"ধূমপান ও তামাকজাত দ্রব্য ব্যবহার হইতে বিরত থাকুন, ইহা শাস্তিযোগ্য অপরাধ"</span>
                     </div>
 
                     {/* Footer */}

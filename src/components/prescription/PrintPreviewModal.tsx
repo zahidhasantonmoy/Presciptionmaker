@@ -69,6 +69,84 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose, initia
     window.print();
   }, []);
 
+  const waitForExportFonts = useCallback(async () => {
+    if (typeof document !== 'undefined' && document.fonts) {
+      await document.fonts.ready;
+      await Promise.allSettled([
+        document.fonts.load('900 48px "Noto Serif Bengali"'),
+        document.fonts.load('600 16px "Noto Sans Bengali"'),
+        document.fonts.load('700 16px "Noto Sans Bengali"'),
+      ]);
+    }
+  }, []);
+
+  const getExportClinicLabel = useCallback(() => {
+    if (prescription.theme === 'sanmun' || doctorProfile?.clinicName?.includes('সানমুন')) {
+      return 'Sanmun_Dental_Care';
+    }
+    const raw = (doctorProfile?.clinicName || doctorProfile?.name || prescription.theme || 'Pad').trim();
+    const asciiSafe = raw
+      .replace(/\s+/g, '_')
+      .replace(/[^\x20-\x7E]/g, '')
+      .replace(/_+/g, '_')
+      .replace(/^_+|_+$/g, '');
+    if (asciiSafe) return asciiSafe;
+    const fallback = (doctorProfile?.name || prescription.theme || 'Pad').replace(/\s+/g, '_').replace(/[^\w-]/g, '');
+    return fallback || 'Pad';
+  }, [doctorProfile, prescription.theme]);
+
+  const captureSheetCanvas = useCallback(async (target: HTMLElement) => {
+    await waitForExportFonts();
+    const exportWidth = target.offsetWidth || Math.round(210 * (96 / 25.4));
+    const exportHeight = target.offsetHeight || Math.round(297 * (96 / 25.4));
+
+    return html2canvas(target, {
+      scale: 3,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      width: exportWidth,
+      height: exportHeight,
+      windowWidth: exportWidth,
+      windowHeight: exportHeight,
+      scrollX: 0,
+      scrollY: 0,
+      onclone: (clonedDoc, clonedEl) => {
+        const noPrints = clonedDoc.querySelectorAll<HTMLElement>('.no-print');
+        noPrints.forEach((np) => {
+          np.style.display = 'none';
+        });
+
+        let cur: HTMLElement | null = clonedEl.parentElement;
+        while (cur && cur !== clonedDoc.body) {
+          cur.style.transform = 'none';
+          cur.style.webkitTransform = 'none';
+          cur.style.zoom = '1';
+          cur.style.width = 'auto';
+          cur.style.maxWidth = 'none';
+          cur.style.padding = '0';
+          cur.style.margin = '0';
+          cur.style.boxShadow = 'none';
+          cur.style.overflow = 'visible';
+          cur.style.backdropFilter = 'none';
+          if (cur.classList.contains('modal-overlay')) {
+            cur.style.position = 'static';
+            cur.style.display = 'block';
+            cur.style.background = '#ffffff';
+          }
+          cur = cur.parentElement;
+        }
+
+        clonedEl.style.transform = 'none';
+        clonedEl.style.margin = '0';
+        clonedEl.style.boxShadow = 'none';
+        clonedEl.style.width = `${exportWidth}px`;
+        clonedEl.style.height = `${exportHeight}px`;
+        clonedEl.style.maxHeight = `${exportHeight}px`;
+      },
+    });
+  }, [waitForExportFonts]);
+
   const handleDownloadPDF = useCallback(async () => {
     if (!previewRef.current) return;
     showToast('Generating high-resolution 1-Page A4 PDF (300 DPI)...', 'info');
@@ -81,34 +159,17 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose, initia
       if (sheets.length > 0) {
         for (let i = 0; i < sheets.length; i++) {
           if (i > 0) pdf.addPage();
-          const sheet = sheets[i];
-          const canvas = await html2canvas(sheet, {
-            scale: 3,
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: '#ffffff',
-            width: sheet.scrollWidth,
-            height: sheet.scrollHeight,
-            windowWidth: sheet.scrollWidth,
-            windowHeight: sheet.scrollHeight,
-          });
+          const canvas = await captureSheetCanvas(sheets[i]);
           const imgData = canvas.toDataURL('image/jpeg', 0.98);
           pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
         }
       } else {
-        const canvas = await html2canvas(previewRef.current, {
-          scale: 3,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: '#ffffff',
-          width: previewRef.current.scrollWidth,
-          height: previewRef.current.scrollHeight,
-        });
+        const canvas = await captureSheetCanvas(previewRef.current);
         const imgData = canvas.toDataURL('image/jpeg', 0.98);
         pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
       }
 
-      const clinicOrDoctor = (doctorProfile?.clinicName || doctorProfile?.name || prescription.theme || 'Pad').replace(/\s+/g, '_');
+      const clinicOrDoctor = getExportClinicLabel();
       const patientName = (prescription.patient.name || 'Patient').replace(/\s+/g, '_');
       const date = prescription.date.substring(0, 10);
       const pageInfo = sheets.length > 1 ? `_${sheets.length}pages` : '';
@@ -126,7 +187,7 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose, initia
       console.error(err);
       showToast('Failed to generate PDF. Try printing instead.', 'error');
     }
-  }, [prescription, showToast]);
+  }, [captureSheetCanvas, getExportClinicLabel, isBlankPadMode, prescription, showToast]);
 
   const handleDownloadJPG = useCallback(async () => {
     if (!previewRef.current) return;
@@ -146,19 +207,9 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose, initia
       };
 
       if (sheets.length > 0) {
+        const clinicOrDoctor = getExportClinicLabel();
         for (let i = 0; i < sheets.length; i++) {
-          const sheet = sheets[i];
-          const canvas = await html2canvas(sheet, {
-            scale: 3,
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: '#ffffff',
-            width: sheet.scrollWidth,
-            height: sheet.scrollHeight,
-            windowWidth: sheet.scrollWidth,
-            windowHeight: sheet.scrollHeight,
-          });
-          const clinicOrDoctor = (doctorProfile?.clinicName || doctorProfile?.name || prescription.theme || 'Pad').replace(/\s+/g, '_');
+          const canvas = await captureSheetCanvas(sheets[i]);
           const pageSuffix = sheets.length > 1 ? `_page${i + 1}` : '';
           const filename = isBlankPadMode
             ? `Blank_Pad_${clinicOrDoctor}_A4${pageSuffix}.jpg`
@@ -169,14 +220,7 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose, initia
           }
         }
       } else {
-        const canvas = await html2canvas(previewRef.current, {
-          scale: 3,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: '#ffffff',
-          width: previewRef.current.scrollWidth,
-          height: previewRef.current.scrollHeight,
-        });
+        const canvas = await captureSheetCanvas(previewRef.current);
         downloadCanvasAsJpg(canvas, `Rx_${patientName}_${date}.jpg`);
       }
 
@@ -185,7 +229,7 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose, initia
       console.error(err);
       showToast('Failed to generate JPG image.', 'error');
     }
-  }, [prescription, showToast]);
+  }, [captureSheetCanvas, getExportClinicLabel, isBlankPadMode, prescription, showToast]);
 
   return (
     <div

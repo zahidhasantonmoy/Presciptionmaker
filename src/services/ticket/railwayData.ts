@@ -1561,10 +1561,262 @@ export function formatRailwayDateTime(dateStr: string, timeStr: string): string 
   return `${enFull} (${bnFull})`;
 }
 
+// Helper: Banglish / Common Spelling Aliases -> Official Station Name in RAILWAY_STATIONS
+export const STATION_ALIASES: Record<string, string> = {
+  'ibrahimbad': 'Ibrahimabad',
+  'ibrahim abad': 'Ibrahimabad',
+  'ebrahimabad': 'Ibrahimabad',
+  'ebrahimbad': 'Ibrahimabad',
+  'ইব্রাহিমাবাদ': 'Ibrahimabad',
+  'ইব্রাহিমবাদ': 'Ibrahimabad',
+  'bangabandhu setu east': 'Bangabandhu Setu East',
+  'bangabandhu bridge east': 'Bangabandhu Setu East',
+  'jamuna bridge east': 'Bangabandhu Setu East',
+  'setu east': 'Bangabandhu Setu East',
+  'bangabandhu setu west': 'Bangabandhu Setu West',
+  'setu west': 'Bangabandhu Setu West',
+  'soydabad': 'Bangabandhu Setu West',
+  'chattogram': 'Chittagong',
+  'ctg': 'Chittagong',
+  'chittagong': 'Chittagong',
+  'চট্টগ্রাম': 'Chittagong',
+  'bogura': 'Bogra',
+  'bogra': 'Bogra',
+  'বগুড়া': 'Bogra',
+  'comilla': 'Cumilla',
+  'cumilla': 'Cumilla',
+  'কুমিল্লা': 'Cumilla',
+  'jessore': 'Jashore',
+  'jashore': 'Jashore',
+  'যশোর': 'Jashore',
+  'iswardi': 'Ishwardi',
+  'ishurdi': 'Ishwardi',
+  'ঈশ্বরদী': 'Ishwardi',
+  'ishwardi bypass': 'Ishwardi Bypass',
+  'iswardi bypass': 'Ishwardi Bypass',
+  'rajshahi': 'Rajshahi',
+  'rajshai': 'Rajshahi',
+  'রাজশাহী': 'Rajshahi',
+  'komolapur': 'Dhaka',
+  'kamalapur': 'Dhaka',
+  'কমলাপুর': 'Dhaka',
+  'biman bandar': 'Dhaka Biman Bandar',
+  'dhaka airport': 'Dhaka Biman Bandar',
+  'airport': 'Dhaka Biman Bandar',
+  'chapai': 'Chapai Nawabganj',
+  'nawabganj': 'Chapai Nawabganj',
+  'chapainawabganj': 'Chapai Nawabganj',
+  "cox's bazar": "Cox's Bazar",
+  'coxs bazar': "Cox's Bazar",
+  'coxsbazar': "Cox's Bazar",
+  'cox bazar': "Cox's Bazar",
+  'tangail': 'Tangail',
+  'tangal': 'Tangail',
+  'টাঙ্গাইল': 'Tangail',
+  'joydebpur': 'Joydebpur',
+  'jaydebpur': 'Joydebpur',
+  'mirzapur': 'Mirzapur',
+  'ullapara': 'Ullapara',
+  'ulla para': 'Ullapara',
+  'chatmohar': 'Chatmohar',
+  'chatmohor': 'Chatmohar',
+  'abdulpur': 'Abdulpur',
+  'natore': 'Natore',
+  'nator': 'Natore',
+  'bheramara': 'Bheramara',
+  'veramara': 'Bheramara',
+  'santahar': 'Santahar',
+  'parbatipur': 'Parbatipur',
+  'parbotipur': 'Parbatipur',
+  'dinajpur': 'Dinajpur',
+  'rangpur': 'Rangpur',
+  'rongpur': 'Rangpur',
+  'khulna': 'Khulna',
+  'sylhet': 'Sylhet',
+  'sylet': 'Sylhet',
+  'mymensingh': 'Mymensingh',
+  'moymonshingho': 'Mymensingh',
+  'jamalpur': 'Jamalpur Town',
+};
+
+// Bounded Levenshtein edit distance for Banglish station typo recovery
+function editDistance(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
+  const dp: number[][] = Array.from({ length: m + 1 }, (_, i) =>
+    Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
+  );
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] =
+        a[i - 1] === b[j - 1]
+          ? dp[i - 1][j - 1]
+          : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+    }
+  }
+  return dp[m][n];
+}
+
+export function normalizeStationName(raw: string): string {
+  if (!raw) return '';
+  const cleaned = raw.trim();
+  const lower = cleaned.toLowerCase();
+
+  if (STATION_ALIASES[lower]) return STATION_ALIASES[lower];
+
+  const exactEn = RAILWAY_STATIONS.find(s => s.name.toLowerCase() === lower);
+  if (exactEn) return exactEn.name;
+
+  const exactBn = RAILWAY_STATIONS.find(s => s.nameBn === cleaned);
+  if (exactBn) return exactBn.name;
+
+  // Bounded fuzzy match for minor spelling typos (e.g. ibrahimbad -> Ibrahimabad)
+  if (/^[a-z\s'-]{5,}$/i.test(lower)) {
+    let bestName = '';
+    let bestDist = Infinity;
+    for (const st of RAILWAY_STATIONS) {
+      const target = st.name.toLowerCase();
+      if (target[0] !== lower[0]) continue;
+      const maxDist = lower.length >= 8 ? 2 : 1;
+      if (Math.abs(target.length - lower.length) > maxDist) continue;
+      const dist = editDistance(lower, target);
+      if (dist <= maxDist && dist < bestDist) {
+        bestDist = dist;
+        bestName = st.name;
+      }
+    }
+    if (bestName) return bestName;
+  }
+
+  return cleaned;
+}
+
+// Known intermediate corridor stops for Bangladesh Railway Intercity trains
+const DHAKA_RAJSHAHI_STOPS = [
+  'Dhaka', 'Dhaka Biman Bandar', 'Joydebpur', 'Mirzapur', 'Tangail',
+  'Ibrahimabad', 'Bangabandhu Setu East', 'Bangabandhu Setu West',
+  'Jamtail', 'Ullapara', 'Chatmohar', 'Ishwardi Bypass', 'Abdulpur',
+  'Natore', 'Rajshahi', 'Chapai Nawabganj',
+];
+
+const DHAKA_NORTH_BENGAL_STOPS = [
+  'Dhaka', 'Dhaka Biman Bandar', 'Joydebpur', 'Tangail',
+  'Ibrahimabad', 'Bangabandhu Setu East', 'Bangabandhu Setu West',
+  'Jamtail', 'Ullapara', 'Ishwardi Bypass', 'Natore', 'Ahsanganj',
+  'Santahar', 'Akkelpur', 'Joypurhat', 'Panchbibi', 'Birampur',
+  'Fulbari', 'Parbatipur', 'Dinajpur', 'Setabganj', 'Pirganj',
+  'Rangpur', 'Kaunia', 'Kurigram', 'Lalmonirhat', 'Saidpur',
+  'Nilphamari', 'Domar', 'Chilahati', 'Burimari', 'Bogra',
+];
+
+const DHAKA_KHULNA_STOPS = [
+  'Dhaka', 'Dhaka Biman Bandar', 'Joydebpur', 'Mirzapur', 'Tangail',
+  'Ibrahimabad', 'Bangabandhu Setu East', 'Bangabandhu Setu West',
+  'Jamtail', 'Ullapara', 'Chatmohar', 'Ishwardi', 'Pakshi',
+  'Bheramara', 'Poradaha', 'Alamdanga', 'Chuadanga', 'Darshana',
+  'Kotchandpur', 'Jashore', 'Noapara', 'Daulatpur', 'Khulna', 'Benapole',
+];
+
+const DHAKA_CHATTOGRAM_STOPS = [
+  'Dhaka', 'Dhaka Biman Bandar', 'Narsingdi', 'Bhairab Bazar',
+  'Brahmanbaria', 'Akhaura', 'Cumilla', 'Laksham', 'Nangalkot',
+  'Hasanpur', 'Gunabati', 'Feni', 'Chittagong', 'Chattogram Cantonment',
+  'Dohazari', 'Lohagara', 'Harbang', 'Chakaria', 'Dulahazra',
+  'Islamabad', 'Ramu', "Cox's Bazar",
+];
+
+const DHAKA_SYLHET_STOPS = [
+  'Dhaka', 'Dhaka Biman Bandar', 'Narsingdi', 'Bhairab Bazar',
+  'Brahmanbaria', 'Akhaura', 'Mantala', 'Nayapara', 'Shayestaganj',
+  'Srimangal', 'Bhanugach', 'Shamshernagar', 'Kulaura', 'Maijgaon',
+  'Moglabazar', 'Sylhet',
+];
+
+const DHAKA_MYMENSINGH_STOPS = [
+  'Dhaka', 'Dhaka Biman Bandar', 'Tongi', 'Joydebpur', 'Gazipur',
+  'Mymensingh', 'Jamalpur Town', 'Netrokona', 'Mohanganj', 'Barhatta',
+  'Kishoreganj', 'Bhairab Bazar', 'Kuliarchar', 'Bajitpur', 'Sararchar',
+];
+
+export const TRAIN_CORRIDOR_STOPS: Record<string, string[]> = {
+  'SILKCITY EXPRESS': DHAKA_RAJSHAHI_STOPS,
+  'PADMA EXPRESS': DHAKA_RAJSHAHI_STOPS,
+  'DHUMKETU EXPRESS': DHAKA_RAJSHAHI_STOPS,
+  'BANALATA EXPRESS': ['Dhaka', 'Dhaka Biman Bandar', 'Tangail', 'Ibrahimabad', 'Ishwardi Bypass', 'Rajshahi', 'Chapai Nawabganj'],
+  'BANA LATA EXPRESS': ['Dhaka', 'Dhaka Biman Bandar', 'Tangail', 'Ibrahimabad', 'Ishwardi Bypass', 'Rajshahi', 'Chapai Nawabganj'],
+  'MADHUMATI EXPRESS': [...DHAKA_RAJSHAHI_STOPS, 'Bhanga', 'Bhanga Junction', 'Faridpur', 'Rajbari', 'Pakshi', 'Ishwardi'],
+  'EKOTA EXPRESS': DHAKA_NORTH_BENGAL_STOPS,
+  'DRUTOJAN EXPRESS': DHAKA_NORTH_BENGAL_STOPS,
+  'PANCHAGARH EXPRESS': DHAKA_NORTH_BENGAL_STOPS,
+  'BANGLABANDHA EXPRESS': DHAKA_NORTH_BENGAL_STOPS,
+  'RANGPUR EXPRESS': DHAKA_NORTH_BENGAL_STOPS,
+  'KURIGRAM EXPRESS': DHAKA_NORTH_BENGAL_STOPS,
+  'LALMONI EXPRESS': DHAKA_NORTH_BENGAL_STOPS,
+  'NILSAGAR EXPRESS': DHAKA_NORTH_BENGAL_STOPS,
+  'CHILAHATI EXPRESS': DHAKA_NORTH_BENGAL_STOPS,
+  'BURIMARI EXPRESS': DHAKA_NORTH_BENGAL_STOPS,
+  'SIRAJGANJ EXPRESS': ['Dhaka', 'Dhaka Biman Bandar', 'Joydebpur', 'Tangail', 'Ibrahimabad', 'Bangabandhu Setu East', 'Bangabandhu Setu West', 'Jamtail', 'Sirajganj', 'Sirajganj Bazar'],
+  'CHITRA EXPRESS': DHAKA_KHULNA_STOPS,
+  'SUNDARBAN EXPRESS': DHAKA_KHULNA_STOPS,
+  'BENAPOLE EXPRESS': DHAKA_KHULNA_STOPS,
+  'SUBORNO EXPRESS': DHAKA_CHATTOGRAM_STOPS,
+  'SONAR BANGLA EXPRESS': DHAKA_CHATTOGRAM_STOPS,
+  'TURNA EXPRESS': DHAKA_CHATTOGRAM_STOPS,
+  'MAHANAGAR EXPRESS': DHAKA_CHATTOGRAM_STOPS,
+  'CHATTALA EXPRESS': DHAKA_CHATTOGRAM_STOPS,
+  "COX'S BAZAR EXPRESS": DHAKA_CHATTOGRAM_STOPS,
+  'PARJATAK EXPRESS': DHAKA_CHATTOGRAM_STOPS,
+  'PARABAT EXPRESS': DHAKA_SYLHET_STOPS,
+  'UPABAN EXPRESS': DHAKA_SYLHET_STOPS,
+  'KALNI EXPRESS': DHAKA_SYLHET_STOPS,
+  'JAYANTIKA EXPRESS': DHAKA_SYLHET_STOPS,
+  'TISTA EXPRESS': DHAKA_MYMENSINGH_STOPS,
+  'AGNIBEENA EXPRESS': DHAKA_MYMENSINGH_STOPS,
+  'JAMUNA EXPRESS': DHAKA_MYMENSINGH_STOPS,
+  'JAMALPUR EXPRESS': DHAKA_MYMENSINGH_STOPS,
+  'HAOR EXPRESS': DHAKA_MYMENSINGH_STOPS,
+  'MOHANGANJ EXPRESS': DHAKA_MYMENSINGH_STOPS,
+};
+
+export function doesTrainServeStation(trainName: string, stationName: string): boolean {
+  if (!trainName || !stationName) return false;
+  const canonicalSt = normalizeStationName(stationName).toLowerCase();
+  const normalizedTrainKey = trainName.toUpperCase().trim();
+
+  const matchingVariants = RAILWAY_TRAINS.filter(t =>
+    t.name.toUpperCase().replace(/\s+/g, '').includes(normalizedTrainKey.replace(/\s+/g, '')) ||
+    normalizedTrainKey.replace(/\s+/g, '').includes(t.name.toUpperCase().replace(/\s+/g, ''))
+  );
+  if (
+    matchingVariants.some(
+      t =>
+        t.fromStation.toLowerCase() === canonicalSt ||
+        t.toStation.toLowerCase() === canonicalSt
+    )
+  ) {
+    return true;
+  }
+
+  for (const [corridorTrain, stops] of Object.entries(TRAIN_CORRIDOR_STOPS)) {
+    if (
+      normalizedTrainKey.replace(/\s+/g, '').includes(corridorTrain.replace(/\s+/g, '')) ||
+      corridorTrain.replace(/\s+/g, '').includes(normalizedTrainKey.replace(/\s+/g, ''))
+    ) {
+      if (stops.some(s => s.toLowerCase() === canonicalSt)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 // Helper: Map Station English to Bengali
 export function getStationBanglaName(stationName: string): string {
   if (!stationName) return '';
-  const match = RAILWAY_STATIONS.find(s => s.name.toLowerCase() === stationName.trim().toLowerCase());
+  const resolved = normalizeStationName(stationName);
+  const match = RAILWAY_STATIONS.find(
+    s => s.name.toLowerCase() === resolved.trim().toLowerCase() || s.name.toLowerCase() === stationName.trim().toLowerCase()
+  );
   return match ? match.nameBn : stationName;
 }
 

@@ -9,7 +9,8 @@ import { getDhakaNow } from '../utils/dateUtils';
 import {
   DEMO_TEMPLATES, DEFAULT_MEDICINE_CATALOG, DEFAULT_DIAGNOSIS_CATALOG,
   DEFAULT_TEST_CATALOG, DEFAULT_ADVICE_TEMPLATES, DEFAULT_DOCTOR_PROFILE,
-  DEFAULT_DOCTOR_PROFILES, DR_MIZAN_PROFILE, SANOWARA_ORTHO_TEMPLATE,
+  DEFAULT_DOCTOR_PROFILES, DR_MIZAN_PROFILE, DR_SANMUN_DENTAL_PROFILE,
+  SANOWARA_ORTHO_TEMPLATE, SANMUN_DENTAL_TEMPLATE,
   JESMIN_CERVICAL_TEMPLATE, JESMIN_FULL_PRESCRIPTION, SANOWARA_FULL_PRESCRIPTION,
   DEMO_PRESCRIPTIONS
 } from '../data/defaults';
@@ -367,11 +368,11 @@ export const useStore = create<Store>()(
       },
 
       clearAllData: () => set({
-        doctorProfiles: [DEFAULT_DOCTOR_PROFILE],
+        doctorProfiles: DEFAULT_DOCTOR_PROFILES,
         activeDoctorId: DEFAULT_DOCTOR_PROFILE.id,
         doctorProfile: DEFAULT_DOCTOR_PROFILE,
         patients: [],
-        prescriptions: [],
+        prescriptions: DEMO_PRESCRIPTIONS,
         prescriptionTemplates: DEMO_TEMPLATES,
         medicineTemplates: [],
         medicineCatalog: DEFAULT_MEDICINE_CATALOG,
@@ -411,12 +412,28 @@ export const useStore = create<Store>()(
             } else {
               state.doctorProfiles.push(DR_MIZAN_PROFILE);
             }
+            for (const builtInProfile of DEFAULT_DOCTOR_PROFILES) {
+              if (!state.doctorProfiles.some(p => p.id === builtInProfile.id)) {
+                state.doctorProfiles.push(builtInProfile);
+              }
+            }
+            if (!state.doctorProfiles.some(p => p.id === DR_SANMUN_DENTAL_PROFILE.id || p.name.includes('Sanmun'))) {
+              state.doctorProfiles.push(DR_SANMUN_DENTAL_PROFILE);
+            }
             if (!state.activeDoctorId) {
               state.activeDoctorId = state.doctorProfiles[0].id;
               state.doctorProfile = state.doctorProfiles[0];
             }
           }
           if (state.prescriptionTemplates) {
+            for (const builtInTpl of [...DEMO_TEMPLATES].reverse()) {
+              if (!state.prescriptionTemplates.some(t => t.id === builtInTpl.id)) {
+                state.prescriptionTemplates = [builtInTpl, ...state.prescriptionTemplates];
+              }
+            }
+            if (!state.prescriptionTemplates.some(t => t.id === SANMUN_DENTAL_TEMPLATE.id || t.name.includes('Sanmun'))) {
+              state.prescriptionTemplates = [SANMUN_DENTAL_TEMPLATE, ...state.prescriptionTemplates];
+            }
             if (!state.prescriptionTemplates.some(t => t.id === JESMIN_CERVICAL_TEMPLATE.id || t.name.includes('Jesmin'))) {
               state.prescriptionTemplates = [JESMIN_CERVICAL_TEMPLATE, ...state.prescriptionTemplates];
             }

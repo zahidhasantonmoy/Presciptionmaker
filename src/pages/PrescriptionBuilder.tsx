@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Save, Printer, Eye, ChevronDown, ChevronUp, FileDown,
   User, Stethoscope, FlaskConical, BookOpen, Calendar, FileText, Keyboard, Clock, RotateCcw,
@@ -195,6 +195,23 @@ export function PrescriptionBuilder() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentPrescription, handleSave, createPrescription, updateCurrentPrescription, showToast]);
 
+  const pendingPromptHandledRef = useRef(false);
+
+  // Auto-run if redirected from Home Central AI Hub
+  useEffect(() => {
+    if (!currentPrescription || pendingPromptHandledRef.current) return;
+    try {
+      const pending = sessionStorage.getItem('pending_ai_prompt');
+      if (pending) {
+        pendingPromptHandledRef.current = true;
+        sessionStorage.removeItem('pending_ai_prompt');
+        handleAiPrescription(pending);
+      }
+    } catch {
+      // ignore
+    }
+  }, [currentPrescription]);
+
   if (!currentPrescription) return <div style={{ padding: 32, textAlign: 'center', color: '#94a3b8' }}>Loading...</div>;
 
   const rx = currentPrescription;
@@ -291,19 +308,6 @@ export function PrescriptionBuilder() {
     showToast('AI: প্রেসক্রিপশন ডেটা অটোমেটিক লোড হয়েছে!', 'success');
     return res.summary;
   };
-
-  // Auto-run if redirected from Home Central AI Hub
-  useEffect(() => {
-    try {
-      const pending = sessionStorage.getItem('pending_ai_prompt');
-      if (pending) {
-        sessionStorage.removeItem('pending_ai_prompt');
-        handleAiPrescription(pending);
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
 
   const toggleSection = (key: keyof SectionToggle) =>
     setSections(s => ({ ...s, [key]: !s[key] }));
