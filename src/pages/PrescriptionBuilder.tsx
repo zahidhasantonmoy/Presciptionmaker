@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Save, Printer, Eye, ChevronDown, ChevronUp,
+  Save, Printer, Eye, ChevronDown, ChevronUp, FileDown,
   User, Stethoscope, FlaskConical, BookOpen, Calendar, FileText, Keyboard, Clock, RotateCcw,
   Layers, ShieldCheck, MessageSquare, FileCode
 } from 'lucide-react';
@@ -31,6 +31,7 @@ const THEME_OPTIONS: { value: PrescriptionTheme; label: string }[] = [
   { value: 'modern', label: 'Modern' },
   { value: 'compact', label: 'Compact' },
   { value: 'sanowara', label: 'Sanowara (Ortho & Spine)' },
+  { value: 'sanmun', label: 'সানমুন ডেন্টাল কেয়ার (Sanmun Dental)' },
 ];
 
 interface SectionToggle {
@@ -76,6 +77,19 @@ export function PrescriptionBuilder() {
 
   const [showPreview, setShowPreview] = useState(true);
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const [printModalInitialBlank, setPrintModalInitialBlank] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem('open_blank_pad_on_load')) {
+        sessionStorage.removeItem('open_blank_pad_on_load');
+        setPrintModalInitialBlank(true);
+        setShowPrintModal(true);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
   const [showLabSlipModal, setShowLabSlipModal] = useState(false);
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   const [showJsonModal, setShowJsonModal] = useState(false);
@@ -536,7 +550,28 @@ export function PrescriptionBuilder() {
           <button className="btn-ghost btn-sm" onClick={() => setShowPreview(!showPreview)}>
             <Eye size={14} /> {showPreview ? 'Hide' : 'Show'} Preview
           </button>
-          <button className="btn-ghost btn-sm" onClick={() => setShowPrintModal(true)}>
+          <button
+            type="button"
+            className="btn-ghost btn-sm"
+            style={{
+              background: '#ecfdf5',
+              color: '#065f46',
+              border: '1px solid #10b981',
+              fontWeight: 700,
+              fontSize: 12,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+            }}
+            onClick={() => {
+              setPrintModalInitialBlank(true);
+              setShowPrintModal(true);
+            }}
+            title="Download or Print Blank Prescription Pad (ব্ল্যাঙ্ক প্রেসক্রিপশন প্যাড টেমপ্লেট ডাউনলোড করুন)"
+          >
+            <FileDown size={14} color="#059669" /> ব্ল্যাঙ্ক প্যাড (Blank Pad)
+          </button>
+          <button className="btn-ghost btn-sm" onClick={() => { setPrintModalInitialBlank(false); setShowPrintModal(true); }}>
             <Printer size={14} /> Print/PDF
           </button>
           <button
@@ -631,10 +666,11 @@ export function PrescriptionBuilder() {
               {prescriptionTemplates.map(t => {
                 const isJesmin = t.id === 'template-jesmin-cervical-plid' || t.name.includes('Jesmin');
                 const isSanowara = t.id === 'template-sanowara-ortho-plid' || t.name.includes('Sanowara');
-                const isSpecial = isJesmin || isSanowara;
-                const brandColor = isJesmin ? '#0f766e' : isSanowara ? '#6b1a4f' : '#1e40af';
-                const bgColor = isJesmin ? '#f0fdfa' : isSanowara ? '#fdf2f8' : '#f8faff';
-                const borderColor = isJesmin ? '#0f766e' : isSanowara ? '#6b1a4f' : '#c7d7fa';
+                const isSanmun = t.id === 'template-sanmun-dental' || t.name.includes('Sanmun');
+                const isSpecial = isJesmin || isSanowara || isSanmun;
+                const brandColor = isJesmin ? '#0f766e' : isSanowara ? '#6b1a4f' : isSanmun ? '#1E3A66' : '#1e40af';
+                const bgColor = isJesmin ? '#f0fdfa' : isSanowara ? '#fdf2f8' : isSanmun ? '#eff6ff' : '#f8faff';
+                const borderColor = isJesmin ? '#0f766e' : isSanowara ? '#6b1a4f' : isSanmun ? '#3b82f6' : '#c7d7fa';
 
                 return (
                   <div key={t.id} style={{
@@ -1097,7 +1133,11 @@ export function PrescriptionBuilder() {
         <PrintPreviewModal
           prescription={rx}
           doctorProfile={effectiveDoctor}
-          onClose={() => setShowPrintModal(false)}
+          initialBlankMode={printModalInitialBlank}
+          onClose={() => {
+            setShowPrintModal(false);
+            setPrintModalInitialBlank(false);
+          }}
         />
       )}
 

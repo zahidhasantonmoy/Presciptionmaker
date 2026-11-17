@@ -63,6 +63,14 @@ export function TemplatesPage() {
         };
         updates.prescriptionNumber = SANOWARA_SAMPLE_PATIENT.patientId;
         updates.date = '2026-09-21T10:00:00.000Z';
+      } else if (t.id === 'template-sanmun-dental' || t.name.includes('Sanmun')) {
+        updates.patient = {
+          ...rx.patient,
+          name: 'মোঃ জাহিদ হাসান',
+          age: '২৮ বছর',
+          gender: 'male',
+        };
+        updates.date = new Date().toISOString();
       }
     }
     if (t.doctorProfileId) {
@@ -141,10 +149,11 @@ export function TemplatesPage() {
             {prescriptionTemplates.map(t => {
               const isJesmin = t.id === 'template-jesmin-cervical-plid' || t.name.includes('Jesmin');
               const isSanowara = t.id === 'template-sanowara-ortho-plid' || t.name.includes('Sanowara');
-              const isSpecial = isJesmin || isSanowara;
-              const brandColor = isJesmin ? '#0f766e' : isSanowara ? '#6b1a4f' : '#1e40af';
-              const bgColor = isJesmin ? '#f0fdfa' : isSanowara ? '#fdf2f8' : 'white';
-              const borderColor = isJesmin ? '#0f766e' : isSanowara ? '#6b1a4f' : '#e2e8f0';
+              const isSanmun = t.id === 'template-sanmun-dental' || t.name.includes('Sanmun');
+              const isSpecial = isJesmin || isSanowara || isSanmun;
+              const brandColor = isJesmin ? '#0f766e' : isSanowara ? '#6b1a4f' : isSanmun ? '#1E3A66' : '#1e40af';
+              const bgColor = isJesmin ? '#f0fdfa' : isSanowara ? '#fdf2f8' : isSanmun ? '#eff6ff' : 'white';
+              const borderColor = isJesmin ? '#0f766e' : isSanowara ? '#6b1a4f' : isSanmun ? '#3b82f6' : '#e2e8f0';
 
               return (
                 <div key={t.id} className="card" style={{
@@ -186,7 +195,7 @@ export function TemplatesPage() {
                     {t.investigations.length > 0 && <div>🔬 {t.investigations.length} test{t.investigations.length !== 1 ? 's' : ''}</div>}
                     {t.advice && <div>📋 Has advice</div>}
                   </div>
-                  <div style={{ display: 'flex', gap: 6, marginTop: 14, paddingTop: 10, borderTop: '1px solid #f1f5f9' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 14, paddingTop: 10, borderTop: '1px solid #f1f5f9' }}>
                     <button
                       className="btn-primary btn-sm"
                       style={{
@@ -198,6 +207,25 @@ export function TemplatesPage() {
                     >
                       ✍️ Use in Prescription
                     </button>
+                    <button
+                      className="btn-ghost btn-sm"
+                      style={{
+                        fontSize: 11,
+                        color: '#065f46',
+                        borderColor: '#10b981',
+                        background: '#ecfdf5',
+                        fontWeight: 700,
+                      }}
+                      onClick={() => {
+                        try {
+                          sessionStorage.setItem('open_blank_pad_on_load', '1');
+                        } catch {}
+                        handleUseTemplate(t, false);
+                      }}
+                      title="ব্ল্যাঙ্ক প্যাড হিসেবে সরাসরি প্রিন্ট বা PDF/JPG ডাউনলোড করুন"
+                    >
+                      📑 Blank Pad
+                    </button>
                     {isSpecial && (
                       <button
                         className="btn-ghost btn-sm"
@@ -205,13 +233,13 @@ export function TemplatesPage() {
                           fontSize: 11,
                           color: brandColor,
                           borderColor: brandColor,
-                          background: isJesmin ? '#ccfbf1' : '#fce7f3',
+                          background: isJesmin ? '#ccfbf1' : isSanowara ? '#fce7f3' : '#dbeafe',
                           fontWeight: 600,
                         }}
                         onClick={() => handleUseTemplate(t, true)}
-                        title={`Load complete case with ${isJesmin ? 'Jesmin (40Y, P-202610339)' : 'Sanowara (70Y, 20265435)'}`}
+                        title={isSanmun ? 'মোঃ জাহিদ হাসান ডেমো পেশেন্ট সহ লোড করুন' : `Load complete case with ${isJesmin ? 'Jesmin (40Y, P-202610339)' : 'Sanowara (70Y, 20265435)'}`}
                       >
-                        Load Patient Case
+                        Sample Patient
                       </button>
                     )}
                   </div>

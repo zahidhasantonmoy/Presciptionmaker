@@ -1,6 +1,6 @@
 import React, { useRef, useState, useCallback } from 'react';
 import {
-  Printer, Download, X, MessageSquare, FileText, Layers,
+  Printer, Download, X, MessageSquare, FileText, Layers, FileDown,
   ZoomIn, ZoomOut, Maximize2, Image as ImageIcon
 } from 'lucide-react';
 import type { Prescription, DoctorProfile } from '../../types';
@@ -14,12 +14,14 @@ interface PrintPreviewModalProps {
   prescription: Prescription;
   doctorProfile: DoctorProfile | null;
   onClose: () => void;
+  initialBlankMode?: boolean;
 }
 
-export function PrintPreviewModal({ prescription, doctorProfile, onClose }: PrintPreviewModalProps) {
+export function PrintPreviewModal({ prescription, doctorProfile, onClose, initialBlankMode = false }: PrintPreviewModalProps) {
   const previewRef = useRef<HTMLDivElement>(null);
   const { showToast } = useToast();
   const [isPadMode, setIsPadMode] = useState<boolean>(prescription.printMode === 'pad_only');
+  const [isBlankPadMode, setIsBlankPadMode] = useState<boolean>(initialBlankMode);
   // Default to '1' page unless explicitly set to '2' or auto with >11 medicines
   const [pageMode, setPageMode] = useState<'1' | '2' | 'auto'>(prescription.pageCount || '1');
   const [splitAfter, setSplitAfter] = useState<number>(
@@ -27,7 +29,34 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose }: Prin
   );
   const [zoomScale, setZoomScale] = useState<number>(0.9);
 
-  const activePrescription: Prescription = {
+  const blankPrescription: Prescription = {
+    ...prescription,
+    patient: {
+      ...prescription.patient,
+      name: '',
+      nameBn: '',
+      age: '',
+      gender: '' as any,
+      phone: '',
+      patientId: '',
+    },
+    prescriptionNumber: '',
+    complaints: '',
+    history: '',
+    onExamination: '',
+    diagnoses: [],
+    investigations: [],
+    medicines: [],
+    advice: '',
+    adviceBn: '',
+    followUpDate: '',
+    followUpText: '',
+    additionalNotes: '',
+    printMode: isPadMode ? 'pad_only' : 'full',
+    pageCount: '1',
+  };
+
+  const activePrescription: Prescription = isBlankPadMode ? blankPrescription : {
     ...prescription,
     printMode: isPadMode ? 'pad_only' : 'full',
     pageCount: pageMode,
@@ -79,11 +108,20 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose }: Prin
         pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
       }
 
-      const patientName = prescription.patient.name || 'Patient';
+      const clinicOrDoctor = (doctorProfile?.clinicName || doctorProfile?.name || prescription.theme || 'Pad').replace(/\s+/g, '_');
+      const patientName = (prescription.patient.name || 'Patient').replace(/\s+/g, '_');
       const date = prescription.date.substring(0, 10);
       const pageInfo = sheets.length > 1 ? `_${sheets.length}pages` : '';
-      pdf.save(`Rx_${patientName.replace(/\s+/g, '_')}_${date}${pageInfo}.pdf`);
-      showToast(`PDF saved successfully (${sheets.length || 1} Page${(sheets.length || 1) > 1 ? 's' : ''})!`, 'success');
+      const filename = isBlankPadMode
+        ? `Blank_Pad_${clinicOrDoctor}_A4.pdf`
+        : `Rx_${patientName}_${date}${pageInfo}.pdf`;
+      pdf.save(filename);
+      showToast(
+        isBlankPadMode
+          ? 'ব্ল্যাঙ্ক প্রেসক্রিপশন প্যাড (PDF) সফলভাবে ডাউনলোড হয়েছে!'
+          : `PDF saved successfully (${sheets.length || 1} Page${(sheets.length || 1) > 1 ? 's' : ''})!`,
+        'success'
+      );
     } catch (err) {
       console.error(err);
       showToast('Failed to generate PDF. Try printing instead.', 'error');
@@ -120,8 +158,12 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose }: Prin
             windowWidth: sheet.scrollWidth,
             windowHeight: sheet.scrollHeight,
           });
+          const clinicOrDoctor = (doctorProfile?.clinicName || doctorProfile?.name || prescription.theme || 'Pad').replace(/\s+/g, '_');
           const pageSuffix = sheets.length > 1 ? `_page${i + 1}` : '';
-          downloadCanvasAsJpg(canvas, `Rx_${patientName}_${date}${pageSuffix}.jpg`);
+          const filename = isBlankPadMode
+            ? `Blank_Pad_${clinicOrDoctor}_A4${pageSuffix}.jpg`
+            : `Rx_${patientName}_${date}${pageSuffix}.jpg`;
+          downloadCanvasAsJpg(canvas, filename);
           if (i < sheets.length - 1) {
             await new Promise((resolve) => setTimeout(resolve, 300));
           }
@@ -226,6 +268,28 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose }: Prin
           )}
         </div>
 
+        {/* Blank Template Pad Toggle */}
+        <button
+          type="button"
+          className="btn-ghost btn-sm"
+          style={{
+            background: isBlankPadMode ? '#ecfdf5' : '#f8fafc',
+            color: isBlankPadMode ? '#065f46' : '#475569',
+            border: `1px solid ${isBlankPadMode ? '#10b981' : '#cbd5e1'}`,
+            fontWeight: 700,
+            fontSize: 12,
+            padding: '4px 10px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+          }}
+          onClick={() => setIsBlankPadMode(!isBlankPadMode)}
+          title="Toggle Blank Prescription Template (প্যাডে কোনো তথ্য না রেখে কেবল ব্ল্যাঙ্ক টেমপ্লেট প্যাড দেখুন ও ডাউনলোড করুন)"
+        >
+          <FileDown size={13} color={isBlankPadMode ? '#059669' : '#64748b'} />
+          {isBlankPadMode ? 'Blank Pad: ON (শুধু টেমপ্লেট)' : 'Blank Pad: OFF'}
+        </button>
+
         {/* Pre-printed Pad Mode Toggle */}
         <button
           type="button"
@@ -242,7 +306,7 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose }: Prin
           title="Toggle Pre-printed Pad Stationery Mode"
         >
           <FileText size={13} />
-          {isPadMode ? 'Pad Mode (ON)' : 'Pad Mode (OFF)'}
+          {isPadMode ? 'Pre-printed (ON)' : 'Pre-printed (OFF)'}
         </button>
 
         {/* WhatsApp Share */}

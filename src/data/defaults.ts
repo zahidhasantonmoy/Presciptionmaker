@@ -53,9 +53,33 @@ export const DR_MIZAN_PROFILE: DoctorProfile = {
   updatedAt: new Date().toISOString(),
 };
 
+export const DR_SANMUN_DENTAL_PROFILE: DoctorProfile = {
+  id: 'dr-ahsanur-rahman-dental',
+  name: 'Dr. Md. Ahsanur Rahman',
+  nameBn: 'ডাঃ মোঃ আহসানুর রহমান',
+  degrees: 'BDS, PGT',
+  degreesBn: 'বিডিএস, পিজিটি',
+  specialty: 'Oral & Dental Surgeon',
+  specialtyBn: 'মুখ ও দন্তরোগ বিশেষজ্ঞ ও সার্জন',
+  title: 'Assistant Professor, Dhaka International Diploma Medical College',
+  titleBn: 'সহকারী অধ্যাপক, ঢাকা ইন্টারন্যাশনাল ডিপ্লোমা মেডিকেল কলেজ',
+  bmdcNumber: '3083',
+  clinicName: 'সানমুন ডেন্টাল কেয়ার',
+  clinicNameBn: 'সানমুন ডেন্টাল কেয়ার',
+  address: '১৭০৪ রায়েরবাগ, বাসস্ট্যান্ড, গ্যাস রোডের মাথায়, কদমতলী, ঢাকা-১৩৬২ । মোবাইল : ০১৯২২-০৪১৮২৫',
+  addressBn: '১৭০৪ রায়েরবাগ, বাসস্ট্যান্ড, গ্যাস রোডের মাথায়, কদমতলী, ঢাকা-১৩৬২ । মোবাইল : ০১৯২২-০৪১৮২৫',
+  phone: '01922-041825',
+  consultationHours: 'রোগী দেখার সময় : সকাল ১০টা থেকে দুপুর ২টা, বিকাল ৪টা থেকে রাত ১০টা পর্যন্ত',
+  consultationHoursBn: 'রোগী দেখার সময় : সকাল ১০টা থেকে দুপুর ২টা, বিকাল ৪টা থেকে রাত ১০টা পর্যন্ত',
+  showBnHeader: true,
+  theme: 'sanmun',
+  updatedAt: new Date().toISOString(),
+};
+
 export const DEFAULT_DOCTOR_PROFILES: DoctorProfile[] = [
   DEFAULT_DOCTOR_PROFILE,
   DR_MIZAN_PROFILE,
+  DR_SANMUN_DENTAL_PROFILE,
 ];
 
 export const JESMIN_SAMPLE_PATIENT = {
@@ -394,7 +418,92 @@ Decompression & Fixation for PLID (Subject to BMD report).`,
   createdAt: new Date().toISOString(),
 };
 
+export const SANMUN_DENTAL_TEMPLATE: PrescriptionTemplate = {
+  id: 'template-sanmun-dental',
+  name: 'সানমুন ডেন্টাল কেয়ার (Sanmun Dental Care)',
+  description: 'Dr. Md. Ahsanur Rahman – Official Sanmun Dental Care (A4) Clinical Checklist & Prescription Pad',
+  theme: 'sanmun',
+  doctorProfileId: 'dr-ahsanur-rahman-dental',
+  complaints: 'Plaque and calculus deposits with mild gum bleeding\nToothache on lower molar while chewing',
+  history: 'Oral hygiene: Irregular brushing; No known drug allergy',
+  onExamination: 'Caries on lower right 1st molar\nGingival inflammation',
+  diagnoses: [
+    { id: uuidv4(), text: 'Dental Caries / Pulpitis (Lower Right Molar)' },
+    { id: uuidv4(), text: 'Gingivitis with Plaque & Calculus' },
+  ],
+  medicines: [
+    {
+      id: uuidv4(),
+      name: 'TAB. MOXACLAV 625mg',
+      genericName: 'AMOXICILLIN + CLAVULANIC ACID',
+      form: 'tablet',
+      strength: '625mg',
+      morning: '১',
+      afternoon: '০',
+      evening: '১',
+      timing: 'ভরা পেটে',
+      duration: '৫ দিন',
+      instruction: 'খাবারের ঠিক মাঝে বা পরে ভরা পেটে খাবেন',
+    },
+    {
+      id: uuidv4(),
+      name: 'TAB. TORAX 10mg',
+      genericName: 'KETOROLAC TROMETHAMINE',
+      form: 'tablet',
+      strength: '10mg',
+      morning: '১',
+      afternoon: '০',
+      evening: '১',
+      timing: 'ভরা পেটে',
+      duration: '৩ দিন',
+      instruction: 'ব্যথা বেশি হলে ভরা পেটে খাবেন',
+    },
+    {
+      id: uuidv4(),
+      name: 'CAP. SERGEL 20mg',
+      genericName: 'ESOMEPRAZOLE',
+      form: 'capsule',
+      strength: '20mg',
+      morning: '১',
+      afternoon: '০',
+      evening: '১',
+      timing: 'খাওয়ার আধা ঘন্টা আগে',
+      duration: '৫ দিন',
+      instruction: 'খাওয়ার আধা ঘন্টা আগে',
+    },
+    {
+      id: uuidv4(),
+      name: 'ORALEX MOUTHWASH 120ml',
+      genericName: 'CHLORHEXIDINE GLUCONATE 0.2%',
+      form: 'other',
+      strength: '0.2%',
+      morning: '১',
+      afternoon: '০',
+      evening: '১',
+      timing: 'খাওয়ার পর',
+      duration: '৭ দিন',
+      instruction: '১০ মি.লি. সমপরিমাণ পানিতে মিশিয়ে ৩০ সেকেন্ড কুলকুচি করুন',
+    },
+  ],
+  investigations: [
+    { id: uuidv4(), name: '1. X-Ray Periapical (IOPA) of Lower Right Molar', category: 'imaging' },
+    { id: uuidv4(), name: '2. X-Ray OPG', category: 'imaging' },
+    { id: uuidv4(), name: '3. Random Blood Sugar (RBS)', category: 'lab' },
+  ],
+  advice: `১. কুসুম গরম পানিতে লবণ মিশিয়ে দিনে ৩-৪ বার কুলকুচি করবেন।
+২. শক্ত, অতিরিক্ত গরম বা ঠান্ডা খাবার পরিহার করুন।
+৩. প্রতিবার খাবারের পর সঠিক নিয়মে ব্রাশ করবেন ও রাতে ফ্লস ব্যবহার করবেন।
+৪. ব্রাশ করার সময় মাড়িতে অতিরিক্ত চাপ দেবেন না।`,
+  followUpText: '৭ দিন পর (পরবর্তী চিকিৎসার জন্য)',
+  additionalNotes: `TREATMENT PLAN:
+1. Scaling and root planing for gingivitis & plaque removal.
+2. Root Canal Treatment (RCT) / restoration for caries/pulpitis.`,
+  isDemo: true,
+  createdAt: new Date().toISOString(),
+};
+
 export const DEMO_TEMPLATES: PrescriptionTemplate[] = [
+  SANMUN_DENTAL_TEMPLATE,
   JESMIN_CERVICAL_TEMPLATE,
   SANOWARA_ORTHO_TEMPLATE,
   {

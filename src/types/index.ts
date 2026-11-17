@@ -5,7 +5,7 @@
 export type Gender = 'male' | 'female' | 'other';
 export type MedicineForm = 'tablet' | 'capsule' | 'syrup' | 'injection' | 'cream' | 'ointment' | 'drops' | 'inhaler' | 'suppository' | 'other';
 export type Language = 'en' | 'bn';
-export type PrescriptionTheme = 'classic' | 'minimal' | 'modern' | 'compact' | 'sanowara';
+export type PrescriptionTheme = 'classic' | 'minimal' | 'modern' | 'compact' | 'sanowara' | 'sanmun';
 
 // ─── Doctor Profile ───────────────────────────────────────────────────────────
 export interface DoctorProfile {
@@ -13,6 +13,7 @@ export interface DoctorProfile {
   name: string;
   nameBn?: string;
   title?: string;
+  titleBn?: string;
   degrees: string;
   degreesBn?: string;
   specialty: string;
