@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Sparkles, Send, Loader2, Key, CheckCircle2,
-  FileText, Eye, AlertCircle, RefreshCw, Lightbulb, Wifi, WifiOff, Zap, Clock,
+  Sparkles, Loader2, Key, CheckCircle2,
+  FileText, Eye, Lightbulb, Wifi, WifiOff, Zap, Clock,
   Image as ImageIcon, Copy
 } from 'lucide-react';
 import { hasGeminiApiKey } from '../../services/ai/geminiClient';

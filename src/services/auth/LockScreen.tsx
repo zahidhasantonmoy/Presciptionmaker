@@ -7,7 +7,9 @@ export function LockScreen({ onUnlocked }: { onUnlocked?: () => void }) {
     isConfigured,
     setupMasterPasscode,
     verifyPasscode,
+    isUsingDefaultPasscode,
   } = useAuthStore();
+  const usingDefault = isUsingDefaultPasscode();
 
   const [passcode, setPasscode] = useState('');
   const [confirmPasscode, setConfirmPasscode] = useState('');
@@ -106,40 +108,42 @@ export function LockScreen({ onUnlocked }: { onUnlocked?: () => void }) {
           </p>
         </div>
 
-        {/* Default Passcode Hint / Quick-Fill Pill */}
-        <div style={{
-          background: 'rgba(99, 102, 241, 0.12)',
-          border: '1px solid rgba(99, 102, 241, 0.3)',
-          borderRadius: 12,
-          padding: '10px 14px',
-          marginBottom: 20,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 10,
-        }}>
-          <div>
-            <div style={{ fontSize: 11, color: '#a5b4fc', fontWeight: 600 }}>DEFAULT PASSCODE</div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', letterSpacing: '0.15em' }}>2580</div>
+        {/* Default Passcode Hint / Quick-Fill Pill (hidden once user sets a custom PIN) */}
+        {usingDefault && (
+          <div style={{
+            background: 'rgba(99, 102, 241, 0.12)',
+            border: '1px solid rgba(99, 102, 241, 0.3)',
+            borderRadius: 12,
+            padding: '10px 14px',
+            marginBottom: 20,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 10,
+          }}>
+            <div>
+              <div style={{ fontSize: 11, color: '#a5b4fc', fontWeight: 600 }}>DEFAULT PASSCODE</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', letterSpacing: '0.15em' }}>2580</div>
+            </div>
+            <button
+              type="button"
+              onClick={handleQuickFillDefault}
+              style={{
+                background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                border: 'none',
+                borderRadius: 8,
+                color: '#fff',
+                fontSize: 12,
+                fontWeight: 700,
+                padding: '6px 12px',
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(99, 102, 241, 0.4)',
+              }}
+            >
+              Unlock with 2580
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={handleQuickFillDefault}
-            style={{
-              background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
-              border: 'none',
-              borderRadius: 8,
-              color: '#fff',
-              fontSize: 12,
-              fontWeight: 700,
-              padding: '6px 12px',
-              cursor: 'pointer',
-              boxShadow: '0 2px 8px rgba(99, 102, 241, 0.4)',
-            }}
-          >
-            Unlock with 2580
-          </button>
-        </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -153,7 +157,7 @@ export function LockScreen({ onUnlocked }: { onUnlocked?: () => void }) {
                 value={passcode}
                 onChange={(e) => setPasscode(e.target.value)}
                 autoFocus
-                placeholder="Enter passcode (default: 2580)"
+                placeholder={usingDefault ? 'Enter passcode (default: 2580)' : 'Enter your custom passcode'}
                 style={{
                   width: '100%',
                   boxSizing: 'border-box',

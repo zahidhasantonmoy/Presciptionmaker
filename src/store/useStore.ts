@@ -362,7 +362,7 @@ export const useStore = create<Store>()(
             adviceTemplates: data.adviceTemplates ?? DEFAULT_ADVICE_TEMPLATES,
             settings: data.settings ?? DEFAULT_SETTINGS,
           });
-        } catch (e) {
+        } catch {
           throw new Error('Failed to import: Invalid JSON or backup format');
         }
       },

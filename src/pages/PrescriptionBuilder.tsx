@@ -70,26 +70,24 @@ function SectionHeader({ title, icon, isOpen, onToggle, count }: SectionHeaderPr
 
 export function PrescriptionBuilder() {
   const {
-    currentPrescription, doctorProfile, doctorProfiles, activeDoctorId, setActiveDoctorId, prescriptionTemplates, updateCurrentPrescription,
+    currentPrescription, doctorProfile, doctorProfiles, setActiveDoctorId, prescriptionTemplates, updateCurrentPrescription,
     createPrescription, savePrescription, setCurrentPrescription, settings, prescriptions
   } = useStore();
   const { showToast } = useToast();
 
   const [showPreview, setShowPreview] = useState(true);
-  const [showPrintModal, setShowPrintModal] = useState(false);
-  const [printModalInitialBlank, setPrintModalInitialBlank] = useState(false);
-
-  useEffect(() => {
+  const [printModalInitialBlank, setPrintModalInitialBlank] = useState(() => {
     try {
       if (sessionStorage.getItem('open_blank_pad_on_load')) {
         sessionStorage.removeItem('open_blank_pad_on_load');
-        setPrintModalInitialBlank(true);
-        setShowPrintModal(true);
+        return true;
       }
     } catch {
       // ignore
     }
-  }, []);
+    return false;
+  });
+  const [showPrintModal, setShowPrintModal] = useState(() => printModalInitialBlank);
   const [showLabSlipModal, setShowLabSlipModal] = useState(false);
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   const [showJsonModal, setShowJsonModal] = useState(false);
@@ -197,6 +195,71 @@ export function PrescriptionBuilder() {
 
   const pendingPromptHandledRef = useRef(false);
 
+  const handleAiPrescription = useCallback(async (promptText: string): Promise<string> => {
+    if (!currentPrescription) return '';
+    const res = await generatePrescriptionAi(promptText);
+    const updates: Partial<Prescription> = {};
+
+    if (res.patientName) {
+      updates.patient = {
+        ...currentPrescription.patient,
+        name: res.patientName,
+        age: res.age || currentPrescription.patient.age,
+        gender: (res.gender as any) || currentPrescription.patient.gender,
+      };
+    }
+
+    if (res.complaints && res.complaints.length > 0) {
+      updates.complaints = currentPrescription.complaints
+        ? `${currentPrescription.complaints}\n${res.complaints.join('\n')}`
+        : res.complaints.join('\n');
+    }
+
+    if (res.diagnosis && res.diagnosis.length > 0) {
+      updates.diagnoses = [
+        ...currentPrescription.diagnoses,
+        ...res.diagnosis.map(d => ({ id: uuidv4(), text: d })),
+      ];
+    }
+
+    if (res.medicines && res.medicines.length > 0) {
+      updates.medicines = [
+        ...currentPrescription.medicines,
+        ...res.medicines.map(m => {
+          const parts = (m.dosage || '1+0+1').split('+').map(s => s.trim());
+          return {
+            id: uuidv4(),
+            name: m.name,
+            genericName: m.generic || '',
+            form: 'tablet' as const,
+            morning: parts[0] || '1',
+            afternoon: parts[1] || '0',
+            evening: parts[2] || '1',
+            timing: m.timing || 'After meal',
+            duration: m.duration || '5 days',
+            instruction: m.instructions || '',
+          };
+        }),
+      ];
+    }
+
+    if (res.investigations && res.investigations.length > 0) {
+      updates.investigations = [
+        ...currentPrescription.investigations,
+        ...res.investigations.map(inv => ({ id: uuidv4(), name: inv, instruction: '' })),
+      ];
+    }
+
+    if (res.advice && res.advice.length > 0) {
+      const newAdv = res.advice.join('\n• ');
+      updates.advice = currentPrescription.advice ? `${currentPrescription.advice}\n• ${newAdv}` : `• ${newAdv}`;
+    }
+
+    updateCurrentPrescription(updates);
+    showToast('AI: প্রেসক্রিপশন ডেটা অটোমেটিক লোড হয়েছে!', 'success');
+    return res.summary;
+  }, [currentPrescription, showToast, updateCurrentPrescription]);
+
   // Auto-run if redirected from Home Central AI Hub
   useEffect(() => {
     if (!currentPrescription || pendingPromptHandledRef.current) return;
@@ -205,12 +268,12 @@ export function PrescriptionBuilder() {
       if (pending) {
         pendingPromptHandledRef.current = true;
         sessionStorage.removeItem('pending_ai_prompt');
-        handleAiPrescription(pending);
+        Promise.resolve().then(() => handleAiPrescription(pending));
       }
     } catch {
       // ignore
     }
-  }, [currentPrescription]);
+  }, [currentPrescription, handleAiPrescription]);
 
   if (!currentPrescription) return <div style={{ padding: 32, textAlign: 'center', color: '#94a3b8' }}>Loading...</div>;
 
@@ -243,70 +306,6 @@ export function PrescriptionBuilder() {
     const copied = pastPrescription.medicines.map(m => ({ ...m, id: uuidv4() }));
     update({ medicines: [...rx.medicines, ...copied] });
     showToast(`Copied ${copied.length} medicines from past visit (${formatDateDisplay(pastPrescription.date)})`, 'success');
-  };
-
-  const handleAiPrescription = async (promptText: string): Promise<string> => {
-    const res = await generatePrescriptionAi(promptText);
-    const updates: Partial<Prescription> = {};
-
-    if (res.patientName) {
-      updates.patient = {
-        ...rx.patient,
-        name: res.patientName,
-        age: res.age || rx.patient.age,
-        gender: (res.gender as any) || rx.patient.gender,
-      };
-    }
-
-    if (res.complaints && res.complaints.length > 0) {
-      updates.complaints = rx.complaints
-        ? `${rx.complaints}\n${res.complaints.join('\n')}`
-        : res.complaints.join('\n');
-    }
-
-    if (res.diagnosis && res.diagnosis.length > 0) {
-      updates.diagnoses = [
-        ...rx.diagnoses,
-        ...res.diagnosis.map(d => ({ id: uuidv4(), text: d })),
-      ];
-    }
-
-    if (res.medicines && res.medicines.length > 0) {
-      updates.medicines = [
-        ...rx.medicines,
-        ...res.medicines.map(m => {
-          const parts = (m.dosage || '1+0+1').split('+').map(s => s.trim());
-          return {
-            id: uuidv4(),
-            name: m.name,
-            genericName: m.generic || '',
-            form: 'tablet' as const,
-            morning: parts[0] || '1',
-            afternoon: parts[1] || '0',
-            evening: parts[2] || '1',
-            timing: m.timing || 'After meal',
-            duration: m.duration || '5 days',
-            instruction: m.instructions || '',
-          };
-        }),
-      ];
-    }
-
-    if (res.investigations && res.investigations.length > 0) {
-      updates.investigations = [
-        ...rx.investigations,
-        ...res.investigations.map(inv => ({ id: uuidv4(), name: inv, instruction: '' })),
-      ];
-    }
-
-    if (res.advice && res.advice.length > 0) {
-      const newAdv = res.advice.join('\n• ');
-      updates.advice = rx.advice ? `${rx.advice}\n• ${newAdv}` : `• ${newAdv}`;
-    }
-
-    update(updates);
-    showToast('AI: প্রেসক্রিপশন ডেটা অটোমেটিক লোড হয়েছে!', 'success');
-    return res.summary;
   };
 
   const toggleSection = (key: keyof SectionToggle) =>

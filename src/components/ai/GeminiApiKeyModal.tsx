@@ -37,12 +37,14 @@ export function GeminiApiKeyModal({ isOpen, onClose, onSaved }: GeminiApiKeyModa
 
   useEffect(() => {
     if (isOpen) {
-      setGeminiKey(getGeminiApiKey());
-      const prefGemini = getPreferredModel();
-      setGeminiModel(prefGemini.includes('2.0-flash-lite') ? 'gemini-2.5-flash-lite' : prefGemini);
-      setGroqKey(getGroqApiKey());
-      setGroqModel(getGroqPreferredModel());
-      setTestResult(null);
+      Promise.resolve().then(() => {
+        setGeminiKey(getGeminiApiKey());
+        const prefGemini = getPreferredModel();
+        setGeminiModel(prefGemini.includes('2.0-flash-lite') ? 'gemini-2.5-flash-lite' : prefGemini);
+        setGroqKey(getGroqApiKey());
+        setGroqModel(getGroqPreferredModel());
+        setTestResult(null);
+      });
     }
   }, [isOpen]);
 

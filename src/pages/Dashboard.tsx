@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
-  FilePlus, FileText, Users, BookOpen, Star, Plus, Clock, Stethoscope, FlaskConical
+  FilePlus, FileText, Users, BookOpen, Star, Plus, Clock, FlaskConical
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { formatDateDisplay } from '../utils/dateUtils';
@@ -24,7 +24,9 @@ export function Dashboard() {
     setActivePage('builder');
   };
 
-  const today = new Date().toLocaleDateString('en-BD', { timeZone: 'Asia/Dhaka', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const [today] = useState(() =>
+    new Date().toLocaleDateString('en-BD', { timeZone: 'Asia/Dhaka', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+  );
 
   return (
     <div style={{ padding: '16px 14px', maxWidth: 1100, margin: '0 auto' }}>

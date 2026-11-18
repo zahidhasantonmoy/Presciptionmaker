@@ -1,12 +1,13 @@
 import React, { useRef, useState, useCallback } from 'react';
 import {
   Printer, Download, X, MessageSquare, FileText, Layers, FileDown,
-  ZoomIn, ZoomOut, Maximize2, Image as ImageIcon
+  ZoomIn, ZoomOut, Maximize2, Image as ImageIcon, Copy, Check, FileCode
 } from 'lucide-react';
 import type { Prescription, DoctorProfile } from '../../types';
 import { PrescriptionPreview } from './PrescriptionPreview';
 import { useToast } from '../ui/Toast';
 import { openWhatsAppPrescription } from '../../utils/whatsappShare';
+import { loadInlineFontsCss } from '../../utils/offlineFonts';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -28,6 +29,7 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose, initia
     prescription.splitAfterMedicine || Math.min(6, Math.max(1, Math.ceil((prescription.medicines.length || 1) / 2)))
   );
   const [zoomScale, setZoomScale] = useState<number>(0.9);
+  const [copiedHtml, setCopiedHtml] = useState(false);
 
   const blankPrescription: Prescription = {
     ...prescription,
@@ -152,7 +154,7 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose, initia
     showToast('Generating high-resolution 1-Page A4 PDF (300 DPI)...', 'info');
     try {
       const sheets = previewRef.current.querySelectorAll<HTMLElement>('.rx-page-sheet');
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
       const pdfWidth = 210;
       const pdfHeight = 297;
 
@@ -160,13 +162,13 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose, initia
         for (let i = 0; i < sheets.length; i++) {
           if (i > 0) pdf.addPage();
           const canvas = await captureSheetCanvas(sheets[i]);
-          const imgData = canvas.toDataURL('image/jpeg', 0.98);
-          pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+          const imgData = canvas.toDataURL('image/jpeg', 0.95);
+          pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
         }
       } else {
         const canvas = await captureSheetCanvas(previewRef.current);
-        const imgData = canvas.toDataURL('image/jpeg', 0.98);
-        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
       }
 
       const clinicOrDoctor = getExportClinicLabel();
@@ -230,6 +232,141 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose, initia
       showToast('Failed to generate JPG image.', 'error');
     }
   }, [captureSheetCanvas, getExportClinicLabel, isBlankPadMode, prescription, showToast]);
+
+  const buildStandaloneHtml = useCallback(async () => {
+    if (!previewRef.current) return '';
+    const clone = previewRef.current.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll('.no-print').forEach((el) => el.remove());
+    clone.style.transform = 'none';
+    clone.style.margin = '0';
+    clone.querySelectorAll<HTMLElement>('.rx-preview, .rx-page-sheet').forEach((el) => {
+      el.style.transform = 'none';
+      el.style.margin = '0 auto';
+    });
+
+    const origin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : '';
+    const cssBlocks: string[] = [];
+    if (typeof document !== 'undefined') {
+      Array.from(document.styleSheets).forEach((sheet) => {
+        try {
+          if (sheet.cssRules) {
+            const rules = Array.from(sheet.cssRules).map((r) => r.cssText).join('\n');
+            if (rules.trim()) cssBlocks.push(rules);
+          }
+        } catch {
+          // skip cross-origin stylesheets
+        }
+      });
+    }
+
+    const inlineFontsCss = await loadInlineFontsCss();
+    const combinedCss = cssBlocks
+      .join('\n')
+      .replace(/@font-face\s*\{[^}]*\/fonts\/[^}]*\}/gi, '')
+      .replace(/url\((["']?)\/fonts\//g, `url($1${origin}/fonts/`);
+
+    const clinicOrDoctor = getExportClinicLabel();
+    const patientName = (prescription.patient.name || 'Patient').trim().replace(/\s+/g, '_');
+    const docTitle = isBlankPadMode
+      ? `${clinicOrDoctor.replace(/_/g, ' ')} – Blank Prescription Pad`
+      : `Prescription – ${patientName.replace(/_/g, ' ')}`;
+
+    return `<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>${docTitle}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@300;400;500;600;700;800;900&family=Noto+Serif+Bengali:wght@700;900&family=Roboto:wght@400;500;700;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  ${inlineFontsCss}
+  ${combinedCss}
+  @page { size: A4 portrait; margin: 0; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #e2e8f0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .rx-export-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 0;
+  }
+  @media print {
+    html, body { background: #ffffff !important; }
+    .rx-export-wrap { display: block; padding: 0; gap: 0; }
+    .rx-page-sheet {
+      box-shadow: none !important;
+      margin: 0 !important;
+      page-break-after: always;
+      break-after: page;
+    }
+    .rx-page-sheet:last-child {
+      page-break-after: auto;
+      break-after: auto;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="rx-export-wrap">
+    ${clone.outerHTML}
+  </div>
+</body>
+</html>`;
+  }, [getExportClinicLabel, isBlankPadMode, prescription.patient.name]);
+
+  const handleCopyHtml = useCallback(async () => {
+    try {
+      const html = await buildStandaloneHtml();
+      if (!html) return;
+      await navigator.clipboard.writeText(html);
+      setCopiedHtml(true);
+      setTimeout(() => setCopiedHtml(false), 2500);
+      showToast('অফলাইন ফন্টসহ HTML কোড ক্লিপবোর্ডে কপি করা হয়েছে!', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to copy HTML to clipboard.', 'error');
+    }
+  }, [buildStandaloneHtml, showToast]);
+
+  const handleDownloadHtml = useCallback(async () => {
+    try {
+      const html = await buildStandaloneHtml();
+      if (!html) return;
+      const clinicOrDoctor = getExportClinicLabel();
+      const patientName = (prescription.patient.name || 'Patient').replace(/\s+/g, '_');
+      const date = prescription.date.substring(0, 10);
+      const filename = isBlankPadMode
+        ? `Blank_Pad_${clinicOrDoctor}_A4.html`
+        : `Rx_${patientName}_${date}.html`;
+
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      showToast(
+        isBlankPadMode
+          ? 'অফলাইন ফন্টসহ ব্ল্যাঙ্ক প্যাড (HTML) ডাউনলোড হয়েছে!'
+          : `Offline-ready HTML downloaded: ${filename}`,
+        'success'
+      );
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to download HTML file.', 'error');
+    }
+  }, [buildStandaloneHtml, getExportClinicLabel, isBlankPadMode, prescription, showToast]);
 
   return (
     <div
@@ -416,6 +553,45 @@ export function PrintPreviewModal({ prescription, doctorProfile, onClose, initia
 
         <button className="btn-secondary btn-sm" style={{ padding: '6px 14px', fontSize: 12, background: '#f8fafc', color: '#0f172a', border: '1px solid #cbd5e1' }} onClick={handleDownloadJPG} title="Download high-resolution JPG image (300 DPI)">
           <ImageIcon size={14} color="#2563eb" /> Download Image (JPG)
+        </button>
+
+        <button
+          type="button"
+          className="btn-secondary btn-sm"
+          style={{
+            padding: '6px 12px',
+            fontSize: 12,
+            background: copiedHtml ? '#ecfdf5' : '#f8fafc',
+            color: copiedHtml ? '#065f46' : '#0f172a',
+            border: `1px solid ${copiedHtml ? '#10b981' : '#cbd5e1'}`,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+          }}
+          onClick={handleCopyHtml}
+          title="Copy standalone printable HTML code to clipboard"
+        >
+          {copiedHtml ? <Check size={14} color="#059669" /> : <Copy size={14} color="#475569" />}
+          {copiedHtml ? 'Copied HTML!' : 'Copy HTML'}
+        </button>
+
+        <button
+          type="button"
+          className="btn-secondary btn-sm"
+          style={{
+            padding: '6px 12px',
+            fontSize: 12,
+            background: '#f8fafc',
+            color: '#0f172a',
+            border: '1px solid #cbd5e1',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+          }}
+          onClick={handleDownloadHtml}
+          title="Download standalone printable HTML file"
+        >
+          <FileCode size={14} color="#7c3aed" /> Download HTML
         </button>
 
         <button className="btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={onClose} title="Close Preview">

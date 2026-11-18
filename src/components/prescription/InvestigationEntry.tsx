@@ -41,10 +41,6 @@ export function InvestigationEntry({ investigations, onChange }: InvestigationEn
 
   const removeInvestigation = (id: string) => onChange(investigations.filter(i => i.id !== id));
 
-  const updateInstruction = (id: string, instruction: string) => {
-    onChange(investigations.map(i => i.id === id ? { ...i, instruction } : i));
-  };
-
   return (
     <div>
       {/* Current tests */}

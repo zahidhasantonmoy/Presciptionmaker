@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Loader2 } from 'lucide-react';
+import { Mic } from 'lucide-react';
 
 interface VoiceInputButtonProps {
   onTranscript: (text: string) => void;
@@ -13,7 +13,10 @@ export function VoiceInputButton({
   disabled = false,
 }: VoiceInputButtonProps) {
   const [isListening, setIsListening] = useState(false);
-  const [isSupported, setIsSupported] = useState(true);
+  const [isSupported, setIsSupported] = useState(() =>
+    typeof window !== 'undefined' &&
+    !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)
+  );
   const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
@@ -21,7 +24,6 @@ export function VoiceInputButton({
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      setIsSupported(false);
       return;
     }
 

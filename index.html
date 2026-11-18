@@ -9,16 +9,33 @@
     <meta property="og:description" content="Professional medical prescription and multi-service document software for doctors with Rx builder, patient history, dosage calculation, and clinical safety." />
     <meta name="theme-color" content="#1e40af" />
     <title>EasyPad – Prescription Software for Doctors</title>
-    <link rel="manifest" href="/manifest.json" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="EasyPad" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preload" href="/fonts/SolaimanLipi.woff" as="font" type="font/woff" crossorigin />
     <link rel="preload" href="/fonts/Roboto.ttf" as="font" type="font/ttf" crossorigin />
+    <link rel="preload" href="/fonts/NotoSerifBengali-Black.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/NotoSansBengali.woff2" as="font" type="font/woff2" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@300;400;500;600;700;800;900&family=Noto+Serif+Bengali:wght@700;900&family=Roboto:wght@400;500;700;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <style>
+      @font-face {
+        font-family: 'Noto Serif Bengali';
+        src: url('/fonts/NotoSerifBengali-Black.woff2') format('woff2');
+        font-weight: 900;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'Noto Sans Bengali';
+        src: url('/fonts/NotoSansBengali.woff2') format('woff2');
+        font-weight: 100 900;
+        font-style: normal;
+        font-display: swap;
+      }
       @font-face {
         font-family: 'SolaimanLipi';
         src: url('/fonts/SolaimanLipi.woff') format('woff'),

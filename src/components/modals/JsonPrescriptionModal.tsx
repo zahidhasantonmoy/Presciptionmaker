@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import {
   FileCode, Upload, Download, Copy, Check, AlertCircle,
-  X, Sparkles, FileText, CheckCircle2, ArrowRight
+  X, Sparkles, CheckCircle2, ArrowRight
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import type {

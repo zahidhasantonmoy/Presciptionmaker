@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Menu, LayoutDashboard, FilePlus, History, BookOpen, Settings, Stethoscope
+  Menu, LayoutDashboard, FilePlus, History, BookOpen, Settings
 } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Dashboard } from '../../pages/Dashboard';

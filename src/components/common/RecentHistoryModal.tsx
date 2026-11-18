@@ -1,8 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Clock, X, Trash2, ArrowRight, RotateCcw,
-  Sparkles, Check, AlertCircle, FileText
-} from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Clock, X, Trash2, RotateCcw } from 'lucide-react';
 import {
   DocumentHistoryItem,
   getDocumentHistory,
@@ -25,27 +22,25 @@ export function RecentHistoryModal({
   onClose,
   onRestore,
 }: RecentHistoryModalProps) {
-  const [items, setItems] = useState<DocumentHistoryItem[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [refreshTick, setRefreshTick] = useState(0);
 
-  useEffect(() => {
-    if (isOpen) {
-      setItems(getDocumentHistory(service));
-    }
-  }, [isOpen, service]);
+  const items = useMemo(() => {
+    void refreshTick;
+    return isOpen ? getDocumentHistory(service) : [];
+  }, [isOpen, service, refreshTick]);
 
   if (!isOpen) return null;
 
   const handleDelete = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     deleteDocumentHistoryItem(service, id);
-    setItems(prev => prev.filter(x => x.id !== id));
+    setRefreshTick(t => t + 1);
   };
 
   const handleClearAll = () => {
     if (window.confirm('আপনি কি এই সেবার সকল ড্রাফট ও ইতিহাস মুছে ফেলতে চান?')) {
       clearDocumentHistory(service);
-      setItems([]);
+      setRefreshTick(t => t + 1);
     }
   };
 

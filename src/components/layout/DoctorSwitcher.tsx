@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Stethoscope, Check, Plus, Settings, ChevronDown, Building2 } from 'lucide-react';
+import { Stethoscope, Check, Settings, ChevronDown, Building2 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 
 interface DoctorSwitcherProps {

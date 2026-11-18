@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import {
-  Save, Upload, Camera, AlertCircle, Plus, Trash2, Edit3, Copy, Check, Stethoscope, Building2
+  Save, Upload, Camera, AlertCircle, Plus, Trash2, Edit3, Copy, Check, Stethoscope, Building2,
+  Lock, Shield, KeyRound, RotateCcw, Smartphone
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useToast } from '../components/ui/Toast';
+import { useAuthStore, DEFAULT_PASSCODE } from '../services/auth/useAuthStore';
+import { PWAInstallButton } from '../components/pwa/PWAInstallButton';
 import type { DoctorProfile, PrescriptionTheme } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -14,6 +17,26 @@ const THEMES: { value: PrescriptionTheme; label: string; desc: string }[] = [
   { value: 'compact', label: 'Compact', desc: 'Smaller fonts, fits more on one page' },
 ];
 
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="form-label">{label}</label>
+      {children}
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="card" style={{ padding: 20, marginBottom: 16 }}>
+      <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1e40af', marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid #e2e8f0' }}>
+        {title}
+      </h3>
+      {children}
+    </div>
+  );
+}
+
 export function SettingsPage() {
   const {
     doctorProfiles, activeDoctorId, setActiveDoctorId,
@@ -21,6 +44,14 @@ export function SettingsPage() {
     settings, updateSettings, exportData, importData, clearAllData
   } = useStore();
   const { showToast } = useToast();
+  const {
+    securityEnabled,
+    toggleSecurity,
+    changePasscode,
+    resetToDefaultPasscode,
+    isUsingDefaultPasscode,
+    lock,
+  } = useAuthStore();
 
   const activeDoc = doctorProfiles.find(d => d.id === activeDoctorId) || doctorProfiles[0];
   const [editingProfileId, setEditingProfileId] = useState<string | null>(activeDoc?.id || null);
@@ -29,6 +60,10 @@ export function SettingsPage() {
     id: uuidv4(), name: '', degrees: '', specialty: '', showBnHeader: true, theme: 'classic',
   });
   const [clearConfirm, setClearConfirm] = useState(false);
+  const [currentPin, setCurrentPin] = useState('');
+  const [newPin, setNewPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const usingDefaultPin = isUsingDefaultPasscode();
 
   const startEditProfile = (p: DoctorProfile) => {
     setEditingProfileId(p.id);
@@ -176,21 +211,34 @@ export function SettingsPage() {
     setClearConfirm(false);
   };
 
-  const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
-    <div>
-      <label className="form-label">{label}</label>
-      {children}
-    </div>
-  );
+  const handleChangePin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPin.trim().length < 4) {
+      showToast('নতুন পিন কমপক্ষে ৪ অক্ষরের হতে হবে।', 'error');
+      return;
+    }
+    if (newPin.trim() !== confirmPin.trim()) {
+      showToast('নতুন পিন ও কনফার্ম পিন মিলছে না!', 'error');
+      return;
+    }
+    const ok = changePasscode(currentPin, newPin);
+    if (!ok) {
+      showToast('বর্তমান পিনটি সঠিক নয়!', 'error');
+      return;
+    }
+    setCurrentPin('');
+    setNewPin('');
+    setConfirmPin('');
+    showToast('নতুন মাস্টার পিন সফলভাবে সেট করা হয়েছে!', 'success');
+  };
 
-  const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-    <div className="card" style={{ padding: 20, marginBottom: 16 }}>
-      <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1e40af', marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid #e2e8f0' }}>
-        {title}
-      </h3>
-      {children}
-    </div>
-  );
+  const handleResetPin = () => {
+    resetToDefaultPasscode();
+    setCurrentPin('');
+    setNewPin('');
+    setConfirmPin('');
+    showToast(`পিন ডিফল্ট (${DEFAULT_PASSCODE}) তে রিসেট করা হয়েছে।`, 'info');
+  };
 
   return (
     <div style={{ padding: '16px 14px', maxWidth: 860, margin: '0 auto' }}>
@@ -761,6 +809,136 @@ export function SettingsPage() {
                 <button className="btn-ghost" onClick={() => setClearConfirm(false)}>Cancel</button>
               </div>
             )}
+          </div>
+        </div>
+      </Section>
+
+      {/* Security, Lock Screen PIN & Offline PWA */}
+      <Section title="🔒 Security, Lock Screen PIN & Offline App (PWA)">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Lock Screen Toggle & Status */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 12,
+            padding: '12px 14px',
+            background: '#f8fafc',
+            borderRadius: 10,
+            border: '1px solid #e2e8f0',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Shield size={18} color={securityEnabled ? '#2563eb' : '#64748b'} />
+              <div>
+                <div style={{ fontSize: 13.5, fontWeight: 700, color: '#0f172a' }}>
+                  Workspace Lock Screen ({securityEnabled ? 'Active' : 'Disabled'})
+                </div>
+                <div style={{ fontSize: 12, color: '#64748b' }}>
+                  {usingDefaultPin
+                    ? `Currently using default PIN (${DEFAULT_PASSCODE}). Set a custom PIN below for privacy.`
+                    : 'Custom private master PIN is active.'}
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <button
+                type="button"
+                className="btn-secondary btn-sm"
+                onClick={() => {
+                  toggleSecurity(!securityEnabled);
+                  showToast(
+                    !securityEnabled ? 'Lock Screen enabled.' : 'Lock Screen disabled.',
+                    'info'
+                  );
+                }}
+              >
+                {securityEnabled ? 'Disable Lock Screen' : 'Enable Lock Screen'}
+              </button>
+              <button
+                type="button"
+                className="btn-primary btn-sm"
+                onClick={lock}
+              >
+                <Lock size={13} /> Lock Now
+              </button>
+            </div>
+          </div>
+
+          {/* Change Master PIN Form */}
+          <form onSubmit={handleChangePin} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, alignItems: 'end' }}>
+            <Field label={`Current PIN ${usingDefaultPin ? `(Default: ${DEFAULT_PASSCODE})` : ''}`}>
+              <input
+                type="password"
+                className="form-input"
+                placeholder={usingDefaultPin ? DEFAULT_PASSCODE : 'Current PIN'}
+                value={currentPin}
+                onChange={e => setCurrentPin(e.target.value)}
+                required
+              />
+            </Field>
+            <Field label="New Custom PIN (min 4 chars)">
+              <input
+                type="password"
+                className="form-input"
+                placeholder="New PIN"
+                value={newPin}
+                onChange={e => setNewPin(e.target.value)}
+                required
+              />
+            </Field>
+            <Field label="Confirm New PIN">
+              <input
+                type="password"
+                className="form-input"
+                placeholder="Confirm PIN"
+                value={confirmPin}
+                onChange={e => setConfirmPin(e.target.value)}
+                required
+              />
+            </Field>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button type="submit" className="btn-primary btn-sm" style={{ height: 38 }}>
+                <KeyRound size={14} /> Update PIN
+              </button>
+              {!usingDefaultPin && (
+                <button
+                  type="button"
+                  className="btn-secondary btn-sm"
+                  style={{ height: 38 }}
+                  onClick={handleResetPin}
+                  title={`Reset PIN back to ${DEFAULT_PASSCODE}`}
+                >
+                  <RotateCcw size={14} /> Reset to {DEFAULT_PASSCODE}
+                </button>
+              )}
+            </div>
+          </form>
+
+          {/* Offline PWA Install Card */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 12,
+            padding: '12px 14px',
+            background: '#f8fafc',
+            borderRadius: 10,
+            border: '1px solid #e2e8f0',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Smartphone size={18} color="#059669" />
+              <div>
+                <div style={{ fontSize: 13.5, fontWeight: 700, color: '#0f172a' }}>
+                  Installable Offline PWA (Desktop &amp; Mobile)
+                </div>
+                <div style={{ fontSize: 12, color: '#64748b' }}>
+                  অ্যাপ ও সব বাংলা ফন্ট একবার লোড হলে ইন্টারনেট ছাড়াই পুরো সুইট ব্যবহার করা যাবে।
+                </div>
+              </div>
+            </div>
+            <PWAInstallButton variant="card" />
           </div>
         </div>
       </Section>

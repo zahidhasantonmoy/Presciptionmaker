@@ -41,7 +41,7 @@ export function HistoryPage() {
   };
 
   const handleDuplicate = (id: string) => {
-    const dup = duplicatePrescription(id);
+    duplicatePrescription(id);
     setActivePage('builder');
     showToast('Prescription duplicated – editing copy', 'success');
   };
@@ -52,7 +52,6 @@ export function HistoryPage() {
     setDeleteId(null);
   };
 
-  const previewPrescription = prescriptions.find(p => p.id === previewRx);
   const printPrescription = prescriptions.find(p => p.id === printRxId);
 
   return (

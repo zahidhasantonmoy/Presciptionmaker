@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Star, Copy, GripVertical, ChevronDown, ChevronUp, Calculator, ShieldAlert, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, Copy, ChevronDown, ChevronUp, Calculator, ShieldAlert, AlertTriangle } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import type { PrescriptionMedicine, MedicineForm } from '../../types';
 import { AutocompleteInput } from '../ui/AutocompleteInput';
@@ -143,17 +143,6 @@ export function MedicineEntry({ medicines, onChange, patientAllergies, patientWe
 
   const handleNameChange = (id: string, name: string) => {
     updateMedicine(id, { name });
-  };
-
-  const handleNameBlur = (med: PrescriptionMedicine) => {
-    if (med.name.trim()) {
-      addToCatalog({ name: med.name, genericName: med.genericName, form: med.form, strength: med.strength });
-      // Duplicate check on blur
-      const isDup = medicines.some(m => m.id !== med.id && normalizeMedicineName(m.name) === normalizeMedicineName(med.name) && normalizeMedicineName(m.name).length > 2);
-      if (isDup) {
-        showToast(`⚠️ সতর্কতা: "${med.name}" ইতিমধ্যে প্রেসক্রিপশনে বিদ্যমান!`, 'warning');
-      }
-    }
   };
 
   return (

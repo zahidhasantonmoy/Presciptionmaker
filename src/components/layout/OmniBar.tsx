@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import {
   Grid, Lock, ChevronDown, Check, Maximize2, Sparkles
 } from 'lucide-react';
-import { ServiceId, SERVICE_PATHS } from '../../utils/navigation';
+import { ServiceId } from '../../utils/navigation';
 import { SERVICES_REGISTRY, getServiceById } from '../../services/registry';
 import { useAuthStore } from '../../services/auth/useAuthStore';
 import { GeminiApiKeyModal } from '../ai/GeminiApiKeyModal';
 import { hasGeminiApiKey } from '../../services/ai/geminiClient';
 import { hasGroqApiKey } from '../../services/ai/groqClient';
+import { PWAInstallButton } from '../pwa/PWAInstallButton';
 
 interface OmniBarProps {
   activeService: ServiceId;
@@ -236,6 +237,9 @@ export function OmniBar({ activeService, onSwitchService }: OmniBarProps) {
           <span style={{ color: '#818cf8' }}>route:</span>
           <span>{currentServiceMeta ? currentServiceMeta.path : '/'}</span>
         </div>
+
+        {/* Install PWA Button (hidden once installed) */}
+        <PWAInstallButton variant="toolbar" />
 
         {/* AI Settings button */}
         <button

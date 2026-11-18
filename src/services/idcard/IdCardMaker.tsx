@@ -3,10 +3,12 @@ import QRCode from 'qrcode';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import {
-  CreditCard, Download, Printer, Plus, User, Building, ShieldCheck, Upload
+  CreditCard, Download, Printer, Plus, User, Upload, Image as ImageIcon, CheckCircle2, Clock
 } from 'lucide-react';
 import { AiCommandBar } from '../../components/ai/AiCommandBar';
 import { generateIdCardAi } from '../ai/aiGenerators';
+import { saveDocumentHistory } from '../history/documentHistory';
+import { RecentHistoryModal } from '../../components/common/RecentHistoryModal';
 
 interface IdCardData {
   id: string;
@@ -34,9 +36,17 @@ export function IdCardMaker() {
   const [card, setCard] = useState<IdCardData>(DEFAULT_CARD);
   const [qrUrl, setQrUrl] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isGeneratingJpg, setIsGeneratingJpg] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 1024);
   const [mobileTab, setMobileTab] = useState<'editor' | 'preview'>('editor');
+  const [statusNotice, setStatusNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+
+  const showNotice = (text: string, type: 'success' | 'error' = 'success') => {
+    setStatusNotice({ type, text });
+    setTimeout(() => setStatusNotice(null), 3500);
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -66,38 +76,121 @@ export function IdCardMaker() {
     }
   };
 
+  const captureCardCanvas = async () => {
+    if (!cardRef.current) return null;
+    if (typeof document !== 'undefined' && document.fonts) {
+      await document.fonts.ready;
+    }
+    const target = cardRef.current;
+    const exportWidth = target.offsetWidth || 320;
+    const exportHeight = target.offsetHeight || 500;
+    return html2canvas(target, {
+      scale: 3,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      width: exportWidth,
+      height: exportHeight,
+      windowWidth: exportWidth,
+      windowHeight: exportHeight,
+      scrollX: 0,
+      scrollY: 0,
+      onclone: (clonedDoc, clonedEl) => {
+        clonedDoc.querySelectorAll<HTMLElement>('.no-print').forEach((np) => {
+          np.style.display = 'none';
+        });
+        let cur: HTMLElement | null = clonedEl.parentElement;
+        while (cur && cur !== clonedDoc.body) {
+          cur.style.transform = 'none';
+          cur.style.webkitTransform = 'none';
+          cur.style.zoom = '1';
+          cur.style.overflow = 'visible';
+          cur.style.boxShadow = 'none';
+          cur = cur.parentElement;
+        }
+        clonedEl.style.transform = 'none';
+        clonedEl.style.boxShadow = 'none';
+      },
+    });
+  };
+
+  const handleSaveCard = () => {
+    saveDocumentHistory({
+      service: 'idcard',
+      title: card.fullName || 'ID Badge',
+      subtitle: `${card.role} — ${card.company}`,
+      badge: card.id,
+      data: card,
+    });
+    showNotice('ID card saved to local history!', 'success');
+  };
+
   const handleDownloadPdf = async () => {
     if (!cardRef.current) return;
     setIsGenerating(true);
     try {
-      const canvas = await html2canvas(cardRef.current, { scale: 3, useCORS: true });
-      const imgData = canvas.toDataURL('image/png');
+      const canvas = await captureCardCanvas();
+      if (!canvas) return;
+      const imgData = canvas.toDataURL('image/jpeg', 0.96);
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: [85.6, 53.98], // Standard CR80 badge
+        compress: true,
       });
-      pdf.addImage(imgData, 'PNG', 0, 0, 53.98, 85.6);
+      pdf.addImage(imgData, 'JPEG', 0, 0, 53.98, 85.6, undefined, 'FAST');
       pdf.save(`Badge_${card.fullName.replace(/\s+/g, '_')}.pdf`);
+      showNotice('ID Card PDF exported successfully!', 'success');
     } catch (e) {
       console.error(e);
-      alert('Could not export PDF');
+      showNotice('Could not export PDF. Please try again.', 'error');
     } finally {
       setIsGenerating(false);
     }
   };
 
+  const handleDownloadJpg = async () => {
+    if (!cardRef.current) return;
+    setIsGeneratingJpg(true);
+    try {
+      const canvas = await captureCardCanvas();
+      if (!canvas) return;
+      const imgData = canvas.toDataURL('image/jpeg', 0.96);
+      const fileName = `Badge_${card.fullName.replace(/\s+/g, '_')}.jpg`;
+      const link = document.createElement('a');
+      link.download = fileName;
+      link.href = imgData;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showNotice(`ID Card JPG downloaded: ${fileName}`, 'success');
+    } catch (e) {
+      console.error(e);
+      showNotice('Could not export JPG. Please try again.', 'error');
+    } finally {
+      setIsGeneratingJpg(false);
+    }
+  };
+
   const handleAiIdCard = async (promptText: string): Promise<string> => {
     const res = await generateIdCardAi(promptText);
-    setCard(prev => ({
-      ...prev,
-      fullName: res.fullName || prev.fullName,
-      role: res.role || prev.role,
-      company: res.company || prev.company,
-      department: res.department || prev.department,
-      bloodGroup: res.bloodGroup || prev.bloodGroup,
-      validUntil: res.validUntil || prev.validUntil,
-    }));
+    const nextCard: IdCardData = {
+      ...card,
+      fullName: res.fullName || card.fullName,
+      role: res.role || card.role,
+      company: res.company || card.company,
+      department: res.department || card.department,
+      bloodGroup: res.bloodGroup || card.bloodGroup,
+      validUntil: res.validUntil || card.validUntil,
+    };
+    setCard(nextCard);
+    saveDocumentHistory({
+      service: 'idcard',
+      title: nextCard.fullName || 'ID Badge',
+      subtitle: `${nextCard.role} — ${nextCard.company}`,
+      badge: nextCard.id,
+      data: nextCard,
+    });
     return res.summary;
   };
 
@@ -107,7 +200,7 @@ export function IdCardMaker() {
       const pending = sessionStorage.getItem('pending_ai_prompt');
       if (pending) {
         sessionStorage.removeItem('pending_ai_prompt');
-        handleAiIdCard(pending);
+        Promise.resolve().then(() => handleAiIdCard(pending));
       }
     } catch {
       // ignore
@@ -173,6 +266,17 @@ export function IdCardMaker() {
             >
               <Plus size={13} /> Reset
             </button>
+            <button
+              onClick={() => setHistoryOpen(true)}
+              style={{
+                background: 'rgba(6, 182, 212, 0.14)', border: '1px solid rgba(6, 182, 212, 0.35)',
+                color: '#67e8f9', padding: '5px 8px', borderRadius: 6, fontSize: 11, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 3
+              }}
+              title="Badge History"
+            >
+              <Clock size={13} />
+            </button>
             <div style={{ display: 'flex', background: '#1e293b', borderRadius: 6, padding: 2, gap: 2 }}>
               <button
                 onClick={() => setMobileTab('editor')}
@@ -207,7 +311,7 @@ export function IdCardMaker() {
             </button>
           </div>
         ) : (
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button
               onClick={() => {
                 setCard({
@@ -218,20 +322,53 @@ export function IdCardMaker() {
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
-                color: '#f1f5f9', padding: '8px 14px', borderRadius: 8, fontSize: 13, cursor: 'pointer'
+                color: '#f1f5f9', padding: '8px 12px', borderRadius: 8, fontSize: 13, cursor: 'pointer'
               }}
             >
-              <Plus size={16} /> New
+              <Plus size={15} /> New
+            </button>
+            <button
+              onClick={handleSaveCard}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                color: '#f1f5f9', padding: '8px 12px', borderRadius: 8, fontSize: 13, cursor: 'pointer'
+              }}
+            >
+              <CheckCircle2 size={15} /> Save
+            </button>
+            <button
+              onClick={() => setHistoryOpen(true)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: 'rgba(6, 182, 212, 0.14)', border: '1px solid rgba(6, 182, 212, 0.35)',
+                color: '#67e8f9', padding: '8px 12px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer'
+              }}
+            >
+              <Clock size={15} /> History
             </button>
             <button
               onClick={() => window.print()}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
-                color: '#f1f5f9', padding: '8px 14px', borderRadius: 8, fontSize: 13, cursor: 'pointer'
+                color: '#f1f5f9', padding: '8px 12px', borderRadius: 8, fontSize: 13, cursor: 'pointer'
               }}
             >
-              <Printer size={16} /> Print
+              <Printer size={15} /> Print
+            </button>
+            <button
+              onClick={handleDownloadJpg}
+              disabled={isGeneratingJpg}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
+                color: '#fff', border: 'none', padding: '8px 14px', borderRadius: 8,
+                fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.35)'
+              }}
+            >
+              <ImageIcon size={15} /> {isGeneratingJpg ? 'Processing...' : 'Download JPG'}
             </button>
             <button
               onClick={handleDownloadPdf}
@@ -239,18 +376,34 @@ export function IdCardMaker() {
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 background: 'linear-gradient(135deg, #06b6d4 0%, #0284c7 100%)',
-                color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 8,
+                color: '#fff', border: 'none', padding: '8px 14px', borderRadius: 8,
                 fontSize: 13, fontWeight: 600, cursor: 'pointer',
                 boxShadow: '0 4px 12px rgba(6, 182, 212, 0.4)'
               }}
             >
-              <Download size={16} /> {isGenerating ? 'Generating...' : 'Download Card PDF'}
+              <Download size={15} /> {isGenerating ? 'Generating...' : 'Download PDF'}
             </button>
           </div>
         )}
       </div>
 
       {/* Main Workspace */}
+      {statusNotice && (
+        <div
+          className="no-print"
+          style={{
+            padding: '8px 16px',
+            background: statusNotice.type === 'error' ? '#7f1d1d' : '#065f46',
+            color: '#fff',
+            fontSize: 12,
+            fontWeight: 600,
+            textAlign: 'center',
+            borderBottom: '1px solid rgba(255,255,255,0.12)',
+          }}
+        >
+          {statusNotice.text}
+        </div>
+      )}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
         {/* Editor */}
         {(!isMobile || mobileTab === 'editor') && (
@@ -270,9 +423,11 @@ export function IdCardMaker() {
             placeholder="যেমন: 'তানভীর আহমেদ - সিনিয়র সফটওয়্যার ইঞ্জিনিয়ার, ডিপার্টমেন্ট এআই'"
             onGenerate={handleAiIdCard}
             onReviewPdf={handleDownloadPdf}
+            onDownloadJpg={handleDownloadJpg}
             onViewPreview={() => {
               if (isMobile) setMobileTab('preview');
             }}
+            onRestoreHistory={(data) => setCard(data)}
           />
 
           <h2 style={{ fontSize: 14, fontWeight: 700, color: '#06b6d4', textTransform: 'uppercase', marginBottom: 14 }}>
@@ -502,7 +657,7 @@ export function IdCardMaker() {
             <div style={{ height: 6, background: '#0284c7' }} />
           </div>
 
-          {/* Mobile bottom bar for quick PDF download while in preview tab */}
+          {/* Mobile bottom bar for quick PDF / JPG / Save while in preview tab */}
           {isMobile && (
             <div className="no-print" style={{
               position: 'fixed',
@@ -512,59 +667,91 @@ export function IdCardMaker() {
               background: 'rgba(15, 23, 42, 0.95)',
               backdropFilter: 'blur(10px)',
               borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-              padding: '10px 16px',
+              padding: '10px 12px',
               display: 'flex',
-              gap: 10,
+              gap: 8,
               zIndex: 40,
               boxSizing: 'border-box'
             }}>
               <button
-                onClick={() => window.print()}
+                onClick={handleSaveCard}
                 style={{
                   flex: 1,
                   background: 'rgba(255, 255, 255, 0.08)',
                   border: '1px solid rgba(255, 255, 255, 0.15)',
                   color: '#fff',
-                  padding: '10px',
+                  padding: '10px 8px',
                   borderRadius: 8,
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: 600,
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: 6
+                  gap: 5
                 }}
               >
-                <Printer size={16} /> Print
+                <CheckCircle2 size={15} /> Save
               </button>
               <button
-                onClick={handleDownloadPdf}
-                disabled={isGenerating}
+                onClick={handleDownloadJpg}
+                disabled={isGeneratingJpg}
                 style={{
-                  flex: 2,
-                  background: 'linear-gradient(135deg, #06b6d4 0%, #0284c7 100%)',
+                  flex: 1,
+                  background: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
                   border: 'none',
                   color: '#fff',
-                  padding: '10px',
+                  padding: '10px 8px',
                   borderRadius: 8,
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: 700,
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: 6,
+                  gap: 5
+                }}
+              >
+                <ImageIcon size={15} /> JPG
+              </button>
+              <button
+                onClick={handleDownloadPdf}
+                disabled={isGenerating}
+                style={{
+                  flex: 1.5,
+                  background: 'linear-gradient(135deg, #06b6d4 0%, #0284c7 100%)',
+                  border: 'none',
+                  color: '#fff',
+                  padding: '10px 8px',
+                  borderRadius: 8,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 5,
                   boxShadow: '0 4px 12px rgba(6, 182, 212, 0.4)'
                 }}
               >
-                <Download size={16} /> {isGenerating ? 'Generating...' : 'Download Card PDF'}
+                <Download size={15} /> {isGenerating ? '...' : 'PDF'}
               </button>
             </div>
           )}
         </div>
       )}
     </div>
+
+    <RecentHistoryModal
+      isOpen={historyOpen}
+      service="idcard"
+      title="আইডি কার্ড হিস্টোরি ও ড্রাফট"
+      onClose={() => setHistoryOpen(false)}
+      onRestore={(data) => {
+        setCard(data);
+        showNotice('Saved ID card restored from history!', 'success');
+      }}
+    />
   </div>
   );
 }

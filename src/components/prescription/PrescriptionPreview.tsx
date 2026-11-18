@@ -3,7 +3,7 @@ import QRCode from 'qrcode';
 import type { Prescription, DoctorProfile, PrescriptionTheme, PrescriptionMedicine } from '../../types';
 import { formatDateDisplay } from '../../utils/dateUtils';
 import {
-  CaduceusEmblem, PopularLogoSvg, HotlinePhoneSvg, JotnoQrSvg
+  CaduceusEmblem, PopularLogoSvg, HotlinePhoneSvg
 } from '../../assets/sanowaraAssets';
 import {
   SANMUN_DOC_PHOTO, SANMUN_SMILE_GRAPHIC, SANMUN_PINKBOX_LOGO, SANMUN_WATERMARK_BG
@@ -341,7 +341,7 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
             {isSanowaraTheme ? (
               <ul className="rx-bullet-list">
                 {prescription.complaints.split('\n').filter(Boolean).map((line, idx) => (
-                  <li key={idx}>{line.replace(/^[•\-\*]\s*/, '')}</li>
+                  <li key={idx}>{line.replace(/^[•\-*]\s*/, '')}</li>
                 ))}
               </ul>
             ) : (
@@ -364,7 +364,7 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
             {isSanowaraTheme ? (
               <ul className="rx-bullet-list">
                 {prescription.history.split('\n').filter(Boolean).map((line, idx) => (
-                  <li key={idx}>{line.replace(/^[•\-\*]\s*/, '')}</li>
+                  <li key={idx}>{line.replace(/^[•\-*]\s*/, '')}</li>
                 ))}
               </ul>
             ) : (
@@ -407,7 +407,7 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
                   {isSanowaraTheme ? (
                     <ul className="rx-bullet-list">
                       {prescription.onExamination.split('\n').filter(Boolean).map((line, idx) => (
-                        <li key={idx}>{line.replace(/^[•\-\*]\s*/, '')}</li>
+                        <li key={idx}>{line.replace(/^[•\-*]\s*/, '')}</li>
                       ))}
                     </ul>
                   ) : (
@@ -468,7 +468,7 @@ export const PrescriptionPreview = forwardRef<HTMLDivElement, PrescriptionPrevie
               return (
                 <div key={lIdx} style={{ paddingLeft: 6, display: 'flex', alignItems: 'flex-start', gap: 4, color: '#222', fontSize: '8pt' }}>
                   <span>•</span>
-                  <span>{trimmed.replace(/^[•\-\*]\s*/, '')}</span>
+                  <span>{trimmed.replace(/^[•\-*]\s*/, '')}</span>
                 </div>
               );
             })}

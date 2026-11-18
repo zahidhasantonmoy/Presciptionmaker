@@ -1,7 +1,7 @@
 import React, { useRef, useCallback } from 'react';
 import { Printer, Download, X, FlaskConical } from 'lucide-react';
 import type { Prescription, DoctorProfile } from '../../types';
-import { PopularLogoSvg, HotlinePhoneSvg } from '../../assets/sanowaraAssets';
+import { PopularLogoSvg } from '../../assets/sanowaraAssets';
 import { formatDateDisplay } from '../../utils/dateUtils';
 import { useToast } from '../ui/Toast';
 import jsPDF from 'jspdf';

@@ -1,18 +1,33 @@
 {
+  "id": "/",
   "short_name": "EasyPad",
   "name": "EasyPad – Prescription Software for Doctors",
   "icons": [
     {
-      "src": "/favicon.svg",
-      "type": "image/svg+xml",
-      "sizes": "192x192 512x512"
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "start_url": "/",
-  "background_color": "#f8fafc",
+  "scope": "/",
+  "background_color": "#0f172a",
   "theme_color": "#1e40af",
   "display": "standalone",
   "orientation": "any",
   "categories": ["medical", "productivity", "utilities"],
-  "description": "High-efficiency prescription maker and medical record organizer for doctors in Bangladesh."
+  "description": "High-efficiency offline prescription maker, e-ticket generator, and document suite for doctors in Bangladesh."
 }

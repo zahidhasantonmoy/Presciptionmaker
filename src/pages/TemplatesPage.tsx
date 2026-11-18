@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Edit3, Save, Star, X } from 'lucide-react';
+import { Plus, Trash2, Save, Star, X } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useToast } from '../components/ui/Toast';
 import { ConfirmModal } from '../components/ui/Modal';
@@ -9,10 +9,10 @@ import { SANOWARA_SAMPLE_PATIENT, JESMIN_SAMPLE_PATIENT } from '../data/defaults
 
 export function TemplatesPage() {
   const {
-    prescriptionTemplates, savePrescriptionTemplate, deletePrescriptionTemplate,
+    prescriptionTemplates, deletePrescriptionTemplate,
     medicineCatalog, adviceTemplates, saveAdviceTemplate, deleteAdviceTemplate,
-    toggleAdviceFavorite, toggleMedicineFavorite, toggleDiagnosisFavorite,
-    diagnosisCatalog, testCatalog, toggleTestFavorite,
+    toggleAdviceFavorite, toggleMedicineFavorite,
+    testCatalog, toggleTestFavorite,
     createPrescription, updateCurrentPrescription, setActivePage,
     doctorProfiles, setActiveDoctorId,
   } = useStore();

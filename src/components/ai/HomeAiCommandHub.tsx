@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Sparkles, ArrowRight, Lightbulb, Zap, Wifi, WifiOff,
-  Compass, Loader2, CheckCircle2
+  Sparkles, ArrowRight, Lightbulb, Zap, Wifi, Loader2
 } from 'lucide-react';
 import { ServiceId } from '../../utils/navigation';
 import { detectServiceFromPrompt } from '../../services/ai/aiGenerators';

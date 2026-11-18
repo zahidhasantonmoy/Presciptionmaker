@@ -5,8 +5,9 @@ import { useAuthStore } from './services/auth/useAuthStore';
 import { LockScreen } from './services/auth/LockScreen';
 import { OmniBar } from './components/layout/OmniBar';
 import { HubDashboard } from './services/hub/HubDashboard';
-import { SERVICES_REGISTRY, getServiceById } from './services/registry';
+import { getServiceById } from './services/registry';
 import { PrescriptionVerificationPage } from './pages/PrescriptionVerificationPage';
+import { OfflineIndicator } from './components/pwa/OfflineIndicator';
 
 function getVerifyIdFromUrl(): string | null {
   try {
@@ -35,7 +36,7 @@ function getVerifyIdFromUrl(): string | null {
 }
 
 function MainPlatform() {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, securityEnabled } = useAuthStore();
   const [activeService, setActiveService] = useState<ServiceId>(() => detectActiveService());
   const [verifyRxId, setVerifyRxId] = useState<string | null>(getVerifyIdFromUrl);
   const [, startTransition] = useTransition();
@@ -80,8 +81,8 @@ function MainPlatform() {
     );
   }
 
-  // 2. Personal Auth Barrier: If not unlocked, display Lock Screen
-  if (!isAuthenticated) {
+  // 2. Personal Auth Barrier: If security is enabled and not unlocked, display Lock Screen
+  if (securityEnabled && !isAuthenticated) {
     return <LockScreen onUnlocked={() => setActiveService(detectActiveService())} />;
   }
 
@@ -136,6 +137,7 @@ export default function App() {
   return (
     <ToastProvider>
       <MainPlatform />
+      <OfflineIndicator />
     </ToastProvider>
   );
 }

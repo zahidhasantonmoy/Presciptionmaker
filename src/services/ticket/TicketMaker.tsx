@@ -5,10 +5,9 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import {
   Train, Download, Printer, Plus, CheckCircle2,
-  Trash2, PenTool, Eye, ZoomIn, ZoomOut, MessageCircle, Clock, Share2,
-  Copy, Image as ImageIcon, FileCode, Check
+  Trash2, PenTool, Eye, ZoomIn, ZoomOut, MessageCircle, Clock,
+  Copy, Image as ImageIcon, Check, FileCode
 } from 'lucide-react';
-import { ShohozLogo } from './ShohozLogo';
 import {
   RAILWAY_STATIONS, RAILWAY_TRAINS, RAILWAY_CLASSES,
   doesTrainServeStation, toBanglaDigits, getStationBanglaName,
@@ -16,9 +15,9 @@ import {
 } from './railwayData';
 import { AiCommandBar } from '../../components/ai/AiCommandBar';
 import { generateTicketAi } from '../ai/aiGenerators';
-import type { TicketAiWarning } from '../ai/aiGenerators';
 import { saveDocumentHistory } from '../history/documentHistory';
 import { openWhatsAppTicket } from '../../utils/whatsappShare';
+import { loadInlineFontsCss } from '../../utils/offlineFonts';
 import { RecentHistoryModal } from '../../components/common/RecentHistoryModal';
 
 export interface BangladeshRailwayTicket {
@@ -298,7 +297,7 @@ export function TicketMaker() {
       margin: 0,
       color: { dark: '#000000', light: '#ffffff' }
     }).then(setQrDataUrl).catch(console.error);
-  }, [ticket.pnrNumber, ticket.passengerName, ticket.trainName, ticket.trainNumber, ticket.journeyDate, ticket.journeyTime, ticket.coachSeat, ticket.fare]);
+  }, [ticket.pnrNumber, ticket.passengerName, ticket.trainName, ticket.trainNumber, ticket.fromStation, ticket.toStation, ticket.journeyDate, ticket.journeyTime, ticket.coachSeat, ticket.fare]);
 
   // Calculations
   const isBeddingClass = ticket.className === 'AC_B' || ticket.className === 'F_BERTH';
@@ -409,11 +408,12 @@ export function TicketMaker() {
       const pending = sessionStorage.getItem('pending_ai_prompt');
       if (pending) {
         sessionStorage.removeItem('pending_ai_prompt');
-        handleAiGenerate(pending);
+        Promise.resolve().then(() => handleAiGenerate(pending));
       }
     } catch {
       // ignore
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Download High-Resolution A4 PDF with exact Shohoz BD Railway filename pattern
@@ -540,8 +540,8 @@ export function TicketMaker() {
     }
   };
 
-  // Generate self-contained standalone HTML matching official BDRAILWAY_TICKET
-  const getStandaloneTicketHtml = () => {
+  // Generate self-contained standalone HTML matching official BDRAILWAY_TICKET (with Base64 offline fonts)
+  const getStandaloneTicketHtml = async (): Promise<string> => {
     if (!ticketRef.current) return '';
     let inner = ticketRef.current.innerHTML;
     try {
@@ -554,12 +554,26 @@ export function TicketMaker() {
         if (ctx) {
           ctx.drawImage(logoEl, 0, 0);
           const dataUri = c.toDataURL('image/png');
-          inner = inner.replace('src="/20428_4-78474535-icon.png"', `src="${dataUri}"`);
+          inner = inner.replaceAll('src="/20428_4-78474535-icon.png"', `src="${dataUri}"`);
+        }
+      }
+      if (inner.includes('/20428_4-78474535-icon.png')) {
+        const resp = await fetch('/20428_4-78474535-icon.png', { cache: 'force-cache' });
+        if (resp.ok) {
+          const blob = await resp.blob();
+          const dataUri = await new Promise<string>((resolve) => {
+            const r = new FileReader();
+            r.onloadend = () => resolve(typeof r.result === 'string' ? r.result : '');
+            r.readAsDataURL(blob);
+          });
+          if (dataUri) inner = inner.replaceAll('src="/20428_4-78474535-icon.png"', `src="${dataUri}"`);
         }
       }
     } catch {
       // keep existing src if tainted
     }
+
+    const inlineFontsCss = await loadInlineFontsCss();
 
     return `<!DOCTYPE html>
 <html lang="bn">
@@ -569,6 +583,7 @@ export function TicketMaker() {
 <title>Bangladesh Railway e-Ticket - ${ticket.pnrNumber}</title>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+Bengali:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
+  ${inlineFontsCss}
   @page { size: A4; margin: 0; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { background: #ffffff; }
@@ -630,11 +645,12 @@ ${inner}
   // Copy HTML to clipboard
   const handleCopyHtml = async () => {
     try {
-      const html = getStandaloneTicketHtml();
+      const html = await getStandaloneTicketHtml();
+      if (!html) return;
       await navigator.clipboard.writeText(html);
       setCopiedHtml(true);
       setTimeout(() => setCopiedHtml(false), 2500);
-      setAiUpdatedNotice('টিকেটের সম্পূর্ণ অফিসিয়াল HTML কোড ক্লিপবোর্ডে কপি করা হয়েছে!');
+      setAiUpdatedNotice('অফলাইন ফন্টসহ টিকেটের অফিসিয়াল HTML কোড ক্লিপবোর্ডে কপি করা হয়েছে!');
     } catch (err) {
       console.error('Failed to copy HTML:', err);
       setAiUpdatedNotice('HTML কপি করতে সমস্যা হয়েছে।');
@@ -642,18 +658,21 @@ ${inner}
   };
 
   // Download standalone HTML file
-  const handleDownloadHtml = () => {
+  const handleDownloadHtml = async () => {
     try {
-      const html = getStandaloneTicketHtml();
+      const html = await getStandaloneTicketHtml();
+      if (!html) return;
       const fileName = generateOfficialTicketFileName('html', ticket.pnrNumber);
       const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = fileName;
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      setAiUpdatedNotice(`HTML ফাইল ডাউনলোড সম্পন্ন হয়েছে: ${fileName}`);
+      setAiUpdatedNotice(`অফিসিয়াল HTML ফাইল ডাউনলোড সম্পন্ন হয়েছে: ${fileName}`);
     } catch (err) {
       console.error('Failed to download HTML:', err);
       setAiUpdatedNotice('HTML ফাইল ডাউনলোড করতে সমস্যা হয়েছে।');
@@ -842,6 +861,20 @@ ${inner}
             >
               {copiedHtml ? <Check size={15} /> : <Copy size={15} />}
               {copiedHtml ? 'HTML Copied!' : 'Copy HTML'}
+            </button>
+            <button
+              onClick={handleDownloadHtml}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
+                border: 'none',
+                color: '#fff',
+                padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(124, 58, 237, 0.35)'
+              }}
+              title="Official Standalone HTML File Download (100% Offline Fonts)"
+            >
+              <FileCode size={15} /> Download HTML
             </button>
           </div>
         ) : (
@@ -2100,12 +2133,31 @@ ${inner}
               background: copiedHtml ? 'rgba(34, 197, 94, 0.25)' : 'rgba(255, 255, 255, 0.08)',
               border: copiedHtml ? '1px solid #22c55e' : '1px solid rgba(255, 255, 255, 0.15)',
               color: copiedHtml ? '#4ade80' : '#fff',
-              padding: '6px 10px', borderRadius: 16,
+              padding: '6px 9px', borderRadius: 16,
               fontSize: 11, fontWeight: 600,
               cursor: 'pointer',
             }}
+            title="Copy HTML"
           >
             {copiedHtml ? <Check size={13} /> : <Copy size={13} />}
+            <span>Copy</span>
+          </button>
+
+          <button
+            onClick={handleDownloadHtml}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
+              border: 'none',
+              color: '#fff',
+              padding: '6px 9px', borderRadius: 16,
+              fontSize: 11, fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(124, 58, 237, 0.4)',
+            }}
+            title="Download HTML File"
+          >
+            <FileCode size={13} />
             <span>HTML</span>
           </button>
         </nav>

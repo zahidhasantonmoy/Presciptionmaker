@@ -9,12 +9,9 @@ import {
   doesTrainServeStation,
   toBanglaDigits,
   getStationBanglaName,
-  formatCoachSeat,
   getPureBanglaCoachSeat,
 } from '../ticket/railwayData';
-import { Prescription, PrescriptionMedicine, Diagnosis } from '../../types';
 import { ServiceId } from '../../utils/navigation';
-import { v4 as uuidv4 } from 'uuid';
 
 // Detects which service a user prompt is intended for (Ticket, Prescription, Invoice, Certificate, ID Card)
 export function detectServiceFromPrompt(prompt: string): ServiceId {

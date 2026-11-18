@@ -2,11 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import {
-  Receipt, Plus, Trash2, Download, Printer, CheckCircle2,
-  Building, User, Calendar, CreditCard, DollarSign
+  Receipt, Plus, Trash2, Download, Printer, CheckCircle2, Image as ImageIcon, Clock
 } from 'lucide-react';
 import { AiCommandBar } from '../../components/ai/AiCommandBar';
 import { generateInvoiceAi } from '../ai/aiGenerators';
+import { saveDocumentHistory } from '../history/documentHistory';
+import { RecentHistoryModal } from '../../components/common/RecentHistoryModal';
 
 interface InvoiceItem {
   id: string;
@@ -66,10 +67,18 @@ export function InvoiceMaker() {
     }
   });
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isGeneratingJpg, setIsGeneratingJpg] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 1024);
   const [mobileTab, setMobileTab] = useState<'editor' | 'preview'>('editor');
   const [previewScale, setPreviewScale] = useState(1);
+  const [statusNotice, setStatusNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const invoiceRef = useRef<HTMLDivElement>(null);
+
+  const showNotice = (text: string, type: 'success' | 'error' = 'success') => {
+    setStatusNotice({ type, text });
+    setTimeout(() => setStatusNotice(null), 3500);
+  };
 
   const calculateFitScale = () => {
     if (typeof window === 'undefined') return 1;
@@ -130,7 +139,14 @@ export function InvoiceMaker() {
     const updated = [invoice, ...savedInvoices.filter(i => i.id !== invoice.id)];
     setSavedInvoices(updated);
     localStorage.setItem('personal_invoices_db', JSON.stringify(updated));
-    alert('Invoice saved to your local database!');
+    saveDocumentHistory({
+      service: 'invoice',
+      title: `${invoice.invoiceNumber} — ${invoice.clientName}`,
+      subtitle: `${invoice.senderName} | Total: ${invoice.currency}${total.toFixed(2)}`,
+      badge: invoice.date,
+      data: invoice,
+    });
+    showNotice('Invoice saved to local database & history!', 'success');
   };
 
   const createNewInvoice = () => {
@@ -143,36 +159,107 @@ export function InvoiceMaker() {
     });
   };
 
+  const captureInvoiceCanvas = async () => {
+    if (!invoiceRef.current) return null;
+    if (typeof document !== 'undefined' && document.fonts) {
+      await document.fonts.ready;
+    }
+    const target = invoiceRef.current;
+    const exportWidth = target.offsetWidth || 700;
+    const exportHeight = target.offsetHeight || 850;
+
+    return html2canvas(target, {
+      scale: 3,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      width: exportWidth,
+      height: exportHeight,
+      windowWidth: exportWidth,
+      windowHeight: exportHeight,
+      scrollX: 0,
+      scrollY: 0,
+      onclone: (clonedDoc, clonedEl) => {
+        clonedDoc.querySelectorAll<HTMLElement>('.no-print').forEach((np) => {
+          np.style.display = 'none';
+        });
+        let cur: HTMLElement | null = clonedEl.parentElement;
+        while (cur && cur !== clonedDoc.body) {
+          cur.style.transform = 'none';
+          cur.style.webkitTransform = 'none';
+          cur.style.zoom = '1';
+          cur.style.overflow = 'visible';
+          cur.style.boxShadow = 'none';
+          cur = cur.parentElement;
+        }
+        clonedEl.style.transform = 'none';
+        clonedEl.style.boxShadow = 'none';
+        clonedEl.style.width = `${exportWidth}px`;
+        clonedEl.style.minHeight = `${exportHeight}px`;
+      },
+    });
+  };
+
   const handleDownloadPdf = async () => {
     if (!invoiceRef.current) return;
     setIsGeneratingPdf(true);
     try {
-      const canvas = await html2canvas(invoiceRef.current, { scale: 2, useCORS: true });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      const canvas = await captureInvoiceCanvas();
+      if (!canvas) return;
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const pdf = new jsPDF({
+        orientation: 'p',
+        unit: 'mm',
+        format: 'a4',
+        compress: true,
+      });
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
       pdf.save(`${invoice.invoiceNumber}.pdf`);
+      showNotice(`Invoice PDF (${invoice.invoiceNumber}.pdf) downloaded!`, 'success');
     } catch (err) {
       console.error('Invoice PDF error:', err);
-      alert('Could not export PDF');
+      showNotice('Could not export PDF. Please try again.', 'error');
     } finally {
       setIsGeneratingPdf(false);
     }
   };
 
+  const handleDownloadJpg = async () => {
+    if (!invoiceRef.current) return;
+    setIsGeneratingJpg(true);
+    try {
+      const canvas = await captureInvoiceCanvas();
+      if (!canvas) return;
+      const imgData = canvas.toDataURL('image/jpeg', 0.96);
+      const fileName = `${invoice.invoiceNumber}.jpg`;
+      const link = document.createElement('a');
+      link.download = fileName;
+      link.href = imgData;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showNotice(`Invoice JPG (${fileName}) downloaded!`, 'success');
+    } catch (err) {
+      console.error('Invoice JPG error:', err);
+      showNotice('Could not export JPG. Please try again.', 'error');
+    } finally {
+      setIsGeneratingJpg(false);
+    }
+  };
+
   const handleAiInvoice = async (promptText: string): Promise<string> => {
     const res = await generateInvoiceAi(promptText);
-    setInvoice(prev => ({
-      ...prev,
-      clientName: res.clientName || prev.clientName,
-      clientEmail: res.clientEmail || prev.clientEmail,
-      clientAddress: res.clientAddress || prev.clientAddress,
-      currency: res.currency || prev.currency,
-      taxRate: res.taxRate !== undefined ? res.taxRate : prev.taxRate,
-      discount: res.discount !== undefined ? res.discount : prev.discount,
-      notes: res.notes || prev.notes,
+    const nextInvoice: InvoiceData = {
+      ...invoice,
+      clientName: res.clientName || invoice.clientName,
+      clientEmail: res.clientEmail || invoice.clientEmail,
+      clientAddress: res.clientAddress || invoice.clientAddress,
+      currency: res.currency || invoice.currency,
+      taxRate: res.taxRate !== undefined ? res.taxRate : invoice.taxRate,
+      discount: res.discount !== undefined ? res.discount : invoice.discount,
+      notes: res.notes || invoice.notes,
       items: res.items && res.items.length > 0
         ? res.items.map((it, idx) => ({
             id: String(idx + 1),
@@ -180,8 +267,18 @@ export function InvoiceMaker() {
             quantity: Number(it.quantity) || 1,
             rate: Number(it.rate) || 0,
           }))
-        : prev.items,
-    }));
+        : invoice.items,
+    };
+    setInvoice(nextInvoice);
+    const nextSubtotal = nextInvoice.items.reduce((acc, item) => acc + item.quantity * item.rate, 0);
+    const nextTotal = Math.max(0, nextSubtotal + (nextSubtotal * nextInvoice.taxRate) / 100 - nextInvoice.discount);
+    saveDocumentHistory({
+      service: 'invoice',
+      title: `${nextInvoice.invoiceNumber} — ${nextInvoice.clientName}`,
+      subtitle: `${nextInvoice.senderName} | Total: ${nextInvoice.currency}${nextTotal.toFixed(2)}`,
+      badge: nextInvoice.date,
+      data: nextInvoice,
+    });
     return res.summary;
   };
 
@@ -191,7 +288,7 @@ export function InvoiceMaker() {
       const pending = sessionStorage.getItem('pending_ai_prompt');
       if (pending) {
         sessionStorage.removeItem('pending_ai_prompt');
-        handleAiInvoice(pending);
+        Promise.resolve().then(() => handleAiInvoice(pending));
       }
     } catch {
       // ignore
@@ -252,6 +349,17 @@ export function InvoiceMaker() {
             >
               <Plus size={13} /> New
             </button>
+            <button
+              onClick={() => setHistoryOpen(true)}
+              style={{
+                background: 'rgba(16, 185, 129, 0.14)', border: '1px solid rgba(16, 185, 129, 0.35)',
+                color: '#6ee7b7', padding: '5px 8px', borderRadius: 6, fontSize: 11, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 3
+              }}
+              title="Invoice History"
+            >
+              <Clock size={13} />
+            </button>
             <div style={{ display: 'flex', background: '#1e293b', borderRadius: 6, padding: 2, gap: 2 }}>
               <button
                 onClick={() => setMobileTab('editor')}
@@ -286,36 +394,59 @@ export function InvoiceMaker() {
             </button>
           </div>
         ) : (
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button
               onClick={createNewInvoice}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
-                color: '#f1f5f9', padding: '8px 14px', borderRadius: 8, fontSize: 13, cursor: 'pointer'
+                color: '#f1f5f9', padding: '8px 12px', borderRadius: 8, fontSize: 13, cursor: 'pointer'
               }}
             >
-              <Plus size={16} /> New Invoice
+              <Plus size={15} /> New
             </button>
             <button
               onClick={saveCurrentInvoice}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
-                color: '#f1f5f9', padding: '8px 14px', borderRadius: 8, fontSize: 13, cursor: 'pointer'
+                color: '#f1f5f9', padding: '8px 12px', borderRadius: 8, fontSize: 13, cursor: 'pointer'
               }}
             >
-              <CheckCircle2 size={16} /> Save
+              <CheckCircle2 size={15} /> Save
+            </button>
+            <button
+              onClick={() => setHistoryOpen(true)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: 'rgba(16, 185, 129, 0.14)', border: '1px solid rgba(16, 185, 129, 0.35)',
+                color: '#6ee7b7', padding: '8px 12px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer'
+              }}
+            >
+              <Clock size={15} /> History
             </button>
             <button
               onClick={() => window.print()}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
-                color: '#f1f5f9', padding: '8px 14px', borderRadius: 8, fontSize: 13, cursor: 'pointer'
+                color: '#f1f5f9', padding: '8px 12px', borderRadius: 8, fontSize: 13, cursor: 'pointer'
               }}
             >
-              <Printer size={16} /> Print
+              <Printer size={15} /> Print
+            </button>
+            <button
+              onClick={handleDownloadJpg}
+              disabled={isGeneratingJpg}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
+                color: '#fff', border: 'none', padding: '8px 14px', borderRadius: 8,
+                fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.35)'
+              }}
+            >
+              <ImageIcon size={15} /> {isGeneratingJpg ? 'Processing...' : 'Download JPG'}
             </button>
             <button
               onClick={handleDownloadPdf}
@@ -323,18 +454,34 @@ export function InvoiceMaker() {
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 8,
+                color: '#fff', border: 'none', padding: '8px 14px', borderRadius: 8,
                 fontSize: 13, fontWeight: 600, cursor: 'pointer',
                 boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)'
               }}
             >
-              <Download size={16} /> {isGeneratingPdf ? 'Generating...' : 'Download PDF'}
+              <Download size={15} /> {isGeneratingPdf ? 'Generating...' : 'Download PDF'}
             </button>
           </div>
         )}
       </div>
 
       {/* Main Workspace */}
+      {statusNotice && (
+        <div
+          className="no-print"
+          style={{
+            padding: '8px 16px',
+            background: statusNotice.type === 'error' ? '#7f1d1d' : '#065f46',
+            color: '#fff',
+            fontSize: 12,
+            fontWeight: 600,
+            textAlign: 'center',
+            borderBottom: '1px solid rgba(255,255,255,0.12)',
+          }}
+        >
+          {statusNotice.text}
+        </div>
+      )}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
         {/* Editor Form */}
         {(!isMobile || mobileTab === 'editor') && (
@@ -354,9 +501,11 @@ export function InvoiceMaker() {
             placeholder="যেমন: 'ওয়েব ডেভেলপমেন্ট সার্ভিস ৫০,০০০ টাকা ক্লায়েন্ট এপেক্স'"
             onGenerate={handleAiInvoice}
             onReviewPdf={handleDownloadPdf}
+            onDownloadJpg={handleDownloadJpg}
             onViewPreview={() => {
               if (isMobile) setMobileTab('preview');
             }}
+            onRestoreHistory={(data) => setInvoice(data)}
           />
 
           <h2 style={{ fontSize: 14, fontWeight: 700, color: '#10b981', textTransform: 'uppercase', marginBottom: 14 }}>
@@ -688,9 +837,9 @@ export function InvoiceMaker() {
             background: 'rgba(15, 23, 42, 0.95)',
             backdropFilter: 'blur(10px)',
             borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-            padding: '10px 16px',
+            padding: '10px 12px',
             display: 'flex',
-            gap: 10,
+            gap: 8,
             zIndex: 40,
             boxSizing: 'border-box'
           }}>
@@ -701,46 +850,78 @@ export function InvoiceMaker() {
                 background: 'rgba(255, 255, 255, 0.08)',
                 border: '1px solid rgba(255, 255, 255, 0.15)',
                 color: '#fff',
-                padding: '10px',
+                padding: '10px 8px',
                 borderRadius: 8,
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: 600,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 6
+                gap: 5
               }}
             >
-              <CheckCircle2 size={16} /> Save
+              <CheckCircle2 size={15} /> Save
             </button>
             <button
-              onClick={handleDownloadPdf}
-              disabled={isGeneratingPdf}
+              onClick={handleDownloadJpg}
+              disabled={isGeneratingJpg}
               style={{
-                flex: 2,
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                flex: 1,
+                background: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
                 border: 'none',
                 color: '#fff',
-                padding: '10px',
+                padding: '10px 8px',
                 borderRadius: 8,
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: 700,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 6,
+                gap: 5
+              }}
+            >
+              <ImageIcon size={15} /> JPG
+            </button>
+            <button
+              onClick={handleDownloadPdf}
+              disabled={isGeneratingPdf}
+              style={{
+                flex: 1.5,
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                border: 'none',
+                color: '#fff',
+                padding: '10px 8px',
+                borderRadius: 8,
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 5,
                 boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)'
               }}
             >
-              <Download size={16} /> {isGeneratingPdf ? 'Generating...' : 'Download PDF'}
+              <Download size={15} /> {isGeneratingPdf ? '...' : 'PDF'}
             </button>
           </div>
         )}
       </div>
     )}
   </div>
+
+  <RecentHistoryModal
+    isOpen={historyOpen}
+    service="invoice"
+    title="ইনভয়েস হিস্টোরি ও ড্রাফট"
+    onClose={() => setHistoryOpen(false)}
+    onRestore={(data) => {
+      setInvoice(data);
+      showNotice('Saved invoice restored from history!', 'success');
+    }}
+  />
 </div>
   );
 }

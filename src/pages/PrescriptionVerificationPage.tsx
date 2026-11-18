@@ -2,12 +2,11 @@ import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
 import {
   CheckCircle2, ShieldCheck, Printer, ArrowLeft,
-  Calendar, User, AlertCircle, Share2, Copy, Check, Stethoscope
+  Calendar, User, Copy, Check, Stethoscope
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { formatDateDisplay } from '../utils/dateUtils';
 import { PrintPreviewModal } from '../components/prescription/PrintPreviewModal';
-import { CaduceusEmblem, PopularLogoSvg } from '../assets/sanowaraAssets';
 import { JESMIN_FULL_PRESCRIPTION, SANOWARA_FULL_PRESCRIPTION, DR_MIZAN_PROFILE } from '../data/defaults';
 import type { Prescription } from '../types';
 

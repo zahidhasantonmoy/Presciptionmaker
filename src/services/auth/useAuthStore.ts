@@ -2,16 +2,18 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 interface AuthState {
-  isConfigured: boolean; // Has a master passcode been set?
+  isConfigured: boolean;
   passcodeHash: string | null;
   isAuthenticated: boolean;
-  securityEnabled: boolean; // If false, bypass lock screen
-  
+  securityEnabled: boolean;
+
   // Actions
   setupMasterPasscode: (passcode: string) => void;
   verifyPasscode: (passcode: string) => boolean;
   lock: () => void;
   changePasscode: (oldPasscode: string, newPasscode: string) => boolean;
+  resetToDefaultPasscode: () => void;
+  isUsingDefaultPasscode: () => boolean;
   toggleSecurity: (enabled: boolean) => void;
 }
 
@@ -49,36 +51,48 @@ export const useAuthStore = create<AuthState>()(
 
       verifyPasscode: (passcode: string) => {
         const trimmed = passcode.trim();
-        // The default passcode '2580' is always accepted
-        if (trimmed === DEFAULT_PASSCODE) {
-          set({ isAuthenticated: true, isConfigured: true });
-          return true;
-        }
-
         const currentHash = get().passcodeHash || DEFAULT_HASH;
         const inputHash = hashString(trimmed);
         if (inputHash === currentHash) {
-          set({ isAuthenticated: true });
+          set({ isAuthenticated: true, isConfigured: true });
           return true;
         }
         return false;
       },
 
       lock: () => {
-        set({ isAuthenticated: false });
+        set({ securityEnabled: true, isAuthenticated: false });
       },
 
       changePasscode: (oldPasscode: string, newPasscode: string) => {
-        const currentHash = get().passcodeHash;
-        if (!currentHash || hashString(oldPasscode.trim()) !== currentHash) {
+        const currentHash = get().passcodeHash || DEFAULT_HASH;
+        if (hashString(oldPasscode.trim()) !== currentHash) {
           return false;
         }
-        const newHash = hashString(newPasscode.trim());
+        const trimmedNew = newPasscode.trim();
+        if (trimmedNew.length < 4) {
+          return false;
+        }
+        const newHash = hashString(trimmedNew);
         set({
           passcodeHash: newHash,
+          isConfigured: true,
           isAuthenticated: true,
         });
         return true;
+      },
+
+      resetToDefaultPasscode: () => {
+        set({
+          passcodeHash: DEFAULT_HASH,
+          isConfigured: true,
+          isAuthenticated: true,
+        });
+      },
+
+      isUsingDefaultPasscode: () => {
+        const currentHash = get().passcodeHash || DEFAULT_HASH;
+        return currentHash === DEFAULT_HASH;
       },
 
       toggleSecurity: (enabled: boolean) => {

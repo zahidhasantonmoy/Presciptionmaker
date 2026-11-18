@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
-  Sparkles, ArrowRight, Download, Upload, Lock, Layers,
-  Compass, CheckCircle2, Plus, Terminal
+  ArrowRight, Download, Upload, Lock, Layers,
+  Compass
 } from 'lucide-react';
 import { SERVICES_REGISTRY } from '../registry';
 import { ServiceId } from '../../utils/navigation';
