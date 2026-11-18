@@ -6,10 +6,16 @@ import {
   RAILWAY_CLASSES,
   STATION_ALIASES,
   normalizeStationName,
-  doesTrainServeStation,
+  doesTrainServeRouteInDirection,
+  estimateSegmentSchedule,
+  isTrainOffDayOnDate,
+  validateTrainRouteSelection,
   toBanglaDigits,
   getStationBanglaName,
   getPureBanglaCoachSeat,
+  calculateTicketFareBreakdown,
+  generateSmartCoachSeats,
+  getOppositeDirectionTrain,
 } from '../ticket/railwayData';
 import { ServiceId } from '../../utils/navigation';
 
@@ -153,71 +159,151 @@ export interface TicketAiWarning {
   messageBn: string;
 }
 
-// Checks if a train runs on the given journey date (YYYY-MM-DD)
+// Checks if a train runs on the given journey date (YYYY-MM-DD in Asia/Dhaka)
 export function checkTrainOffDay(train: { offDay: string; name: string }, journeyDate: string): TicketAiWarning | null {
   if (!train.offDay || train.offDay === 'None' || train.offDay === 'none') return null;
   if (!journeyDate) return null;
 
-  const dateObj = new Date(journeyDate);
-  if (isNaN(dateObj.getTime())) return null;
-
-  const dayOfWeek = dateObj.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
-  const dayNames: Record<string, number> = {
-    'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3,
-    'Thursday': 4, 'Friday': 5, 'Saturday': 6,
-  };
-  const dayNamesBn: Record<string, string> = {
-    'Sunday': 'রবিবার', 'Monday': 'সোমবার', 'Tuesday': 'মঙ্গলবার',
-    'Wednesday': 'বুধবার', 'Thursday': 'বৃহস্পতিবার', 'Friday': 'শুক্রবার', 'Saturday': 'শনিবার',
-  };
-
-  const offDayNum = dayNames[train.offDay];
-  if (offDayNum !== undefined && dayOfWeek === offDayNum) {
-    const bn = dayNamesBn[train.offDay] || train.offDay;
+  const offStatus = isTrainOffDayOnDate(train.offDay, journeyDate);
+  if (offStatus.isOffDay) {
     return {
       type: 'off_day',
       message: `⚠️ Off Day Alert: "${train.name}" does NOT run on ${train.offDay}s. The selected date (${journeyDate}) is a ${train.offDay}. Please choose a different date.`,
-      messageBn: `⚠️ ছুটির দিন সতর্কতা: "${train.name}" ট্রেনটি ${bn}ে চলে না! আপনার নির্বাচিত তারিখ (${journeyDate}) ${bn}। দয়া করে অন্য তারিখ বেছে নিন।`,
+      messageBn: `⚠️ ছুটির দিন সতর্কতা: "${train.name}" ট্রেনটি ${offStatus.weekdayBn} চলে না! আপনার নির্বাচিত তারিখ (${journeyDate}) ${offStatus.weekdayBn}। দয়া করে অন্য তারিখ বেছে নিন।`,
     };
   }
   return null;
 }
 
-// Checks if a train serves the requested route (endpoint or intermediate corridor stop)
+// Checks if a train serves the requested directional route
 export function checkTrainRoute(
   trainName: string,
   fromStation: string,
-  toStation: string
+  toStation: string,
+  trainNumber = ''
 ): TicketAiWarning | null {
-  if (!fromStation || !toStation) return null;
+  const res = validateTrainRouteSelection(trainName, trainNumber, fromStation, toStation);
+  if (res.valid) return null;
+  return {
+    type: 'route_mismatch',
+    message: `⚠️ ${res.reasonEn || 'Route mismatch detected.'}`,
+    messageBn: `⚠️ ${res.reasonBn || 'নির্বাচিত রুট ও ট্রেন মিলছে না।'}`,
+  };
+}
 
-  const resolvedFrom = normalizeStationName(fromStation);
-  const resolvedTo = normalizeStationName(toStation);
-  const allVariants = RAILWAY_TRAINS.filter(t =>
-    t.name.toUpperCase().replace(/\s+/g, '').includes(trainName.toUpperCase().replace(/\s+/g, '')) ||
-    trainName.toUpperCase().replace(/\s+/g, '').includes(t.name.toUpperCase().replace(/\s+/g, ''))
-  );
-  if (allVariants.length === 0) return null;
-
-  const servesFrom = doesTrainServeStation(trainName, resolvedFrom);
-  const servesTo = doesTrainServeStation(trainName, resolvedTo);
-
-  if (!servesFrom || !servesTo) {
-    const routes = allVariants.map(t => `${t.fromStation} → ${t.toStation}`).join(' | ');
-    const missingStation = !servesFrom ? resolvedFrom : resolvedTo;
-    return {
-      type: 'route_mismatch',
-      message: `⚠️ Route Mismatch: "${trainName}" does not stop at "${missingStation}". Available routes: ${routes}`,
-      messageBn: `⚠️ রুট সমস্যা: "${trainName}" ট্রেনটি "${missingStation}" স্টেশনে থামে না। এই ট্রেনের রুট: ${routes}। অন্য ট্রেন বা স্টেশন বেছে নিন।`,
-    };
+export function detectRoundTripIntent(prompt: string): { isRoundTrip: boolean; returnOffsetDays: number } {
+  const pLower = prompt.toLowerCase();
+  const roundTripPatterns = [
+    /\bround[\s-]?trip\b/i,
+    /\breturn\b/i,
+    /\bboth\s+way/i,
+    /\bup[\s-]?down\b/i,
+    /যাওয়া[\s-]?আসা/,
+    /যাওয়া[\s-]?আসা/,
+    /আসা[\s-]?যাওয়া/,
+    /আসা[\s-]?যাওয়া/,
+    /যাওয়ার\s+(?:ও|এবং|আর)\s+আসার/,
+    /যাওয়ার\s+(?:ও|এবং|আর)\s+আসার/,
+    /রিটার্ন/,
+    /ফেরার\s+টিকিট/,
+    /ফিরতি\s+টিকিট/,
+    /(?:২|দুই|2)\s*(?:টা|টি|দিকের)\s*টিকিট/,
+  ];
+  const isRoundTrip = roundTripPatterns.some(rx => rx.test(prompt) || rx.test(pLower));
+  let returnOffsetDays = 1;
+  const daysMatch = prompt.match(/(\d+|২|৩|৪|৫|৬|৭)\s*(?:দিন|days?)\s*(?:পর|পরে|later|after)/i);
+  if (daysMatch) {
+    const mapBn: Record<string, number> = { '২': 2, '৩': 3, '৪': 4, '৫': 5, '৬': 6, '৭': 7 };
+    returnOffsetDays = mapBn[daysMatch[1]] || Math.max(1, parseInt(daysMatch[1], 10) || 1);
   }
-  return null;
+  return { isRoundTrip, returnOffsetDays };
+}
+
+export function buildReturnTicketFromOutbound(
+  outbound: BangladeshRailwayTicket,
+  offsetDays = 1
+): BangladeshRailwayTicket {
+  const returnFrom = outbound.toStation;
+  const returnFromBn = outbound.toStationBn || getStationBanglaName(returnFrom);
+  const returnTo = outbound.fromStation;
+  const returnToBn = outbound.fromStationBn || getStationBanglaName(returnTo);
+
+  const returnTrain = getOppositeDirectionTrain(
+    outbound.trainName,
+    outbound.trainNumber,
+    returnFrom,
+    returnTo
+  );
+
+  // Compute return date (advance by offsetDays and skip off-day if needed)
+  const baseDate = outbound.journeyDate
+    ? new Date(`${outbound.journeyDate}T12:00:00+06:00`)
+    : new Date();
+  if (!isNaN(baseDate.getTime())) {
+    baseDate.setUTCDate(baseDate.getUTCDate() + Math.max(1, offsetDays));
+    if (returnTrain && isTrainOffDayOnDate(returnTrain.offDay, baseDate.toISOString().split('T')[0]).isOffDay) {
+      baseDate.setUTCDate(baseDate.getUTCDate() + 1);
+    }
+  }
+  const returnDateStr = !isNaN(baseDate.getTime())
+    ? baseDate.toISOString().split('T')[0]
+    : outbound.journeyDate;
+
+  const returnTrainName = returnTrain ? returnTrain.name : outbound.trainName;
+  const returnTrainNameBn = returnTrain ? returnTrain.nameBn : outbound.trainNameBn;
+  const returnTrainNumber = returnTrain ? returnTrain.number : outbound.trainNumber;
+
+  const seg = returnTrain
+    ? estimateSegmentSchedule(returnTrain, returnFrom, returnTo, outbound.className)
+    : null;
+  const unitFare =
+    seg?.segmentFare ||
+    returnTrain?.fares[outbound.className] ||
+    RAILWAY_CLASSES.find(c => c.code === outbound.className)?.defaultFare ||
+    outbound.fare ||
+    450;
+
+  const breakdown = calculateTicketFareBreakdown(
+    unitFare,
+    outbound.className,
+    outbound.numAdults,
+    outbound.numSeniors,
+    outbound.numChildren
+  );
+  const smartSeats = generateSmartCoachSeats(outbound.className, outbound.numSeats, outbound.coachSeat);
+  const { pnr, ticketId } = generateTicketIds();
+
+  return {
+    ...outbound,
+    id: ticketId,
+    pnrNumber: pnr,
+    fromStation: returnFrom,
+    fromStationBn: returnFromBn,
+    toStation: returnTo,
+    toStationBn: returnToBn,
+    trainName: returnTrainName,
+    trainNameBn: returnTrainNameBn,
+    trainNumber: returnTrainNumber,
+    journeyDate: returnDateStr,
+    journeyTime: seg?.boardingTime || returnTrain?.departureTime || outbound.journeyTime,
+    coachSeat: smartSeats.coachSeat,
+    coachSeatBn: smartSeats.coachSeatBn,
+    fare: breakdown.fare,
+    vat: breakdown.vat,
+    serviceCharge: breakdown.serviceCharge,
+    createdAt: new Date().toISOString(),
+  };
 }
 
 export async function generateTicketAi(
   prompt: string,
   baseTicket: BangladeshRailwayTicket
-): Promise<{ ticket: BangladeshRailwayTicket; summary: string; warnings?: TicketAiWarning[] }> {
+): Promise<{
+  ticket: BangladeshRailwayTicket;
+  returnTicket?: BangladeshRailwayTicket;
+  summary: string;
+  warnings?: TicketAiWarning[];
+}> {
   // Try online Multi-Provider AI (Gemini -> Groq fallback)
   if (isOnline()) {
     try {
@@ -290,8 +376,7 @@ RULES:
                t.toStation.toLowerCase() === toStClean.toLowerCase()
         ) || RAILWAY_TRAINS.find(
           t => trainNameMatches(t) &&
-               t.fromStation.toLowerCase() === fromStClean.toLowerCase() &&
-               doesTrainServeStation(t.name, toStClean)
+               doesTrainServeRouteInDirection(t, fromStClean, toStClean)
         ) || RAILWAY_TRAINS.find(
           t => trainNameMatches(t) &&
                t.fromStation.toLowerCase() === fromStClean.toLowerCase()
@@ -306,9 +391,12 @@ RULES:
         const coachSeatBn = getPureBanglaCoachSeat(coachSeat, d.coachSeatBn);
 
         const numSeats = Number(d.numSeats) || 1;
-        const unitFare = matchedTrain?.fares[d.className || 'S_CHAIR'] || Number(d.fare) || 450;
-        const totalFare = unitFare * numSeats;
-        const serviceCharge = 20 * numSeats;
+        const chosenClass = d.className || 'S_CHAIR';
+        const segEstimate = matchedTrain
+          ? estimateSegmentSchedule(matchedTrain, fromStClean, toStClean, chosenClass)
+          : null;
+        const unitFare = segEstimate?.segmentFare || matchedTrain?.fares[chosenClass] || Number(d.fare) || 450;
+        const breakdown = calculateTicketFareBreakdown(unitFare, chosenClass, numSeats, 0, 0);
 
         const merged: BangladeshRailwayTicket = {
           ...baseTicket,
@@ -324,10 +412,10 @@ RULES:
           trainNumber: matchedTrain ? matchedTrain.number : (d.trainNumber || '759'),
           trainName: matchedTrain ? matchedTrain.name : (d.trainName || 'PADMA EXPRESS'),
           trainNameBn: matchedTrain ? matchedTrain.nameBn : (d.trainNameBn || 'পদ্মা এক্সপ্রেস'),
-          journeyTime: matchedTrain ? matchedTrain.departureTime : (d.journeyTime || '23:00'),
-          fare: totalFare,
-          vat: Number(d.vat) || 0,
-          serviceCharge,
+          journeyTime: segEstimate ? segEstimate.boardingTime : (matchedTrain ? matchedTrain.departureTime : (d.journeyTime || '23:00')),
+          fare: breakdown.fare,
+          vat: Number(d.vat) > 0 ? Number(d.vat) : breakdown.vat,
+          serviceCharge: breakdown.serviceCharge,
           numSeats,
           numAdults: numSeats,
           createdAt: new Date().toISOString(),
@@ -337,14 +425,22 @@ RULES:
 
         // Run validation warnings on AI result
         const aiWarnings: TicketAiWarning[] = [];
-        const routeWarn = checkTrainRoute(merged.trainName, fromStClean, toStClean);
+        const routeWarn = checkTrainRoute(merged.trainName, fromStClean, toStClean, merged.trainNumber);
         if (routeWarn) aiWarnings.push(routeWarn);
         const offDayWarn = merged.journeyDate ? checkTrainOffDay({ offDay: matchedTrain?.offDay || 'None', name: merged.trainName }, merged.journeyDate) : null;
         if (offDayWarn) aiWarnings.push(offDayWarn);
 
+        const roundTrip = detectRoundTripIntent(prompt);
+        const returnTicket = roundTrip.isRoundTrip
+          ? buildReturnTicketFromOutbound(merged, roundTrip.returnOffsetDays)
+          : undefined;
+
         return {
           ticket: merged,
-          summary: `${aiTag}: ${merged.trainName} (${merged.trainNumber}), ${merged.fromStation} ➔ ${merged.toStation}, তারিখ: ${merged.journeyDate}, সিট: ${merged.coachSeat}`,
+          returnTicket,
+          summary: returnTicket
+            ? `${aiTag} রাউন্ড-ট্রিপ: যাওয়া ${merged.trainName} [${merged.trainNumber}] (${merged.journeyDate}) + আসা ${returnTicket.trainName} [${returnTicket.trainNumber}] (${returnTicket.journeyDate})`
+            : `${aiTag}: ${merged.trainName} (${merged.trainNumber}), ${merged.fromStation} ➔ ${merged.toStation}, তারিখ: ${merged.journeyDate}, সিট: ${merged.coachSeat}`,
           warnings: aiWarnings.length > 0 ? aiWarnings : undefined,
         };
       }
@@ -360,9 +456,26 @@ RULES:
 function parseRailwayTicketLocally(
   prompt: string,
   baseTicket: BangladeshRailwayTicket
-): { ticket: BangladeshRailwayTicket; summary: string; warnings?: TicketAiWarning[] } {
+): {
+  ticket: BangladeshRailwayTicket;
+  returnTicket?: BangladeshRailwayTicket;
+  summary: string;
+  warnings?: TicketAiWarning[];
+} {
   const { ticket, summary, warnings } = parseRailwayTicketLocallyDetailed(prompt, baseTicket);
-  return { ticket, summary, warnings };
+  const roundTrip = detectRoundTripIntent(prompt);
+  const returnTicket = roundTrip.isRoundTrip
+    ? buildReturnTicketFromOutbound(ticket, roundTrip.returnOffsetDays)
+    : undefined;
+
+  return {
+    ticket,
+    returnTicket,
+    summary: returnTicket
+      ? `⚡ রাউন্ড-ট্রিপ সম্পন্ন: যাওয়া ${ticket.trainName} [${ticket.trainNumber}] (${ticket.fromStation} ➔ ${ticket.toStation}, ${ticket.journeyDate}) ও ফেরার ${returnTicket.trainName} [${returnTicket.trainNumber}] (${returnTicket.fromStation} ➔ ${returnTicket.toStation}, ${returnTicket.journeyDate})`
+      : summary,
+    warnings,
+  };
 }
 
 const NON_STATION_PROMPT_WORDS = new Set([
@@ -692,12 +805,14 @@ function parseRailwayTicketLocallyDetailed(
   let routeValidationWarning = ''; // ← Route validation warning
 
   if (targetTrainName) {
-    // 1st priority: matching name AND origin AND destination
+    // 1st priority: matching name AND exact directional stop sequence
     if (detectedFrom && detectedTo) {
       matchedTrain = RAILWAY_TRAINS.find(
         t => trainNameMatcher(t) &&
              t.fromStation.toLowerCase() === detectedFrom.toLowerCase() &&
              t.toStation.toLowerCase() === detectedTo.toLowerCase()
+      ) || RAILWAY_TRAINS.find(
+        t => trainNameMatcher(t) && doesTrainServeRouteInDirection(t, detectedFrom, detectedTo)
       );
     }
     // 2nd priority: matching name AND origin
@@ -719,20 +834,22 @@ function parseRailwayTicketLocallyDetailed(
       matchedTrain = RAILWAY_TRAINS.find(t => trainNameMatcher(t));
     }
 
-    // ── Route Validation: Check if detected train actually serves the requested route (endpoints or corridor stops) ──
+    // ── Route Validation: Check if detected train actually serves the requested route ──
     if (matchedTrain && detectedFrom && detectedTo) {
-      const routeWarn = checkTrainRoute(matchedTrain.name, detectedFrom, detectedTo);
+      const routeWarn = checkTrainRoute(matchedTrain.name, detectedFrom, detectedTo, matchedTrain.number);
       if (routeWarn) {
         routeValidationWarning = routeWarn.messageBn;
       }
     }
   }
 
-  // Fallback train
+  // Fallback train: pick a directional match on requested stations first
   if (!matchedTrain) {
     matchedTrain = RAILWAY_TRAINS.find(
       t => (!detectedFrom || t.fromStation.toLowerCase() === detectedFrom.toLowerCase()) &&
            (!detectedTo || t.toStation.toLowerCase() === detectedTo.toLowerCase())
+    ) || RAILWAY_TRAINS.find(
+      t => Boolean(detectedFrom && detectedTo && doesTrainServeRouteInDirection(t, detectedFrom, detectedTo))
     ) || RAILWAY_TRAINS[0];
   }
 
@@ -744,11 +861,14 @@ function parseRailwayTicketLocallyDetailed(
       : matchedTrain.toStation;
   }
 
-  // Final check: ensure directional train matches the resolved fromStation
+  // Final check: ensure directional train variant serves fromStation -> toStation in order
   const directionalTrain = RAILWAY_TRAINS.find(
     t => t.name.toLowerCase() === matchedTrain.name.toLowerCase() &&
          t.fromStation.toLowerCase() === fromStation.toLowerCase() &&
          t.toStation.toLowerCase() === toStation.toLowerCase()
+  ) || RAILWAY_TRAINS.find(
+    t => t.name.toLowerCase() === matchedTrain.name.toLowerCase() &&
+         doesTrainServeRouteInDirection(t, fromStation, toStation)
   ) || RAILWAY_TRAINS.find(
     t => t.name.toLowerCase() === matchedTrain.name.toLowerCase() &&
          t.fromStation.toLowerCase() === fromStation.toLowerCase()
@@ -810,8 +930,9 @@ function parseRailwayTicketLocallyDetailed(
         /\b(?:padma|sonar\s*bangla|suborno|suborna|cox|parjatak|chitra|parabat|upaban|bana\s*lata|banalata|bonolota|silkcity|dhumketu|ekota|drutojan|banglabandha|tista|agnibeena|tungipara|karatoa|dolonchapa|madhumati|burimari|chilahati|kurigram|rangpur|lalmoni|benapole|sundarban|jamuna|kalni|jayantika|kapotakkha|sagordari|rupsha|simanta|turna|mahanagar|chattala|bijoy|paharika|udayan|sirajganj|haor|mohonganj|meghna|jamalpur)\b/i,
         /\b(?:dhaka|rajshahi|chattogram|chittagong|sylhet|cox's\s*bazar|khulna|rangpur|dinajpur|ibrahimabad)\b/i,
         /\b(?:shovon|shovon_chair|snigdha|ac|ac_s|ac_b|f_seat|f_berth|শোভন|স্নিগ্ধা|এসি|সিট|আসন|seat)\b/i,
+        /\b(?:round[\s-]?trip|return|up[\s-]?down|যাওয়া[\s-]?আসা|যাওয়া[\s-]?আসা|রিটার্ন|ফেরার|ফিরতি|দিন\s+পর|days?\s+(?:later|after))\b/i,
         /\b(?:tikit|ticket|টিকিট|kato|kato\s*ta|কাটো|কাটুন|দিন|দেন|বুক|book)\b/i,
-        /\b\d+\s*(?:ta|টা|jon|জন|person|টি)\b/i
+        /\b\d+\s*(?:ta|টা|jon|জন|person|টি|দিন)\b/i
       ];
       for (const pat of cutoffPatterns) {
         const cMatch = rawPart.match(pat);
@@ -856,23 +977,19 @@ function parseRailwayTicketLocallyDetailed(
   // ─────────────────────────────────────────────────────────────
   // 6. Coach & Consecutive Seat Generation
   // ─────────────────────────────────────────────────────────────
-  const coachLetters = ['KHA', 'GA', 'GHA', 'CHA', 'JA', 'JHA', 'TA', 'THA', 'DA'];
-  const coachLetter = coachLetters[Math.floor(Math.random() * coachLetters.length)];
-  const startSeat = Math.floor(Math.random() * 35) + 1;
-  const seatList: string[] = [];
-  for (let i = 0; i < numSeats; i++) {
-    seatList.push(`${coachLetter}-${startSeat + i}`);
-  }
-  const coachSeat = seatList.join(', ');
-  const coachSeatBn = getPureBanglaCoachSeat(coachSeat);
+  const generatedSeats = generateSmartCoachSeats(selectedClass.code, numSeats);
+  const coachSeat = generatedSeats.coachSeat;
+  const coachSeatBn = generatedSeats.coachSeatBn;
 
   // ─────────────────────────────────────────────────────────────
-  // 7. Accurate Fare Calculations
+  // 7. Accurate Segment Fare, AC VAT & Boarding Time Calculations
   // ─────────────────────────────────────────────────────────────
-  const unitFare = matchedTrain.fares[selectedClass.code] || selectedClass.defaultFare || 450;
-  const totalFare = unitFare * numSeats;
-  const vat = 0;
-  const serviceCharge = 20 * numSeats;
+  const segEstimate = estimateSegmentSchedule(matchedTrain, fromStation, toStation, selectedClass.code);
+  const unitFare = segEstimate.segmentFare || matchedTrain.fares[selectedClass.code] || selectedClass.defaultFare || 450;
+  const breakdown = calculateTicketFareBreakdown(unitFare, selectedClass.code, numSeats, 0, 0);
+  const totalFare = breakdown.fare;
+  const vat = breakdown.vat;
+  const serviceCharge = breakdown.serviceCharge;
 
   const { pnr, ticketId } = generateTicketIds();
   const now = new Date();
@@ -887,7 +1004,7 @@ function parseRailwayTicketLocallyDetailed(
     issueDate,
     issueTime,
     journeyDate: dateStr,
-    journeyTime: matchedTrain.departureTime,
+    journeyTime: segEstimate.boardingTime,
     fromStation,
     fromStationBn: getStationBanglaName(fromStation),
     toStation,
@@ -914,7 +1031,7 @@ function parseRailwayTicketLocallyDetailed(
   const offDayWarn = checkTrainOffDay({ offDay: matchedTrain.offDay, name: matchedTrain.name }, dateStr);
   if (offDayWarn) finalWarnings.push(offDayWarn);
   if (routeValidationWarning || (detectedFrom && detectedTo)) {
-    const routeWarn = checkTrainRoute(matchedTrain.name, fromStation, toStation);
+    const routeWarn = checkTrainRoute(matchedTrain.name, fromStation, toStation, matchedTrain.number);
     if (routeWarn) finalWarnings.push(routeWarn);
   }
 

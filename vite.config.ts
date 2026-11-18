@@ -1,12 +1,42 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import { probeLiveRailwaySchedule } from './api/railway-lookup'
+
+function railwayLookupDevPlugin(): Plugin {
+  return {
+    name: 'railway-lookup-dev-api',
+    configureServer(server) {
+      server.middlewares.use('/api/railway-lookup', async (req, res) => {
+        try {
+          const reqUrl = new URL(req.url || '/', 'http://localhost');
+          const from = (reqUrl.searchParams.get('from') || '').trim();
+          const to = (reqUrl.searchParams.get('to') || '').trim();
+          const date = (reqUrl.searchParams.get('date') || '').trim();
+          res.setHeader('Content-Type', 'application/json');
+          if (!from || !to) {
+            res.statusCode = 400;
+            res.end(JSON.stringify({ ok: false, error: 'Missing from or to parameter' }));
+            return;
+          }
+          const result = await probeLiveRailwaySchedule(from, to, date);
+          res.statusCode = 200;
+          res.end(JSON.stringify({ ok: true, from, to, date, ...result }));
+        } catch {
+          res.statusCode = 200;
+          res.end(JSON.stringify({ ok: true, checkedLive: false, liveAvailable: false, liveMatches: [] }));
+        }
+      });
+    },
+  };
+}
 
 export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    railwayLookupDevPlugin(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: [

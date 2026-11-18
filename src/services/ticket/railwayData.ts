@@ -192,6 +192,7 @@ export const RAILWAY_STATIONS: RailwayStation[] = [
   { name: 'Gouripur', nameBn: 'গৌরীপুর', code: 'GRP', district: 'Mymensingh' },
   { name: 'Piyarpur', nameBn: 'পিয়ারপুর', code: 'PYP', district: 'Mymensingh' },
   { name: 'Jamalpur', nameBn: 'জামালপুর', code: 'JML', district: 'Jamalpur' },
+  { name: 'Bhuapur', nameBn: 'ভুয়াপুর', code: 'BHP', district: 'Tangail' },
   { name: 'Sarishabari', nameBn: 'সরিষাবাড়ী', code: 'SSB', district: 'Jamalpur' },
   { name: 'Tarakandi', nameBn: 'তারাকান্দি', code: 'TKD', district: 'Jamalpur' },
   { name: 'Adv. Motiur Rahman', nameBn: 'এডভোকেট মতিউর রহমান', code: 'AMR', district: 'Jamalpur' },
@@ -211,9 +212,6 @@ export const RAILWAY_STATIONS: RailwayStation[] = [
   { name: 'Nowdapara', nameBn: 'নওদাপাড়া', code: 'NDP', district: 'Rajshahi' },
   { name: 'Chapai Nawabganj', nameBn: 'চাঁপাইনবাবগঞ্জ', code: 'CNJ', district: 'Chapai Nawabganj' },
   { name: 'Rohanpur', nameBn: 'রোহনপুর', code: 'RHP', district: 'Chapai Nawabganj' },
-
-  // Chittagong / Cox's Bazar extra
-  { name: 'Islamabad', nameBn: 'ইসলামাবাদ', code: 'ISB2', district: 'Cox\'s Bazar' },
 ];
 
 export const RAILWAY_TRAINS: RailwayTrain[] = [
@@ -286,29 +284,6 @@ export const RAILWAY_TRAINS: RailwayTrain[] = [
   },
   {
     number: '792',
-    name: 'BANA LATA EXPRESS',
-    nameBn: 'বনলতা এক্সপ্রেস',
-    fromStation: 'Rajshahi',
-    toStation: 'Dhaka',
-    departureTime: '06:00',
-    arrivalTime: '10:45',
-    offDay: 'Friday',
-    fares: { S_CHAIR: 525, SNIGDHA: 1000, AC_S: 1200, AC_B: 1800, SHOVON: 440 },
-  },
-  {
-    number: '791',
-    name: 'BANA LATA EXPRESS',
-    nameBn: 'বনলতা এক্সপ্রেস',
-    fromStation: 'Dhaka',
-    toStation: 'Rajshahi',
-    departureTime: '13:30',
-    arrivalTime: '18:15',
-    offDay: 'Friday',
-    fares: { S_CHAIR: 525, SNIGDHA: 1000, AC_S: 1200, AC_B: 1800, SHOVON: 440 },
-  },
-  // BANALATA also has a Chapai Nawabganj variant via Rajshahi
-  {
-    number: '792',
     name: 'BANALATA EXPRESS',
     nameBn: 'বনলতা এক্সপ্রেস',
     fromStation: 'Chapai Nawabganj',
@@ -328,28 +303,6 @@ export const RAILWAY_TRAINS: RailwayTrain[] = [
     arrivalTime: '20:00',
     offDay: 'Friday',
     fares: { S_CHAIR: 580, SNIGDHA: 1115, AC_S: 1335, AC_B: 2005, SHOVON: 485 },
-  },
-  {
-    number: '755',
-    name: 'MADHUMATI EXPRESS',
-    nameBn: 'মধুমতী এক্সপ্রেস',
-    fromStation: 'Dhaka',
-    toStation: 'Rajshahi',
-    departureTime: '15:00',
-    arrivalTime: '21:30',
-    offDay: 'Thursday',
-    fares: { S_CHAIR: 460, SNIGDHA: 880, AC_S: 1050, SHOVON: 380 },
-  },
-  {
-    number: '756',
-    name: 'MADHUMATI EXPRESS',
-    nameBn: 'মধুমতী এক্সপ্রেস',
-    fromStation: 'Rajshahi',
-    toStation: 'Dhaka',
-    departureTime: '06:40',
-    arrivalTime: '13:20',
-    offDay: 'Thursday',
-    fares: { S_CHAIR: 460, SNIGDHA: 880, AC_S: 1050, SHOVON: 380 },
   },
 
   // ─── Dhaka <-> Chittagong ───
@@ -897,28 +850,7 @@ export const RAILWAY_TRAINS: RailwayTrain[] = [
     offDay: 'None',
     fares: { S_CHAIR: 635, SNIGDHA: 1220, AC_S: 1465, AC_B: 2195, SHOVON: 530 },
   },
-  {
-    number: '758',
-    name: 'DRUTAJAN EXPRESS',
-    nameBn: 'দ্রুতযান এক্সপ্রেস',
-    fromStation: 'Panchagarh',
-    toStation: 'Dhaka',
-    departureTime: '08:10',
-    arrivalTime: '18:50',
-    offDay: 'None',
-    fares: { S_CHAIR: 635, SNIGDHA: 1220, AC_S: 1465, AC_B: 2195, SHOVON: 530 },
-  },
-  {
-    number: '757',
-    name: 'DRUTAJAN EXPRESS',
-    nameBn: 'দ্রুতযান এক্সপ্রেস',
-    fromStation: 'Dhaka',
-    toStation: 'Panchagarh',
-    departureTime: '20:00',
-    arrivalTime: '06:10',
-    offDay: 'None',
-    fares: { S_CHAIR: 635, SNIGDHA: 1220, AC_S: 1465, AC_B: 2195, SHOVON: 530 },
-  },
+
   {
     number: '794',
     name: 'PANCHAGARH EXPRESS',
@@ -1054,28 +986,6 @@ export const RAILWAY_TRAINS: RailwayTrain[] = [
 
   // ─── Dhaka <-> Mymensingh / Jamalpur / Dewanganj / Kishoreganj ───
   {
-    number: '707',
-    name: 'TEESTA EXPRESS',
-    nameBn: 'তিস্তা এক্সপ্রেস',
-    fromStation: 'Dhaka',
-    toStation: 'Dewanganj Bazar',
-    departureTime: '07:30',
-    arrivalTime: '12:50',
-    offDay: 'Monday',
-    fares: { S_CHAIR: 235, SNIGDHA: 450, AC_S: 540, SHOVON: 195 },
-  },
-  {
-    number: '708',
-    name: 'TEESTA EXPRESS',
-    nameBn: 'তিস্তা এক্সপ্রেস',
-    fromStation: 'Dewanganj Bazar',
-    toStation: 'Dhaka',
-    departureTime: '15:00',
-    arrivalTime: '20:30',
-    offDay: 'Monday',
-    fares: { S_CHAIR: 235, SNIGDHA: 450, AC_S: 540, SHOVON: 195 },
-  },
-  {
     number: '743',
     name: 'BRAHMAPUTRA EXPRESS',
     nameBn: 'ব্রহ্মপুত্র এক্সপ্রেস',
@@ -1096,28 +1006,6 @@ export const RAILWAY_TRAINS: RailwayTrain[] = [
     arrivalTime: '12:15',
     offDay: 'None',
     fares: { S_CHAIR: 235, SNIGDHA: 450, AC_S: 540, SHOVON: 195 },
-  },
-  {
-    number: '735',
-    name: 'AGNIBINA EXPRESS',
-    nameBn: 'অগ্নিবীণা এক্সপ্রেস',
-    fromStation: 'Dhaka',
-    toStation: 'Tarakandi',
-    departureTime: '11:00',
-    arrivalTime: '16:30',
-    offDay: 'None',
-    fares: { S_CHAIR: 220, SNIGDHA: 420, SHOVON: 180 },
-  },
-  {
-    number: '736',
-    name: 'AGNIBINA EXPRESS',
-    nameBn: 'অগ্নিবীণা এক্সপ্রেস',
-    fromStation: 'Tarakandi',
-    toStation: 'Dhaka',
-    departureTime: '17:50',
-    arrivalTime: '23:15',
-    offDay: 'None',
-    fares: { S_CHAIR: 220, SNIGDHA: 420, SHOVON: 180 },
   },
   {
     number: '745',
@@ -1142,7 +1030,7 @@ export const RAILWAY_TRAINS: RailwayTrain[] = [
     fares: { S_CHAIR: 220, SNIGDHA: 420, SHOVON: 180 },
   },
   {
-    number: '782',
+    number: '789',
     name: 'MOHANGANJ EXPRESS',
     nameBn: 'মোহনগঞ্জ এক্সপ্রেস',
     fromStation: 'Dhaka',
@@ -1153,7 +1041,7 @@ export const RAILWAY_TRAINS: RailwayTrain[] = [
     fares: { S_CHAIR: 245, SNIGDHA: 470, SHOVON: 200 },
   },
   {
-    number: '781',
+    number: '790',
     name: 'MOHANGANJ EXPRESS',
     nameBn: 'মোহনগঞ্জ এক্সপ্রেস',
     fromStation: 'Mohanganj',
@@ -1537,6 +1425,30 @@ export const RAILWAY_TRAINS: RailwayTrain[] = [
     offDay: 'Thursday',
     fares: { S_CHAIR: 450, SNIGDHA: 860, AC_S: 1035, AC_B: 1550, SHOVON: 375 },
   },
+
+  // ─── Dhaka <-> Noakhali (Upakul Express) ───
+  {
+    number: '712',
+    name: 'UPAKUL EXPRESS',
+    nameBn: 'উপকূল এক্সপ্রেস',
+    fromStation: 'Dhaka',
+    toStation: 'Noakhali',
+    departureTime: '15:10',
+    arrivalTime: '21:10',
+    offDay: 'Tuesday',
+    fares: { S_CHAIR: 280, SNIGDHA: 535, SHOVON: 235 },
+  },
+  {
+    number: '711',
+    name: 'UPAKUL EXPRESS',
+    nameBn: 'উপকূল এক্সপ্রেস',
+    fromStation: 'Noakhali',
+    toStation: 'Dhaka',
+    departureTime: '06:00',
+    arrivalTime: '12:00',
+    offDay: 'Wednesday',
+    fares: { S_CHAIR: 280, SNIGDHA: 535, SHOVON: 235 },
+  },
 ];
 
 // Helper: Convert English Digits to Bengali Digits
@@ -1636,7 +1548,11 @@ export const STATION_ALIASES: Record<string, string> = {
   'sylet': 'Sylhet',
   'mymensingh': 'Mymensingh',
   'moymonshingho': 'Mymensingh',
-  'jamalpur': 'Jamalpur Town',
+  'jamalpur': 'Jamalpur',
+  'jamalpur town': 'Jamalpur',
+  'bhuapur': 'Bhuapur',
+  'noakhali': 'Noakhali',
+  'নোয়াখালী': 'Noakhali',
 };
 
 // Bounded Levenshtein edit distance for Banglish station typo recovery
@@ -1670,6 +1586,9 @@ export function normalizeStationName(raw: string): string {
   const exactBn = RAILWAY_STATIONS.find(s => s.nameBn === cleaned);
   if (exactBn) return exactBn.name;
 
+  const exactCode = RAILWAY_STATIONS.find(s => s.code.toLowerCase() === lower);
+  if (exactCode) return exactCode.name;
+
   // Bounded fuzzy match for minor spelling typos (e.g. ibrahimbad -> Ibrahimabad)
   if (/^[a-z\s'-]{5,}$/i.test(lower)) {
     let bestName = '';
@@ -1691,22 +1610,52 @@ export function normalizeStationName(raw: string): string {
   return cleaned;
 }
 
-// Known intermediate corridor stops for Bangladesh Railway Intercity trains
-const DHAKA_RAJSHAHI_STOPS = [
+// Accurate ordered forward stop lists (from terminal A -> terminal B; reversed automatically for return train)
+const DHAKA_RAJSHAHI_INTERCITY_STOPS = [
   'Dhaka', 'Dhaka Biman Bandar', 'Joydebpur', 'Mirzapur', 'Tangail',
   'Ibrahimabad', 'Bangabandhu Setu East', 'Bangabandhu Setu West',
   'Jamtail', 'Ullapara', 'Chatmohar', 'Ishwardi Bypass', 'Abdulpur',
-  'Natore', 'Rajshahi', 'Chapai Nawabganj',
+  'Natore', 'Rajshahi',
 ];
 
-const DHAKA_NORTH_BENGAL_STOPS = [
-  'Dhaka', 'Dhaka Biman Bandar', 'Joydebpur', 'Tangail',
-  'Ibrahimabad', 'Bangabandhu Setu East', 'Bangabandhu Setu West',
-  'Jamtail', 'Ullapara', 'Ishwardi Bypass', 'Natore', 'Ahsanganj',
-  'Santahar', 'Akkelpur', 'Joypurhat', 'Panchbibi', 'Birampur',
-  'Fulbari', 'Parbatipur', 'Dinajpur', 'Setabganj', 'Pirganj',
-  'Rangpur', 'Kaunia', 'Kurigram', 'Lalmonirhat', 'Saidpur',
-  'Nilphamari', 'Domar', 'Chilahati', 'Burimari', 'Bogra',
+const BANALATA_STOPS = [
+  'Dhaka', 'Dhaka Biman Bandar', 'Tangail', 'Ibrahimabad',
+  'Ishwardi Bypass', 'Rajshahi', 'Chapai Nawabganj',
+];
+
+const MADHUMATI_STOPS = [
+  'Dhaka', 'Mawa', 'Padma', 'Shibchar', 'Bhanga', 'Bhanga Junction',
+  'Faridpur', 'Rajbari', 'Pangsha', 'Kushtia Court', 'Kushtia',
+  'Poradaha', 'Bheramara', 'Pakshi', 'Ishwardi', 'Abdulpur', 'Rajshahi',
+];
+
+const DHAKA_PANCHAGARH_STOPS = [
+  'Dhaka', 'Dhaka Biman Bandar', 'Joydebpur', 'Tangail', 'Ibrahimabad',
+  'Bangabandhu Setu East', 'Bangabandhu Setu West', 'Jamtail', 'Ullapara',
+  'Ishwardi Bypass', 'Natore', 'Ahsanganj', 'Santahar', 'Akkelpur',
+  'Joypurhat', 'Panchbibi', 'Birampur', 'Fulbari', 'Parbatipur',
+  'Dinajpur', 'Setabganj', 'Pirganj', 'Thakurgaon Road', 'Ruhia', 'Panchagarh',
+];
+
+const DHAKA_RANGPUR_STOPS = [
+  'Dhaka', 'Dhaka Biman Bandar', 'Joydebpur', 'Tangail', 'Ibrahimabad',
+  'Bangabandhu Setu East', 'Bangabandhu Setu West', 'Jamtail', 'Ullapara',
+  'Bogra', 'Sonatola', 'Mahimaganj', 'Bonarpara', 'Gaibandha',
+  'Bamandanga', 'Kaunia', 'Rangpur', 'Kurigram',
+];
+
+const DHAKA_LALMONIRHAT_STOPS = [
+  'Dhaka', 'Dhaka Biman Bandar', 'Joydebpur', 'Tangail', 'Ibrahimabad',
+  'Bangabandhu Setu East', 'Bangabandhu Setu West', 'Jamtail', 'Ullapara',
+  'Bogra', 'Sonatola', 'Mahimaganj', 'Bonarpara', 'Gaibandha',
+  'Kaunia', 'Lalmonirhat',
+];
+
+const DHAKA_CHILAHATI_STOPS = [
+  'Dhaka', 'Dhaka Biman Bandar', 'Joydebpur', 'Tangail', 'Ibrahimabad',
+  'Bangabandhu Setu East', 'Bangabandhu Setu West', 'Jamtail', 'Ullapara',
+  'Ishwardi Bypass', 'Natore', 'Ahsanganj', 'Santahar', 'Akkelpur',
+  'Joypurhat', 'Parbatipur', 'Saidpur', 'Nilphamari', 'Domar', 'Chilahati',
 ];
 
 const DHAKA_KHULNA_STOPS = [
@@ -1714,15 +1663,28 @@ const DHAKA_KHULNA_STOPS = [
   'Ibrahimabad', 'Bangabandhu Setu East', 'Bangabandhu Setu West',
   'Jamtail', 'Ullapara', 'Chatmohar', 'Ishwardi', 'Pakshi',
   'Bheramara', 'Poradaha', 'Alamdanga', 'Chuadanga', 'Darshana',
-  'Kotchandpur', 'Jashore', 'Noapara', 'Daulatpur', 'Khulna', 'Benapole',
+  'Kotchandpur', 'Mubarakganj', 'Jashore', 'Noapara', 'Daulatpur', 'Khulna',
 ];
 
-const DHAKA_CHATTOGRAM_STOPS = [
+const DHAKA_BENAPOLE_STOPS = [
+  'Dhaka', 'Dhaka Biman Bandar', 'Joydebpur', 'Tangail', 'Ibrahimabad',
+  'Ishwardi', 'Bheramara', 'Poradaha', 'Chuadanga', 'Darshana',
+  'Jashore', 'Jhikargachha', 'Benapole',
+];
+
+const DHAKA_CHATTOGRAM_NONSTOP_STOPS = [
+  'Dhaka', 'Dhaka Biman Bandar', 'Chittagong',
+];
+
+const DHAKA_CHATTOGRAM_REGULAR_STOPS = [
   'Dhaka', 'Dhaka Biman Bandar', 'Narsingdi', 'Bhairab Bazar',
   'Brahmanbaria', 'Akhaura', 'Cumilla', 'Laksham', 'Nangalkot',
-  'Hasanpur', 'Gunabati', 'Feni', 'Chittagong', 'Chattogram Cantonment',
-  'Dohazari', 'Lohagara', 'Harbang', 'Chakaria', 'Dulahazra',
-  'Islamabad', 'Ramu', "Cox's Bazar",
+  'Hasanpur', 'Gunabati', 'Feni', 'Chittagong',
+];
+
+const DHAKA_COXS_BAZAR_STOPS = [
+  'Dhaka', 'Dhaka Biman Bandar', 'Chittagong', 'Chattogram Cantonment',
+  'Dohazari', 'Lohagara', 'Chakaria', 'Dulahazra', 'Islamabad', 'Ramu', "Cox's Bazar",
 ];
 
 const DHAKA_SYLHET_STOPS = [
@@ -1732,61 +1694,159 @@ const DHAKA_SYLHET_STOPS = [
   'Moglabazar', 'Sylhet',
 ];
 
-const DHAKA_MYMENSINGH_STOPS = [
+const CHATTOGRAM_SYLHET_STOPS = [
+  'Chittagong', 'Feni', 'Gunabati', 'Nangalkot', 'Laksham', 'Cumilla',
+  'Akhaura', 'Shayestaganj', 'Srimangal', 'Shamshernagar', 'Kulaura',
+  'Maijgaon', 'Sylhet',
+];
+
+const DHAKA_DEWANGANJ_STOPS = [
   'Dhaka', 'Dhaka Biman Bandar', 'Tongi', 'Joydebpur', 'Gazipur',
-  'Mymensingh', 'Jamalpur Town', 'Netrokona', 'Mohanganj', 'Barhatta',
-  'Kishoreganj', 'Bhairab Bazar', 'Kuliarchar', 'Bajitpur', 'Sararchar',
+  'Gafargaon', 'Mymensingh', 'Piyarpur', 'Jamalpur', 'Dewanganj Bazar',
+];
+
+const DHAKA_TARAKANDI_STOPS = [
+  'Dhaka', 'Dhaka Biman Bandar', 'Tongi', 'Joydebpur', 'Gazipur',
+  'Gafargaon', 'Mymensingh', 'Jamalpur', 'Sarishabari', 'Tarakandi',
+];
+
+const DHAKA_BHUAPUR_STOPS = [
+  'Dhaka', 'Dhaka Biman Bandar', 'Tongi', 'Joydebpur', 'Gazipur',
+  'Gafargaon', 'Mymensingh', 'Jamalpur', 'Sarishabari', 'Tarakandi',
+  'Adv. Motiur Rahman', 'Bhuapur',
+];
+
+const DHAKA_MOHANGANJ_STOPS = [
+  'Dhaka', 'Dhaka Biman Bandar', 'Tongi', 'Joydebpur', 'Gafargaon',
+  'Mymensingh', 'Gouripur', 'Netrokona', 'Barhatta', 'Mohanganj',
+];
+
+const DHAKA_KISHOREGANJ_STOPS = [
+  'Dhaka', 'Dhaka Biman Bandar', 'Narsingdi', 'Methikanda', 'Bhairab Bazar',
+  'Kuliarchar', 'Bajitpur', 'Sararchar', 'Manikkhali', 'Kishoreganj',
+];
+
+const DHAKA_NOAKHALI_STOPS = [
+  'Dhaka', 'Dhaka Biman Bandar', 'Narsingdi', 'Bhairab Bazar',
+  'Brahmanbaria', 'Akhaura', 'Cumilla', 'Laksham', 'Sonaimuri',
+  'Chowmuhani', 'Maijdee Court', 'Noakhali',
 ];
 
 export const TRAIN_CORRIDOR_STOPS: Record<string, string[]> = {
-  'SILKCITY EXPRESS': DHAKA_RAJSHAHI_STOPS,
-  'PADMA EXPRESS': DHAKA_RAJSHAHI_STOPS,
-  'DHUMKETU EXPRESS': DHAKA_RAJSHAHI_STOPS,
-  'BANALATA EXPRESS': ['Dhaka', 'Dhaka Biman Bandar', 'Tangail', 'Ibrahimabad', 'Ishwardi Bypass', 'Rajshahi', 'Chapai Nawabganj'],
-  'BANA LATA EXPRESS': ['Dhaka', 'Dhaka Biman Bandar', 'Tangail', 'Ibrahimabad', 'Ishwardi Bypass', 'Rajshahi', 'Chapai Nawabganj'],
-  'MADHUMATI EXPRESS': [...DHAKA_RAJSHAHI_STOPS, 'Bhanga', 'Bhanga Junction', 'Faridpur', 'Rajbari', 'Pakshi', 'Ishwardi'],
-  'EKOTA EXPRESS': DHAKA_NORTH_BENGAL_STOPS,
-  'DRUTOJAN EXPRESS': DHAKA_NORTH_BENGAL_STOPS,
-  'PANCHAGARH EXPRESS': DHAKA_NORTH_BENGAL_STOPS,
-  'BANGLABANDHA EXPRESS': DHAKA_NORTH_BENGAL_STOPS,
-  'RANGPUR EXPRESS': DHAKA_NORTH_BENGAL_STOPS,
-  'KURIGRAM EXPRESS': DHAKA_NORTH_BENGAL_STOPS,
-  'LALMONI EXPRESS': DHAKA_NORTH_BENGAL_STOPS,
-  'NILSAGAR EXPRESS': DHAKA_NORTH_BENGAL_STOPS,
-  'CHILAHATI EXPRESS': DHAKA_NORTH_BENGAL_STOPS,
-  'BURIMARI EXPRESS': DHAKA_NORTH_BENGAL_STOPS,
+  'SILKCITY EXPRESS': DHAKA_RAJSHAHI_INTERCITY_STOPS,
+  'PADMA EXPRESS': DHAKA_RAJSHAHI_INTERCITY_STOPS,
+  'DHUMKETU EXPRESS': DHAKA_RAJSHAHI_INTERCITY_STOPS,
+  'BANALATA EXPRESS': BANALATA_STOPS,
+  'BANA LATA EXPRESS': BANALATA_STOPS,
+  'MADHUMATI EXPRESS': MADHUMATI_STOPS,
+  'EKOTA EXPRESS': DHAKA_PANCHAGARH_STOPS,
+  'DRUTOJAN EXPRESS': DHAKA_PANCHAGARH_STOPS,
+  'DRUTAJAN EXPRESS': DHAKA_PANCHAGARH_STOPS,
+  'PANCHAGARH EXPRESS': DHAKA_PANCHAGARH_STOPS,
+  'RANGPUR EXPRESS': DHAKA_RANGPUR_STOPS,
+  'KURIGRAM EXPRESS': DHAKA_RANGPUR_STOPS,
+  'LALMONI EXPRESS': DHAKA_LALMONIRHAT_STOPS,
+  'NILSAGAR EXPRESS': DHAKA_CHILAHATI_STOPS,
+  'CHILAHATI EXPRESS': DHAKA_CHILAHATI_STOPS,
   'SIRAJGANJ EXPRESS': ['Dhaka', 'Dhaka Biman Bandar', 'Joydebpur', 'Tangail', 'Ibrahimabad', 'Bangabandhu Setu East', 'Bangabandhu Setu West', 'Jamtail', 'Sirajganj', 'Sirajganj Bazar'],
   'CHITRA EXPRESS': DHAKA_KHULNA_STOPS,
   'SUNDARBAN EXPRESS': DHAKA_KHULNA_STOPS,
-  'BENAPOLE EXPRESS': DHAKA_KHULNA_STOPS,
-  'SUBORNO EXPRESS': DHAKA_CHATTOGRAM_STOPS,
-  'SONAR BANGLA EXPRESS': DHAKA_CHATTOGRAM_STOPS,
-  'TURNA EXPRESS': DHAKA_CHATTOGRAM_STOPS,
-  'MAHANAGAR EXPRESS': DHAKA_CHATTOGRAM_STOPS,
-  'CHATTALA EXPRESS': DHAKA_CHATTOGRAM_STOPS,
-  "COX'S BAZAR EXPRESS": DHAKA_CHATTOGRAM_STOPS,
-  'PARJATAK EXPRESS': DHAKA_CHATTOGRAM_STOPS,
+  'BENAPOLE EXPRESS': DHAKA_BENAPOLE_STOPS,
+  'SUBORNO EXPRESS': DHAKA_CHATTOGRAM_NONSTOP_STOPS,
+  'SONAR BANGLA EXPRESS': DHAKA_CHATTOGRAM_NONSTOP_STOPS,
+  'TURNA EXPRESS': DHAKA_CHATTOGRAM_REGULAR_STOPS,
+  'MOHANAGAR PROVATI': DHAKA_CHATTOGRAM_REGULAR_STOPS,
+  'MOHANAGAR GODHULI': DHAKA_CHATTOGRAM_REGULAR_STOPS,
+  'MOHANAGAR EXPRESS': DHAKA_CHATTOGRAM_REGULAR_STOPS,
+  'MAHANAGAR EXPRESS': DHAKA_CHATTOGRAM_REGULAR_STOPS,
+  'CHATTALA EXPRESS': DHAKA_CHATTOGRAM_REGULAR_STOPS,
+  "COX'S BAZAR EXPRESS": DHAKA_COXS_BAZAR_STOPS,
+  'PARJATAK EXPRESS': DHAKA_COXS_BAZAR_STOPS,
   'PARABAT EXPRESS': DHAKA_SYLHET_STOPS,
   'UPABAN EXPRESS': DHAKA_SYLHET_STOPS,
   'KALNI EXPRESS': DHAKA_SYLHET_STOPS,
   'JAYANTIKA EXPRESS': DHAKA_SYLHET_STOPS,
-  'TISTA EXPRESS': DHAKA_MYMENSINGH_STOPS,
-  'AGNIBEENA EXPRESS': DHAKA_MYMENSINGH_STOPS,
-  'JAMUNA EXPRESS': DHAKA_MYMENSINGH_STOPS,
-  'JAMALPUR EXPRESS': DHAKA_MYMENSINGH_STOPS,
-  'HAOR EXPRESS': DHAKA_MYMENSINGH_STOPS,
-  'MOHANGANJ EXPRESS': DHAKA_MYMENSINGH_STOPS,
+  'PAHARIKA EXPRESS': CHATTOGRAM_SYLHET_STOPS,
+  'UDAYAN EXPRESS': CHATTOGRAM_SYLHET_STOPS,
+  'TISTA EXPRESS': DHAKA_DEWANGANJ_STOPS,
+  'TEESTA EXPRESS': DHAKA_DEWANGANJ_STOPS,
+  'BRAHMAPUTRA EXPRESS': DHAKA_DEWANGANJ_STOPS,
+  'AGNIBEENA EXPRESS': DHAKA_TARAKANDI_STOPS,
+  'AGNIBINA EXPRESS': DHAKA_TARAKANDI_STOPS,
+  'JAMUNA EXPRESS': DHAKA_TARAKANDI_STOPS,
+  'JAMALPUR EXPRESS': DHAKA_BHUAPUR_STOPS,
+  'HAOR EXPRESS': DHAKA_MOHANGANJ_STOPS,
+  'MOHANGANJ EXPRESS': DHAKA_MOHANGANJ_STOPS,
+  'EGAROSINDHUR PROVATI': DHAKA_KISHOREGANJ_STOPS,
+  'EGAROSINDHUR GODHULI': DHAKA_KISHOREGANJ_STOPS,
+  'KISHOREGANJ EXPRESS': DHAKA_KISHOREGANJ_STOPS,
+  'BIJOY EXPRESS': ['Chittagong', 'Feni', 'Cumilla', 'Akhaura', 'Bhairab Bazar', 'Kishoreganj', 'Gouripur', 'Mymensingh'],
+  'MEGHNA EXPRESS': ['Chittagong', 'Feni', 'Laksham', 'Hajiganj', 'Chandpur Court', 'Chandpur'],
+  'UPAKUL EXPRESS': DHAKA_NOAKHALI_STOPS,
+  'SAGORDARI EXPRESS': ['Khulna', 'Daulatpur', 'Noapara', 'Jashore', 'Kotchandpur', 'Darshana', 'Chuadanga', 'Poradaha', 'Bheramara', 'Pakshi', 'Ishwardi', 'Abdulpur', 'Rajshahi'],
+  'KAPOTAKKHA EXPRESS': ['Khulna', 'Daulatpur', 'Noapara', 'Jashore', 'Kotchandpur', 'Darshana', 'Chuadanga', 'Poradaha', 'Bheramara', 'Pakshi', 'Ishwardi', 'Abdulpur', 'Rajshahi'],
+  'RUPSHA EXPRESS': ['Khulna', 'Noapara', 'Jashore', 'Chuadanga', 'Poradaha', 'Bheramara', 'Ishwardi', 'Natore', 'Santahar', 'Joypurhat', 'Parbatipur', 'Saidpur', 'Nilphamari', 'Domar', 'Chilahati'],
+  'SIMANTA EXPRESS': ['Khulna', 'Noapara', 'Jashore', 'Chuadanga', 'Poradaha', 'Bheramara', 'Ishwardi', 'Natore', 'Santahar', 'Joypurhat', 'Parbatipur', 'Saidpur', 'Nilphamari', 'Domar', 'Chilahati'],
+  'BARENDRA EXPRESS': ['Rajshahi', 'Abdulpur', 'Natore', 'Ahsanganj', 'Santahar', 'Joypurhat', 'Birampur', 'Parbatipur', 'Saidpur', 'Nilphamari', 'Domar', 'Chilahati'],
+  'TITUMIR EXPRESS': ['Rajshahi', 'Abdulpur', 'Natore', 'Ahsanganj', 'Santahar', 'Joypurhat', 'Birampur', 'Parbatipur', 'Saidpur', 'Nilphamari', 'Domar', 'Chilahati'],
+  'BANGLABANDHA EXPRESS': ['Rajshahi', 'Abdulpur', 'Natore', 'Santahar', 'Joypurhat', 'Birampur', 'Parbatipur', 'Dinajpur', 'Setabganj', 'Pirganj', 'Thakurgaon Road', 'Panchagarh'],
+  'TUNGIPARA EXPRESS': ['Gopalganj', 'Kashiani Junction', 'Bhanga', 'Rajbari', 'Kushtia', 'Poradaha', 'Bheramara', 'Ishwardi', 'Rajshahi'],
+  'KARATOA EXPRESS': ['Santahar', 'Bogra', 'Sonatola', 'Mahimaganj', 'Bonarpara', 'Gaibandha', 'Kaunia', 'Lalmonirhat', 'Patgram', 'Burimari'],
+  'DOLONCHAPA EXPRESS': ['Santahar', 'Bogra', 'Sonatola', 'Bonarpara', 'Gaibandha', 'Kaunia', 'Rangpur', 'Parbatipur', 'Dinajpur'],
 };
+
+function normalizeTrainKey(name: string): string {
+  return name.toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+function getBaseStopSequenceForTrain(trainName: string): string[] | null {
+  const target = normalizeTrainKey(trainName);
+  if (!target) return null;
+  for (const [corridorTrain, stops] of Object.entries(TRAIN_CORRIDOR_STOPS)) {
+    const k = normalizeTrainKey(corridorTrain);
+    if (target === k || target.includes(k) || k.includes(target)) {
+      return stops;
+    }
+  }
+  return null;
+}
+
+/**
+ * Returns the ordered stop list strictly matching the train's travel direction (fromStation -> toStation).
+ */
+export function getTrainOrderedStops(train: RailwayTrain): string[] {
+  const base = getBaseStopSequenceForTrain(train.name);
+  if (!base || base.length === 0) {
+    return [train.fromStation, train.toStation];
+  }
+  const fromLower = normalizeStationName(train.fromStation).toLowerCase();
+  const toLower = normalizeStationName(train.toStation).toLowerCase();
+  const fromIdx = base.findIndex(s => s.toLowerCase() === fromLower);
+  const toIdx = base.findIndex(s => s.toLowerCase() === toLower);
+
+  // If train travels in reverse order relative to base list, flip it
+  const ordered = fromIdx !== -1 && toIdx !== -1 && fromIdx > toIdx
+    ? [...base].reverse()
+    : [...base];
+
+  // Slice to [fromIdx..toIdx] when both endpoints appear in corridor (e.g. Dhaka <-> Rajshahi Banalata variant)
+  const oFromIdx = ordered.findIndex(s => s.toLowerCase() === fromLower);
+  const oToIdx = ordered.findIndex(s => s.toLowerCase() === toLower);
+  if (oFromIdx !== -1 && oToIdx !== -1 && oFromIdx <= oToIdx) {
+    return ordered.slice(oFromIdx, oToIdx + 1);
+  }
+  return ordered;
+}
 
 export function doesTrainServeStation(trainName: string, stationName: string): boolean {
   if (!trainName || !stationName) return false;
   const canonicalSt = normalizeStationName(stationName).toLowerCase();
-  const normalizedTrainKey = trainName.toUpperCase().trim();
+  const normalizedTrainKey = normalizeTrainKey(trainName);
 
-  const matchingVariants = RAILWAY_TRAINS.filter(t =>
-    t.name.toUpperCase().replace(/\s+/g, '').includes(normalizedTrainKey.replace(/\s+/g, '')) ||
-    normalizedTrainKey.replace(/\s+/g, '').includes(t.name.toUpperCase().replace(/\s+/g, ''))
-  );
+  const matchingVariants = RAILWAY_TRAINS.filter(t => {
+    const tk = normalizeTrainKey(t.name);
+    return tk.includes(normalizedTrainKey) || normalizedTrainKey.includes(tk);
+  });
   if (
     matchingVariants.some(
       t =>
@@ -1797,17 +1857,287 @@ export function doesTrainServeStation(trainName: string, stationName: string): b
     return true;
   }
 
-  for (const [corridorTrain, stops] of Object.entries(TRAIN_CORRIDOR_STOPS)) {
-    if (
-      normalizedTrainKey.replace(/\s+/g, '').includes(corridorTrain.replace(/\s+/g, '')) ||
-      corridorTrain.replace(/\s+/g, '').includes(normalizedTrainKey.replace(/\s+/g, ''))
-    ) {
-      if (stops.some(s => s.toLowerCase() === canonicalSt)) {
-        return true;
-      }
-    }
+  const base = getBaseStopSequenceForTrain(trainName);
+  if (base && base.some(s => s.toLowerCase() === canonicalSt)) {
+    return true;
   }
   return false;
+}
+
+/**
+ * Validates that a specific train variant (e.g., 769 Dhaka -> Rajshahi) serves BOTH
+ * fromStation and toStation in that exact directional order.
+ */
+export function doesTrainServeRouteInDirection(
+  train: RailwayTrain,
+  fromStation: string,
+  toStation: string
+): boolean {
+  if (!fromStation || !toStation) return false;
+  const fromNorm = normalizeStationName(fromStation).toLowerCase();
+  const toNorm = normalizeStationName(toStation).toLowerCase();
+  if (!fromNorm || !toNorm || fromNorm === toNorm) return false;
+
+  const stops = getTrainOrderedStops(train);
+  const fromIdx = stops.findIndex(s => s.toLowerCase() === fromNorm);
+  const toIdx = stops.findIndex(s => s.toLowerCase() === toNorm);
+  return fromIdx !== -1 && toIdx !== -1 && fromIdx < toIdx;
+}
+
+function parseTimeToMinutes(hhmm: string): number {
+  const [h, m] = (hhmm || '00:00').split(':').map(n => parseInt(n, 10) || 0);
+  return h * 60 + m;
+}
+
+function formatMinutesToHHmm(totalMins: number): string {
+  const mins = ((Math.round(totalMins) % 1440) + 1440) % 1440;
+  const h = String(Math.floor(mins / 60)).padStart(2, '0');
+  const m = String(mins % 60).padStart(2, '0');
+  return `${h}:${m}`;
+}
+
+export interface SegmentScheduleEstimate {
+  boardingTime: string;
+  alightingTime: string;
+  durationMinutes: number;
+  durationLabel: string;
+  segmentFare: number;
+  isDirectTerminal: boolean;
+}
+
+export function estimateSegmentSchedule(
+  train: RailwayTrain,
+  fromStation: string,
+  toStation: string,
+  className = 'S_CHAIR'
+): SegmentScheduleEstimate {
+  const stops = getTrainOrderedStops(train);
+  const fromNorm = normalizeStationName(fromStation).toLowerCase();
+  const toNorm = normalizeStationName(toStation).toLowerCase();
+  const fromIdx = Math.max(0, stops.findIndex(s => s.toLowerCase() === fromNorm));
+  const toIdxRaw = stops.findIndex(s => s.toLowerCase() === toNorm);
+  const toIdx = toIdxRaw > fromIdx ? toIdxRaw : stops.length - 1;
+  const totalSegments = Math.max(1, stops.length - 1);
+
+  const depMins = parseTimeToMinutes(train.departureTime);
+  let arrMins = parseTimeToMinutes(train.arrivalTime);
+  if (arrMins <= depMins) arrMins += 1440;
+  const fullTripMins = Math.max(60, arrMins - depMins);
+
+  const startRatio = fromIdx / totalSegments;
+  const endRatio = toIdx / totalSegments;
+  const segSpanRatio = Math.max(0.18, endRatio - startRatio);
+
+  const boardingTotalMins = depMins + Math.round(fullTripMins * startRatio);
+  const alightingTotalMins = depMins + Math.round(fullTripMins * endRatio);
+  const durMins = Math.max(25, alightingTotalMins - boardingTotalMins);
+
+  const hrs = Math.floor(durMins / 60);
+  const mins = durMins % 60;
+  const durationLabel = `${hrs}h ${String(mins).padStart(2, '0')}m`;
+
+  const baseFare =
+    train.fares[className] ??
+    RAILWAY_CLASSES.find(c => c.code === className)?.defaultFare ??
+    450;
+
+  const isDirectTerminal =
+    fromIdx === 0 && toIdx === totalSegments;
+
+  // Compute realistic segment fare rounded to nearest 5 BDT when travelling intermediate stops
+  const rawFare = isDirectTerminal ? baseFare : Math.max(Math.round(baseFare * 0.28), Math.round(baseFare * segSpanRatio));
+  const segmentFare = isDirectTerminal ? baseFare : Math.max(50, Math.round(rawFare / 5) * 5);
+
+  return {
+    boardingTime: isDirectTerminal ? train.departureTime : formatMinutesToHHmm(boardingTotalMins),
+    alightingTime: isDirectTerminal ? train.arrivalTime : formatMinutesToHHmm(alightingTotalMins),
+    durationMinutes: durMins,
+    durationLabel,
+    segmentFare,
+    isDirectTerminal,
+  };
+}
+
+const WEEKDAY_NAMES_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const WEEKDAY_NAMES_BN: Record<string, string> = {
+  Sunday: 'রবিবার',
+  Monday: 'সোমবার',
+  Tuesday: 'মঙ্গলবার',
+  Wednesday: 'বুধবার',
+  Thursday: 'বৃহস্পতিবার',
+  Friday: 'শুক্রবার',
+  Saturday: 'শনিবার',
+};
+
+export function isTrainOffDayOnDate(
+  offDay: string | undefined,
+  journeyDate: string | undefined
+): { isOffDay: boolean; weekdayEn: string; weekdayBn: string } {
+  if (!journeyDate) {
+    return { isOffDay: false, weekdayEn: '', weekdayBn: '' };
+  }
+  // Anchor to Asia/Dhaka midday so timezone shift never moves the weekday
+  const parsed = new Date(`${journeyDate.trim()}T12:00:00+06:00`);
+  if (isNaN(parsed.getTime())) {
+    return { isOffDay: false, weekdayEn: '', weekdayBn: '' };
+  }
+  const weekdayEn = WEEKDAY_NAMES_EN[parsed.getUTCDay()] || '';
+  const weekdayBn = WEEKDAY_NAMES_BN[weekdayEn] || weekdayEn;
+  const normalizedOff = (offDay || '').trim().toLowerCase();
+  const isOffDay =
+    Boolean(normalizedOff) &&
+    normalizedOff !== 'none' &&
+    normalizedOff === weekdayEn.toLowerCase();
+  return { isOffDay, weekdayEn, weekdayBn };
+}
+
+export interface DirectionalTrainSuggestion {
+  train: RailwayTrain;
+  schedule: SegmentScheduleEstimate;
+  isOffDay: boolean;
+  offDayWeekdayBn: string;
+  source: 'verified' | 'live';
+}
+
+export function findDirectionalTrains(
+  fromStation: string,
+  toStation: string,
+  journeyDate?: string,
+  className = 'S_CHAIR'
+): DirectionalTrainSuggestion[] {
+  const fromNorm = normalizeStationName(fromStation);
+  const toNorm = normalizeStationName(toStation);
+  if (!fromNorm || !toNorm || fromNorm.toLowerCase() === toNorm.toLowerCase()) {
+    return [];
+  }
+
+  // Deduplicate by train number + name in case duplicate schedule blocks exist
+  const seen = new Set<string>();
+  const matched: DirectionalTrainSuggestion[] = [];
+
+  for (const train of RAILWAY_TRAINS) {
+    if (!doesTrainServeRouteInDirection(train, fromNorm, toNorm)) continue;
+    const key = `${train.number}-${normalizeTrainKey(train.name)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const schedule = estimateSegmentSchedule(train, fromNorm, toNorm, className);
+    const offStatus = isTrainOffDayOnDate(train.offDay, journeyDate);
+    matched.push({
+      train,
+      schedule,
+      isOffDay: offStatus.isOffDay,
+      offDayWeekdayBn: offStatus.weekdayBn,
+      source: 'verified',
+    });
+  }
+
+  // Sort: non-off-day + direct terminal first, then by boarding departure time
+  return matched.sort((a, b) => {
+    if (a.isOffDay !== b.isOffDay) return a.isOffDay ? 1 : -1;
+    if (a.schedule.isDirectTerminal !== b.schedule.isDirectTerminal) {
+      return a.schedule.isDirectTerminal ? -1 : 1;
+    }
+    return parseTimeToMinutes(a.schedule.boardingTime) - parseTimeToMinutes(b.schedule.boardingTime);
+  });
+}
+
+export function getOppositeDirectionTrain(
+  trainName: string,
+  currentNumber: string,
+  newFrom: string,
+  newTo: string
+): RailwayTrain | null {
+  const fromNorm = normalizeStationName(newFrom).toLowerCase();
+  const toNorm = normalizeStationName(newTo).toLowerCase();
+  const targetKey = normalizeTrainKey(trainName);
+
+  // 1. Same train family serving the swapped direction
+  const sameFamily = RAILWAY_TRAINS.find(t => {
+    const tk = normalizeTrainKey(t.name);
+    const nameMatch = tk === targetKey || tk.includes(targetKey) || targetKey.includes(tk);
+    return nameMatch && t.number !== currentNumber && doesTrainServeRouteInDirection(t, newFrom, newTo);
+  });
+  if (sameFamily) return sameFamily;
+
+  // 2. Any directional match with matching train family
+  const familyFallback = RAILWAY_TRAINS.find(t => {
+    const tk = normalizeTrainKey(t.name);
+    return (tk === targetKey || tk.includes(targetKey)) &&
+      t.fromStation.toLowerCase() === fromNorm &&
+      t.toStation.toLowerCase() === toNorm;
+  });
+  if (familyFallback) return familyFallback;
+
+  // 3. Best train serving the swapped route
+  const routeMatches = findDirectionalTrains(newFrom, newTo);
+  return routeMatches[0]?.train || null;
+}
+
+export interface RouteValidationResult {
+  valid: boolean;
+  reasonBn?: string;
+  reasonEn?: string;
+  actualRoutes: string[];
+  validTrains: RailwayTrain[];
+}
+
+export function validateTrainRouteSelection(
+  trainName: string,
+  trainNumber: string,
+  fromStation: string,
+  toStation: string
+): RouteValidationResult {
+  const fromNorm = normalizeStationName(fromStation);
+  const toNorm = normalizeStationName(toStation);
+  const validTrains = findDirectionalTrains(fromNorm, toNorm).map(s => s.train);
+
+  if (!trainName || !fromNorm || !toNorm || fromNorm.toLowerCase() === toNorm.toLowerCase()) {
+    return { valid: true, actualRoutes: [], validTrains };
+  }
+
+  const normalizedKey = normalizeTrainKey(trainName);
+  const matchingVariants = RAILWAY_TRAINS.filter(t => {
+    const tk = normalizeTrainKey(t.name);
+    return (trainNumber && t.number === trainNumber) || tk === normalizedKey || tk.includes(normalizedKey) || normalizedKey.includes(tk);
+  });
+
+  // Custom/unknown train names are allowed without false-alarm blocking
+  if (matchingVariants.length === 0) {
+    return { valid: true, actualRoutes: [], validTrains };
+  }
+
+  // Exact directional match on selected train variant or family
+  const directionalVariant = matchingVariants.find(v => doesTrainServeRouteInDirection(v, fromNorm, toNorm));
+  if (directionalVariant) {
+    return { valid: true, actualRoutes: [], validTrains };
+  }
+
+  const actualRoutes = Array.from(
+    new Set(matchingVariants.map(v => `${v.fromStation} ➔ ${v.toStation} [${v.number}]`))
+  );
+  const servesFrom = matchingVariants.some(v => doesTrainServeStation(v.name, fromNorm));
+  const servesTo = matchingVariants.some(v => doesTrainServeStation(v.name, toNorm));
+
+  if (!servesFrom || !servesTo) {
+    const missing = !servesFrom ? fromNorm : toNorm;
+    const missingBn = getStationBanglaName(missing);
+    return {
+      valid: false,
+      actualRoutes,
+      validTrains,
+      reasonBn: `"${trainName}" ট্রেনটি কখনোই "${missingBn} (${missing})" স্টেশনে যায় না! এই ট্রেনের আসল রুট: ${actualRoutes.join(' · ')}`,
+      reasonEn: `${trainName} never operates via ${missing}. Official route(s): ${actualRoutes.join(' · ')}`,
+    };
+  }
+
+  return {
+    valid: false,
+    actualRoutes,
+    validTrains,
+    reasonBn: `"${trainName} [${trainNumber}]" বিপরীত দিকের ট্রেন (${matchingVariants[0].fromStation} → ${matchingVariants[0].toStation})। ${fromNorm} → ${toNorm} রুটের সঠিক দিকের ট্রেন বেছে নিন।`,
+    reasonEn: `${trainName} [${trainNumber}] runs in the opposite direction. Choose a valid train for ${fromNorm} → ${toNorm}.`,
+  };
 }
 
 // Helper: Map Station English to Bengali
@@ -1877,3 +2207,175 @@ export function formatCoachSeat(coachSeat: string, customBn?: string): string {
   }
   return `${coachSeat} (${toBanglaDigits(coachSeat)})`;
 }
+
+// ─── Feature Helpers: VAT Breakdown, Segment Stoppages, Smart Seats & Masking ───
+
+export const AC_VAT_CLASSES = new Set(['SNIGDHA', 'AC_S', 'AC_B', 'AC_CHAIR', 'F_BERTH', 'F_SEAT']);
+
+export interface FareBreakdown {
+  fare: number;
+  vat: number;
+  serviceCharge: number;
+  totalSeats: number;
+}
+
+export function calculateTicketFareBreakdown(
+  unitGrossFare: number,
+  className: string,
+  numAdults: number,
+  numSeniors: number,
+  numChildren: number
+): FareBreakdown {
+  const adults = Math.max(0, Math.floor(numAdults || 0));
+  const seniors = Math.max(0, Math.floor(numSeniors || 0));
+  const children = Math.max(0, Math.floor(numChildren || 0));
+  const totalSeats = Math.max(1, adults + seniors + children);
+  const effectiveMultiplier =
+    adults + seniors + children === 0 ? 1 : adults + seniors + children * 0.5;
+
+  const grossTotal = Math.max(0, Math.round(unitGrossFare * effectiveMultiplier));
+  const isVatClass = AC_VAT_CLASSES.has((className || '').toUpperCase());
+
+  if (isVatClass && grossTotal > 0) {
+    const baseFare = Math.round(grossTotal / 1.15);
+    const vat = Math.max(0, grossTotal - baseFare);
+    return {
+      fare: baseFare,
+      vat,
+      serviceCharge: 20 * totalSeats,
+      totalSeats,
+    };
+  }
+
+  return {
+    fare: grossTotal,
+    vat: 0,
+    serviceCharge: 20 * totalSeats,
+    totalSeats,
+  };
+}
+
+export interface SegmentStoppageDetails {
+  stops: { name: string; nameBn: string }[];
+  boardingTime: string;
+  alightingTime: string;
+  durationLabel: string;
+  isNextDayArrival: boolean;
+}
+
+export function getSegmentStoppageDetails(
+  train: RailwayTrain | undefined,
+  fromStation: string,
+  toStation: string
+): SegmentStoppageDetails | null {
+  if (!train || !fromStation || !toStation) return null;
+  const stops = getTrainOrderedStops(train);
+  const fromNorm = normalizeStationName(fromStation).toLowerCase();
+  const toNorm = normalizeStationName(toStation).toLowerCase();
+  const fromIdx = stops.findIndex(s => s.toLowerCase() === fromNorm);
+  const toIdx = stops.findIndex(s => s.toLowerCase() === toNorm);
+  if (fromIdx === -1 || toIdx === -1 || toIdx <= fromIdx) return null;
+
+  const slice = stops.slice(fromIdx, toIdx + 1).map(name => ({
+    name,
+    nameBn: getStationBanglaName(name),
+  }));
+  const seg = estimateSegmentSchedule(train, fromStation, toStation, 'S_CHAIR');
+  const depM = parseTimeToMinutes(seg.boardingTime);
+  const arrM = parseTimeToMinutes(seg.alightingTime);
+
+  return {
+    stops: slice,
+    boardingTime: seg.boardingTime,
+    alightingTime: seg.alightingTime,
+    durationLabel: seg.durationLabel,
+    isNextDayArrival: arrM <= depM || seg.durationMinutes >= 720,
+  };
+}
+
+const CLASS_COACH_POOL: Record<string, string[]> = {
+  SNIGDHA: ['KA', 'KHA', 'GA'],
+  AC_CHAIR: ['KA', 'KHA', 'GA'],
+  AC_S: ['GHA', 'UMA', 'KA'],
+  AC_B: ['GHA', 'UMA', 'CHA'],
+  F_BERTH: ['GHA', 'UMA'],
+  F_SEAT: ['KA', 'KHA'],
+  S_CHAIR: ['CHA', 'JHA', 'TA', 'THA', 'DA', 'NA'],
+  SHOVON: ['THA', 'DA', 'NA', 'PA'],
+  SHULOV: ['PA', 'BA', 'MA'],
+};
+
+export function generateSmartCoachSeats(
+  className: string,
+  numSeats: number,
+  seedHint?: string
+): { coachSeat: string; coachSeatBn: string } {
+  const count = Math.max(1, Math.min(12, Math.floor(numSeats || 1)));
+  const pool = CLASS_COACH_POOL[(className || 'S_CHAIR').toUpperCase()] || CLASS_COACH_POOL.S_CHAIR;
+
+  // Pick next coach in rotation if seedHint matches same pool, otherwise pick cleanly
+  const currentPrefix = (seedHint || '').split('-')[0]?.trim().toUpperCase();
+  const currentIdx = pool.indexOf(currentPrefix);
+  const coach =
+    currentIdx >= 0
+      ? pool[(currentIdx + 1) % pool.length]
+      : pool[Math.floor(Math.random() * pool.length)];
+
+  const maxSeatNum = className === 'AC_B' || className === 'F_BERTH' ? 32 : 70;
+  const start = Math.floor(Math.random() * Math.max(10, maxSeatNum - count)) + 4;
+  const seats: string[] = [];
+  for (let i = 0; i < count; i++) {
+    seats.push(`${coach}-${start + i}`);
+  }
+  const coachSeat = seats.join(', ');
+  return {
+    coachSeat,
+    coachSeatBn: getPureBanglaCoachSeat(coachSeat),
+  };
+}
+
+export function syncCoachSeatCount(
+  existingCoachSeat: string,
+  className: string,
+  targetCount: number
+): { coachSeat: string; coachSeatBn: string } {
+  const count = Math.max(1, Math.min(12, Math.floor(targetCount || 1)));
+  const items = (existingCoachSeat || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  if (items.length === 0) {
+    return generateSmartCoachSeats(className, count);
+  }
+  if (items.length >= count) {
+    const sliced = items.slice(0, count).join(', ');
+    return { coachSeat: sliced, coachSeatBn: getPureBanglaCoachSeat(sliced) };
+  }
+
+  // Extend from the last seat token consecutively (e.g., TA-34 -> TA-34, TA-35, TA-36)
+  const last = items[items.length - 1];
+  const m = last.match(/^([A-Za-z]+)-(\d+)$/);
+  if (!m) {
+    return generateSmartCoachSeats(className, count);
+  }
+  const prefix = m[1].toUpperCase();
+  let nextNum = parseInt(m[2], 10);
+  const extended = [...items];
+  while (extended.length < count) {
+    nextNum += 1;
+    extended.push(`${prefix}-${nextNum}`);
+  }
+  const coachSeat = extended.join(', ');
+  return { coachSeat, coachSeatBn: getPureBanglaCoachSeat(coachSeat) };
+}
+
+export function maskOfficialNumber(raw: string, keepStart = 3, keepEnd = 3): string {
+  const cleaned = (raw || '').trim();
+  if (!cleaned || cleaned.includes('*') || cleaned.length <= keepStart + keepEnd) {
+    return cleaned;
+  }
+  const starCount = Math.max(3, cleaned.length - keepStart - keepEnd);
+  return `${cleaned.slice(0, keepStart)}${'*'.repeat(starCount)}${cleaned.slice(-keepEnd)}`;
+}
+
