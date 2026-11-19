@@ -594,6 +594,13 @@ export function TicketMaker() {
     return parts.length > 0 ? parts : [''];
   }, [ticket.passengerName]);
 
+  const leadPassengerName = passengerNamesList[0] || ticket.passengerName;
+  const coPassengersList = useMemo(
+    () => passengerNamesList.slice(1).filter(Boolean),
+    [passengerNamesList]
+  );
+  const isCompactMultiPax = coPassengersList.length >= 4;
+
   const applySeatAndCategoryCounts = (
     nextAdults: number,
     nextSeniors: number,
@@ -1094,7 +1101,7 @@ export function TicketMaker() {
           margin: '0',
           width: '793.7px',
           height: '1122.5px',
-          paddingTop: '61.7px',
+          paddingTop: el.classList.contains('compact-pax') ? '32px' : '61.7px',
           boxSizing: 'border-box',
         },
         font: inlineFontsCss ? { cssText: inlineFontsCss } : undefined,
@@ -1258,11 +1265,20 @@ export function TicketMaker() {
   .f-en .big { font-size: 11pt; font-weight: 700; }
   .f-bn { width: 50%; font-size: 9pt; line-height: 14px; }
   .f-bn .big { font-size: 11pt; font-weight: 700; }
+  .page.compact-pax { padding-top: 32px; }
+  .page.compact-pax .frame { padding: 11px 15.1px; }
+  .page.compact-pax td .td-c { padding: 1.5px 6px 2px 6px; line-height: 11.2px; }
+  .page.compact-pax table.outer + .bar { margin-top: 10px; }
+  .page.compact-pax .bar { height: 25px; margin-top: 6px; }
+  .page.compact-pax .pn-en div.it, .page.compact-pax .pn-bn div.it { margin-top: 6px; line-height: 12.5px; }
+  .page.compact-pax .banner1 { height: 44px; margin-top: 6px; font-size: 10.5pt; line-height: 16px; }
+  .page.compact-pax .banner2 { height: 32px; margin-top: 6px; font-size: 10.5pt; line-height: 14px; }
+  .page.compact-pax .footer { margin-top: 10px; }
 </style>
 </head>
 <body>
-<div class="page" id="page">
-${inner}
+<div class="page${isCompactMultiPax ? ' compact-pax' : ''}" id="page">
+${inner.replace(/<style>[\s\S]*?<\/style>/i, '')}
 </div>
 </body>
 </html>`;
@@ -3385,7 +3401,7 @@ ${inner}
                 <div
                   id="page"
                   ref={ticketRef}
-                  className="railway-ticket-page"
+                  className={`railway-ticket-page${isCompactMultiPax ? ' compact-pax' : ''}`}
                   style={{
                     position: 'absolute',
                     top: 0,
@@ -3393,7 +3409,7 @@ ${inner}
                     width: '793.7px',
                     height: '1122.5px',
                     background: '#ffffff',
-                    paddingTop: '61.7px',
+                    paddingTop: isCompactMultiPax ? '32px' : '61.7px',
                     boxSizing: 'border-box',
                     userSelect: 'none',
                     transform: `scale(${previewScale})`,
@@ -3460,6 +3476,14 @@ ${inner}
                     .railway-ticket-page .f-en .big { font-size: 11pt; font-weight: 700; }
                     .railway-ticket-page .f-bn { width: 50%; font-size: 9pt; line-height: 14px; }
                     .railway-ticket-page .f-bn .big { font-size: 11pt; font-weight: 700; }
+                    .railway-ticket-page.compact-pax .frame { padding: 11px 15.1px; }
+                    .railway-ticket-page.compact-pax td .td-c { padding: 1.5px 6px 2px 6px; line-height: 11.2px; }
+                    .railway-ticket-page.compact-pax table.outer + .bar { margin-top: 10px; }
+                    .railway-ticket-page.compact-pax .bar { height: 25px; margin-top: 6px; }
+                    .railway-ticket-page.compact-pax .pn-en div.it, .railway-ticket-page.compact-pax .pn-bn div.it { margin-top: 6px; line-height: 12.5px; }
+                    .railway-ticket-page.compact-pax .banner1 { height: 44px; margin-top: 6px; font-size: 10.5pt; line-height: 16px; }
+                    .railway-ticket-page.compact-pax .banner2 { height: 32px; margin-top: 6px; font-size: 10.5pt; line-height: 14px; }
+                    .railway-ticket-page.compact-pax .footer { margin-top: 10px; }
                   `}</style>
                   <div className="frame">
                     {/* Header */}
@@ -3608,10 +3632,10 @@ ${inner}
                       <tbody>
                         <tr>
                           <td><div className="td-c"><span>Passenger Name <span className="bn">(যাত্রীর নাম)</span></span></div></td>
-                          <td><div className="td-c"><span>{ticket.passengerName}</span></div></td>
+                          <td><div className="td-c"><span>{leadPassengerName}</span></div></td>
                         </tr>
                         <tr>
-                          <td><div className="td-c"><span>Identification Type <span className="bn">(পরিচয়ের ধরণ)</span></span></div></td>
+                          <td><div className="td-c"><span>Identification Type <span className="bn">(পরিচয়পত্র ধরণ)</span></span></div></td>
                           <td><div className="td-c"><span>{ticket.idType} <span className="bn">({ticket.idTypeBn})</span></span></div></td>
                         </tr>
                         <tr>
@@ -3626,6 +3650,12 @@ ${inner}
                           <td><div className="td-c"><span>PNR Number <span className="bn">(পিএনআর নম্বর)</span></span></div></td>
                           <td className="b"><div className="td-c"><span>{ticket.pnrNumber}</span></div></td>
                         </tr>
+                        {coPassengersList.map((coName, idx) => (
+                          <tr key={`co-pax-row-${idx}`}>
+                            <td><div className="td-c"><span>Co Passenger {idx + 1} <span className="bn">(সহযাত্রী {toBanglaDigits(idx + 1)})</span></span></div></td>
+                            <td><div className="td-c"><span>{coName}</span></div></td>
+                          </tr>
+                        ))}
                       </tbody>
                     </table>
 
